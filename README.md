@@ -2,11 +2,13 @@
 
 将文档内容转换为专业思维导图，基于 Google Gemini AI 和 Markmap 可视化技术。
 
-**当前版本**: v2.0.0 🔥 用户认证系统开发中
+**当前版本**: v2.0.0 🎉 用户认证系统完成
 
 ## 🌐 在线体验
 
 - **🖥️ 前端应用**: https://thinktree-frontend.onrender.com
+- **👤 用户注册**: https://thinktree-frontend.onrender.com/register  
+- **🔐 用户登录**: https://thinktree-frontend.onrender.com/login
 - **🔧 API 服务**: https://thinktree-backend.onrender.com
 - **📚 API 文档**: https://thinktree-backend.onrender.com/docs
 - **💚 健康检查**: https://thinktree-backend.onrender.com/health
@@ -22,8 +24,10 @@
 - ⚡ **实时生成**: 输入文本即时生成思维导图
 - 🎨 **现代 UI**: 基于 Tailwind CSS 的美观界面
 - ☁️ **云端部署**: Render 平台稳定运行，随时随地访问
-- 👤 **用户认证**: JWT 令牌认证，个人数据安全存储 (v2.0.0 新增)
-- 💾 **数据持久化**: PostgreSQL 云端数据库，思维导图永久保存 (v2.0.0 新增)
+- 👤 **用户认证**: 完整的注册/登录系统，JWT 令牌认证 (v2.0.0 ✅)
+- 💾 **数据持久化**: PostgreSQL 云端数据库，用户数据安全存储 (v2.0.0 ✅)
+- 🔒 **安全加密**: bcrypt 密码加密，JWT 安全令牌管理 (v2.0.0 ✅)
+- 🎨 **现代UI**: 响应式认证页面，用户友好的交互体验 (v2.0.0 ✅)
 
 ## 🛠️ 技术栈
 
@@ -52,6 +56,35 @@
 - PostgreSQL 数据库服务
 - 前后端分离部署
 - 环境变量配置管理
+
+## 🎉 v2.0.0 重大更新
+
+### 🔐 用户认证系统 (全新功能)
+
+ThinkTree v2.0.0 引入了完整的用户认证系统，从匿名工具升级为个人化应用：
+
+**✅ 核心功能**
+- **用户注册**: 邮箱注册，密码强度验证，数据安全存储
+- **用户登录**: JWT 令牌认证，安全会话管理
+- **响应式UI**: 现代化登录/注册页面，完美适配移动端  
+- **错误处理**: 用户友好的提示信息，实时表单验证
+
+**🛡️ 安全特性**
+- **密码加密**: bcrypt 哈希加密，防止密码泄露
+- **JWT 认证**: 安全令牌管理，无状态认证机制
+- **数据库**: PostgreSQL 云端数据库，数据持久化存储
+- **环境隔离**: 开发/生产环境配置分离
+
+**🌐 生产部署**
+- **前端**: 认证页面已部署到 Render 云平台
+- **后端**: 认证API接口云端运行，支持高并发访问
+- **数据库**: PostgreSQL 云端数据库稳定运行
+- **API集成**: 前后端完美集成，错误处理完善
+
+**🚀 立即体验**
+1. 访问 [注册页面](https://thinktree-frontend.onrender.com/register) 创建账户
+2. 在 [登录页面](https://thinktree-frontend.onrender.com/login) 登录您的账户
+3. 享受个人化的思维导图生成体验
 
 ## 🏗️ 项目架构
 

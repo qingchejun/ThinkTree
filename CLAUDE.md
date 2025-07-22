@@ -4,13 +4,14 @@
 
 **ThinkTree** 是一个 AI 驱动的思维导图生成工具，对标 Mapify.so，使用先进的技术栈实现文档到思维导图的智能转换。
 
-**当前版本**: v1.2.0 - 云端部署完成
+**当前版本**: v2.0.0 - 用户认证系统完成 🎉
 
 ### 核心技术架构
 
 ```
-用户输入 → FastAPI后端 → Google Gemini AI → Markdown数据 → markmap-lib转换 → markmap-view渲染
-部署: Render Cloud Platform (Singapore)
+用户注册/登录 → JWT认证 → 受保护API → AI处理 → 个人化数据存储
+技术栈: Next.js 14 + FastAPI + PostgreSQL + JWT + Google Gemini AI
+部署: Render Cloud Platform (Singapore) - 前后端全栈部署
 ```
 
 ### 🌐 线上地址
@@ -20,23 +21,33 @@
 - **API 文档**: https://thinktree-backend.onrender.com/docs
 - **健康检查**: https://thinktree-backend.onrender.com/health
 
+### 🔐 v2.0.0 新增功能
+
+- **用户注册**: https://thinktree-frontend.onrender.com/register
+- **用户登录**: https://thinktree-frontend.onrender.com/login
+- **认证API**: https://thinktree-backend.onrender.com/api/auth/
+- **数据库**: PostgreSQL (Render 云端数据库)
+
 ## 🛠️ 技术栈详情
 
 ### 前端 (Next.js 14)
 
 - **框架**: Next.js 14 App Router
 - **UI 库**: React 18 + Tailwind CSS 3
+- **认证系统**: JWT 存储 + 状态管理 + 表单验证
 - **思维导图**: markmap-view + markmap-lib + D3.js
 - **特性**: 响应式设计，自适应布局，实时渲染
-- **部署**: Render (Singapore)
+- **部署**: Render (Singapore) + 环境变量自适应
 
 ### 后端 (FastAPI)
 
 - **框架**: FastAPI + Python 3.11
+- **数据库**: PostgreSQL + SQLAlchemy ORM
+- **认证系统**: JWT + bcrypt + 用户管理
 - **AI 引擎**: Google Gemini API
 - **文件处理**: PyMuPDF + pdfplumber + python-docx
 - **API 设计**: RESTful API + 自动文档生成
-- **部署**: Render (Singapore) + gunicorn
+- **部署**: Render (Singapore) + gunicorn + 云端数据库
 
 ### 文档解析能力
 
@@ -91,7 +102,9 @@ ThinkTree/
 │   │   │   ├── file_parser.py     # 文件解析器
 │   │   │   └── config.py          # 配置管理
 │   │   ├── models/           # 数据模型
+│   │   │   └── user.py            # 用户数据模型
 │   │   └── utils/            # 工具函数
+│   │       └── security.py        # 安全工具和JWT处理
 │   ├── main.py               # FastAPI主入口
 │   ├── requirements.txt      # Python依赖
 │   └── uploads/             # 上传文件临时存储
@@ -101,9 +114,17 @@ ThinkTree/
 └── DEPLOYMENT.md              # 部署指南
 ```
 
-## 🚀 v1.2.0 新功能特性
+## 🚀 v2.0.0 重大功能升级
 
-### ✅ 文档上传功能
+### 🔐 用户认证系统
+
+- **完整认证流程**: 用户注册、登录、JWT令牌管理
+- **安全存储**: bcrypt密码加密 + PostgreSQL数据库
+- **现代化UI**: 响应式登录/注册页面，用户体验优化
+- **生产部署**: 云端数据库 + 环境配置 + API集成
+- **错误处理**: 用户友好的提示信息和状态管理
+
+### ✅ 文档上传功能 (已有)
 
 - **多格式支持**: PDF、DOCX、TXT、MD、SRT
 - **拖拽上传**: 现代化的文件上传体验
@@ -264,29 +285,45 @@ markmap-lib转换 → markmap-view渲染思维导图
    - 多格式文档解析集成
    - 统一的响应格式
 
-## 🔮 v2.0.0 规划
+## 📊 v2.0.0 完成状态
 
-### 用户系统
+### ✅ 已完成功能
 
-- 用户注册/登录功能
-- 思维导图保存和历史记录
-- 个人控制台和偏好设置
+**用户认证系统**:
+- ✅ 用户注册/登录功能 (前后端完整实现)
+- ✅ JWT 认证和安全存储
+- ✅ PostgreSQL 数据库集成
+- ✅ 生产环境部署和配置
+
+**基础功能**:
+- ✅ AI 思维导图生成 (Google Gemini)
+- ✅ 多格式文档解析 (PDF/DOCX/TXT/MD/SRT)
+- ✅ 现代化UI界面 (Next.js + Tailwind CSS)
+
+## 🔮 v2.1.0 规划
+
+### 用户体验增强
+
+- [ ] 全局用户状态管理 (React Context)
+- [ ] 思维导图个人化保存和管理
+- [ ] 个人控制台和用户设置
+- [ ] 私有路由保护和导航集成
 
 ### 功能增强
 
-- 思维导图样式和主题定制
-- 节点编辑和手动调整功能
-- 多格式导出 (PNG/PDF/SVG)
+- [ ] 思维导图样式和主题定制
+- [ ] 节点编辑和手动调整功能
+- [ ] 多格式导出 (PNG/PDF/SVG)
 
 ### 协作功能
 
-- 分享链接和权限控制
-- 实时协作编辑
-- 评论和版本历史
+- [ ] 分享链接和权限控制
+- [ ] 实时协作编辑
+- [ ] 评论和版本历史
 
 ---
 
 **更新日期**: 2024-07-22  
-**项目状态**: 🟢 v1.2.0 云端稳定运行  
-**技术架构**: AI → Markdown → markmap-lib → markmap-view  
-**部署状态**: Render 云平台完整部署
+**项目状态**: 🟢 v2.0.0 用户认证系统完成  
+**技术架构**: 用户认证 → JWT → AI处理 → 个人数据存储  
+**部署状态**: Render 云平台全栈部署 (前端 + 后端 + 数据库)
