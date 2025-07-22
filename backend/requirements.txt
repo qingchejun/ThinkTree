@@ -18,9 +18,10 @@ python-jose>=3.3.0
 passlib>=1.7.4
 bcrypt>=4.0.1
 
-# 数据库 (使用 SQLite 进行开发)
+# 数据库
 sqlalchemy>=2.0.23
-# psycopg2-binary>=2.9.7  # 暂时注释掉，使用 SQLite
+psycopg2-binary>=2.9.7  # PostgreSQL 驱动程序
+alembic>=1.13.0  # 数据库迁移工具
 
 # Google Gemini API
 google-generativeai>=0.3.2
@@ -28,6 +29,7 @@ google-generativeai>=0.3.2
 # 数据验证 (使用最新版本支持 Python 3.13)
 pydantic>=2.6.0
 pydantic-settings>=2.2.1
+email-validator>=2.1.0  # 支持 Pydantic EmailStr
 
 # 环境变量管理
 python-dotenv>=1.0.0

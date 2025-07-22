@@ -1,45 +1,56 @@
 """
-配置管理模块
+ThinkTree 应用配置
 """
 
 import os
 from pydantic_settings import BaseSettings
-from typing import Optional
+
 
 class Settings(BaseSettings):
-    """应用配置类"""
+    """应用设置"""
     
     # 基础配置
-    PROJECT_NAME: str = "ThinkTree"
-    VERSION: str = "1.0.0"
-    DEBUG: bool = True
+    app_name: str = "ThinkTree API"
+    app_version: str = "2.0.0"
+    debug: bool = False
     
     # API 配置
-    API_V1_PREFIX: str = "/api"
+    secret_key: str = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
+    access_token_expire_minutes: int = 60 * 24 * 7  # 7 天
     
-    # Google Gemini API 配置
-    GEMINI_API_KEY: Optional[str] = os.getenv("GEMINI_API_KEY")
+    # Google Gemini AI
+    gemini_api_key: str = os.getenv("GEMINI_API_KEY", "")
     
     # 数据库配置
-    DATABASE_URL: Optional[str] = os.getenv("DATABASE_URL", "sqlite:///./thinktree.db")
+    database_url: str = os.getenv(
+        "DATABASE_URL", 
+        "sqlite:///./thinktree.db"  # 本地开发默认使用 SQLite
+    )
     
-    # JWT 配置
-    SECRET_KEY: str = os.getenv("SECRET_KEY", "your-secret-key-here")
-    ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    # 如果是 PostgreSQL URL，确保格式正确
+    @property
+    def database_url_fixed(self) -> str:
+        """修复 Render PostgreSQL URL 格式"""
+        if self.database_url.startswith("postgres://"):
+            return self.database_url.replace("postgres://", "postgresql://", 1)
+        return self.database_url
     
     # 文件上传配置
-    MAX_FILE_SIZE: int = 10 * 1024 * 1024  # 10MB
-    UPLOAD_DIR: str = "./uploads"
-    ALLOWED_FILE_TYPES: list = [".txt", ".md", ".docx", ".pdf", ".srt"]
+    max_file_size: int = 10 * 1024 * 1024  # 10MB
+    upload_dir: str = "uploads"
+    allowed_file_types: list = [".txt", ".md", ".docx", ".pdf", ".srt"]
     
-    # CORS配置
-    ALLOWED_HOSTS: list = ["*"]
-    
-    class Config:
-        case_sensitive = True
-        env_file = ".env"
-        extra = "ignore"  # 忽略额外字段
+    # CORS 配置
+    allowed_origins: list = [
+        "http://localhost:3000",
+        "https://thinktree-frontend.onrender.com"
+    ]
 
-# 创建全局设置实例
+    class Config:
+        """Pydantic 配置"""
+        env_file = ".env"
+        case_sensitive = False
+
+
+# 全局设置实例
 settings = Settings()
