@@ -15,12 +15,22 @@ app = FastAPI(
     version="1.2.0"
 )
 
-# 配置CORS - 生产环境需要更严格的配置
+# 配置CORS - 支持环境变量配置允许的域名
+allowed_origins = [
+    "http://localhost:3000",  # 本地开发
+    "https://thinktree-frontend.onrender.com",  # Render前端域名
+]
+
+# 从环境变量获取额外的允许域名
+extra_origins = os.getenv("ALLOWED_ORIGINS", "").split(",")
+extra_origins = [origin.strip() for origin in extra_origins if origin.strip()]
+allowed_origins.extend(extra_origins)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 生产环境应该限制为具体域名
+    allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
 )
 

@@ -75,7 +75,8 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
       formData.append('file', file)
 
       // 使用默认的standard格式
-      const response = await fetch(`http://localhost:8000/api/upload?format_type=standard`, {
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+      const response = await fetch(`${API_BASE_URL}/api/upload?format_type=standard`, {
         method: 'POST',
         body: formData,
       })
@@ -106,7 +107,8 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
       setIsUploading(true)
       if (onUploadStart) onUploadStart()
 
-      const response = await fetch('http://localhost:8000/api/process-text', {
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+      const response = await fetch(`${API_BASE_URL}/api/process-text`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
