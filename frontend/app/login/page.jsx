@@ -50,10 +50,13 @@ export default function LoginPage() {
         setSuccess('登录成功！正在跳转...')
         
         // 使用全局AuthContext的login函数
+        console.log('调用全局login函数，token:', data.access_token?.substring(0, 20) + '...')
         const loginResult = await login(data.access_token)
+        console.log('login函数返回结果:', loginResult)
         
         if (loginResult.success) {
           // 登录成功，跳转到控制台
+          console.log('登录成功，准备跳转到dashboard')
           setTimeout(() => {
             router.push('/dashboard')
           }, 1500)
