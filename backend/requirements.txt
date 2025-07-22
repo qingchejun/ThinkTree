@@ -1,0 +1,47 @@
+# ThinkTree Backend Dependencies - Python 3.13 Compatible
+
+# FastAPI 框架
+fastapi>=0.104.1
+uvicorn>=0.24.0
+
+# 文件处理
+python-multipart>=0.0.6
+
+# 文档解析
+python-docx>=0.8.11
+PyPDF2>=3.0.1
+pdfplumber>=0.10.3
+PyMuPDF>=1.24.0
+
+# 认证和安全
+python-jose>=3.3.0
+passlib>=1.7.4
+bcrypt>=4.0.1
+
+# 数据库 (使用 SQLite 进行开发)
+sqlalchemy>=2.0.23
+# psycopg2-binary>=2.9.7  # 暂时注释掉，使用 SQLite
+
+# Google Gemini API
+google-generativeai>=0.3.2
+
+# 数据验证 (使用最新版本支持 Python 3.13)
+pydantic>=2.6.0
+
+# 环境变量管理
+python-dotenv>=1.0.0
+
+# HTTP 客户端
+httpx>=0.25.2
+
+# 日期时间处理
+python-dateutil>=2.8.2
+
+# JSON 处理
+orjson>=3.9.10
+
+# 文件系统操作
+aiofiles>=23.2.1
+
+# 生产环境额外依赖
+gunicorn>=21.2.0

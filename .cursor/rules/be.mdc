@@ -1,0 +1,8 @@
+---
+name: be
+description: 这是 ThinkTree 项目的后端上下文。它包含了所有用 Python 和 FastAPI 编写的服务器端逻辑，主要负责处理 API 请求、调用 Google Gemini AI 进行内容分析，以及解析用户上传的文件。
+alwaysApply: false
+globs:
+  - backend/app/
+  - backend/requirements.txt
+---

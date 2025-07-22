@@ -1,0 +1,34 @@
+/* Markmap 思维导图样式 */
+.markmap > g > path {
+  fill: none;
+  stroke: #999;
+  stroke-width: 1.5px;
+}
+
+.markmap-node > circle {
+  fill: #fff;
+  stroke: #999;
+  stroke-width: 1.5px;
+}
+
+.markmap-node > text {
+  fill: #333;
+  font-size: 12px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.markmap-node:hover > circle {
+  stroke: #333;
+  stroke-width: 2px;
+}
+
+.markmap-link {
+  fill: none;
+  stroke: #999;
+  stroke-width: 1.5px;
+}
+
+.markmap-link:hover {
+  stroke: #333;
+  stroke-width: 2px;
+}

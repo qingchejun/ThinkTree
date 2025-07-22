@@ -1,0 +1,66 @@
+{
+  "name": "thinktree-frontend",
+  "version": "1.0.0",
+  "description": "ThinkTree Frontend - AI驱动的思维导图生成工具",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@headlessui/react": "^1.7.17",
+    "@heroicons/react": "^2.0.18",
+    "@reactflow/background": "^11.3.7",
+    "@reactflow/controls": "^11.2.7",
+    "@reactflow/core": "^11.10.1",
+    "@reactflow/minimap": "^11.7.7",
+    "@reactflow/node-toolbar": "^1.3.7",
+    "clsx": "^2.0.0",
+    "d3": "^7.9.0",
+    "markmap-lib": "^0.18.12",
+    "markmap-view": "^0.18.12",
+    "next": "^14.0.4",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-hot-toast": "^2.4.1",
+    "reactflow": "^11.10.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/forms": "^0.5.7",
+    "@tailwindcss/typography": "^0.5.10",
+    "@types/node": "^20.10.5",
+    "@types/react": "^18.2.45",
+    "@types/react-dom": "^18.2.18",
+    "autoprefixer": "^10.4.16",
+    "eslint": "^8.56.0",
+    "eslint-config-next": "^14.0.4",
+    "postcss": "^8.4.32",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.3.3"
+  },
+  "keywords": [
+    "react",
+    "nextjs",
+    "mindmap",
+    "ai",
+    "reactflow",
+    "思维导图"
+  ],
+  "author": "ThinkTree Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/thinktree.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/thinktree/issues"
+  },
+  "homepage": "https://github.com/your-username/thinktree#readme",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
+}
