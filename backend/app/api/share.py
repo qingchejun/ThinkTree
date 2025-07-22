@@ -2,26 +2,42 @@
 分享功能 API 路由
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import JSONResponse
+from sqlalchemy.orm import Session
 from typing import Dict, Any
 import uuid
 import hashlib
 from datetime import datetime
-from app.api.mindmaps import mindmaps_storage
+
+from ..core.database import get_db
+from ..models.mindmap import Mindmap
+from ..models.user import User
+from ..api.auth import get_current_user
 
 router = APIRouter()
 
-# 分享链接存储
+# 分享链接存储 (临时使用内存存储，后续可改为数据库)
 share_links_storage = {}
 
 @router.post("/mindmaps/{mindmap_id}/share")
-async def create_share_link(mindmap_id: str, share_config: Dict[str, Any] = None):
+async def create_share_link(
+    mindmap_id: str, 
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    share_config: Dict[str, Any] = None
+):
     """为思维导图创建分享链接"""
-    if mindmap_id not in mindmaps_storage:
+    # 查询思维导图是否存在且属于当前用户
+    mindmap = db.query(Mindmap).filter(
+        Mindmap.id == mindmap_id,
+        Mindmap.user_id == current_user.id
+    ).first()
+    
+    if not mindmap:
         raise HTTPException(
             status_code=404,
-            detail="思维导图不存在"
+            detail="思维导图不存在或无权访问"
         )
     
     try:
@@ -41,9 +57,9 @@ async def create_share_link(mindmap_id: str, share_config: Dict[str, Any] = None
         
         share_links_storage[share_token] = share_info
         
-        # 更新思维导图的分享状态
-        mindmaps_storage[mindmap_id]["is_public"] = True
-        mindmaps_storage[mindmap_id]["share_token"] = share_token
+        # 更新思维导图的公开状态
+        mindmap.is_public = '1'
+        db.commit()
         
         return JSONResponse(content={
             "success": True,
@@ -53,13 +69,14 @@ async def create_share_link(mindmap_id: str, share_config: Dict[str, Any] = None
         })
         
     except Exception as e:
+        db.rollback()
         raise HTTPException(
             status_code=500,
             detail=f"创建分享链接失败: {str(e)}"
         )
 
 @router.get("/share/{share_token}")
-async def get_shared_mindmap(share_token: str):
+async def get_shared_mindmap(share_token: str, db: Session = Depends(get_db)):
     """通过分享token获取思维导图"""
     if share_token not in share_links_storage:
         raise HTTPException(
@@ -77,7 +94,10 @@ async def get_shared_mindmap(share_token: str):
     
     mindmap_id = share_info["mindmap_id"]
     
-    if mindmap_id not in mindmaps_storage:
+    # 从数据库查询思维导图
+    mindmap = db.query(Mindmap).filter(Mindmap.id == mindmap_id).first()
+    
+    if not mindmap:
         raise HTTPException(
             status_code=404,
             detail="思维导图不存在"
@@ -86,11 +106,17 @@ async def get_shared_mindmap(share_token: str):
     # 增加访问计数
     share_links_storage[share_token]["access_count"] += 1
     
-    mindmap = mindmaps_storage[mindmap_id]
-    
     return JSONResponse(content={
         "success": True,
-        "mindmap": mindmap,
+        "mindmap": {
+            "id": str(mindmap.id),
+            "title": mindmap.title,
+            "content": mindmap.content,
+            "description": mindmap.description,
+            "tags": mindmap.tags.split(',') if mindmap.tags else [],
+            "created_at": mindmap.created_at.isoformat(),
+            "updated_at": mindmap.updated_at.isoformat()
+        },
         "share_info": {
             "token": share_token,
             "created_at": share_info["created_at"],
@@ -115,12 +141,22 @@ async def disable_share_link(share_token: str):
     })
 
 @router.get("/mindmaps/{mindmap_id}/shares")
-async def get_mindmap_shares(mindmap_id: str):
+async def get_mindmap_shares(
+    mindmap_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """获取思维导图的所有分享链接"""
-    if mindmap_id not in mindmaps_storage:
+    # 验证思维导图是否存在且属于当前用户
+    mindmap = db.query(Mindmap).filter(
+        Mindmap.id == mindmap_id,
+        Mindmap.user_id == current_user.id
+    ).first()
+    
+    if not mindmap:
         raise HTTPException(
             status_code=404,
-            detail="思维导图不存在"
+            detail="思维导图不存在或无权访问"
         )
     
     # 查找该思维导图的所有分享链接
