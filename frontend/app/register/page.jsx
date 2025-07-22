@@ -1,5 +1,5 @@
 /**
- * 登录页面 - ThinkTree v2.0.0
+ * 注册页面 - ThinkTree v2.0.0
  */
 'use client'
 
@@ -7,11 +7,12 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const router = useRouter()
   const [formData, setFormData] = useState({
     email: '',
-    password: ''
+    password: '',
+    confirmPassword: ''
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -27,53 +28,72 @@ export default function LoginPage() {
     if (error) setError('')
   }
 
+  const validateForm = () => {
+    if (formData.password !== formData.confirmPassword) {
+      setError('两次输入的密码不一致')
+      return false
+    }
+    if (formData.password.length < 6) {
+      setError('密码长度至少6位')
+      return false
+    }
+    return true
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
+    
+    // 表单验证
+    if (!validateForm()) {
+      return
+    }
+
     setLoading(true)
     setError('')
     setSuccess('')
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password
+        }),
       })
 
       const data = await response.json()
 
       if (response.ok) {
-        setSuccess('登录成功！正在跳转...')
-        // 存储JWT令牌到localStorage
-        localStorage.setItem('access_token', data.access_token)
-        // 2秒后跳转到控制台
+        setSuccess('注册成功！正在跳转到登录页面...')
+        // 2秒后跳转到登录页面
         setTimeout(() => {
-          router.push('/dashboard')
+          router.push('/login')
         }, 2000)
       } else {
-        setError(data.detail || '登录失败，请检查您的邮箱和密码')
+        setError(data.detail || '注册失败，请稍后重试')
       }
     } catch (err) {
       setError('网络错误，请稍后重试')
-      console.error('登录错误:', err)
+      console.error('注册错误:', err)
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-100">
       <div className="max-w-md w-full space-y-8 p-8">
         <div className="bg-white rounded-lg shadow-lg p-8">
           {/* 头部 */}
           <div className="text-center">
             <h2 className="text-3xl font-bold text-gray-900 mb-2">
-              登录到 ThinkTree
+              注册 ThinkTree 账户
             </h2>
             <p className="text-gray-600 mb-8">
-              使用您的账户登录访问思维导图工具
+              创建您的账户，开始使用AI思维导图工具
             </p>
           </div>
 
@@ -92,7 +112,7 @@ export default function LoginPage() {
                 required
                 value={formData.email}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="请输入您的邮箱"
               />
             </div>
@@ -106,12 +126,30 @@ export default function LoginPage() {
                 id="password"
                 name="password"
                 type="password"
-                autoComplete="current-password"
+                autoComplete="new-password"
                 required
                 value={formData.password}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                placeholder="请输入您的密码"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="请输入密码（至少6位）"
+              />
+            </div>
+
+            {/* 确认密码输入框 */}
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+                确认密码
+              </label>
+              <input
+                id="confirmPassword"
+                name="confirmPassword"
+                type="password"
+                autoComplete="new-password"
+                required
+                value={formData.confirmPassword}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="请再次输入密码"
               />
             </div>
 
@@ -127,30 +165,30 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* 登录按钮 */}
+            {/* 注册按钮 */}
             <div>
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200"
+                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200"
               >
                 {loading ? (
                   <div className="flex items-center">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    登录中...
+                    注册中...
                   </div>
                 ) : (
-                  '登录'
+                  '注册账户'
                 )}
               </button>
             </div>
 
-            {/* 注册链接 */}
+            {/* 登录链接 */}
             <div className="text-center">
               <p className="text-sm text-gray-600">
-                还没有账户？{' '}
-                <Link href="/register" className="font-medium text-indigo-600 hover:text-indigo-500">
-                  立即注册
+                已有账户？{' '}
+                <Link href="/login" className="font-medium text-blue-600 hover:text-blue-500">
+                  立即登录
                 </Link>
               </p>
             </div>
