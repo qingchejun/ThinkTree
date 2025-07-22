@@ -6,9 +6,11 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useAuth } from '../../context/AuthContext'
 
 export default function LoginPage() {
   const router = useRouter()
+  const { login } = useAuth()
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -46,12 +48,18 @@ export default function LoginPage() {
 
       if (response.ok) {
         setSuccess('登录成功！正在跳转...')
-        // 存储JWT令牌到localStorage
-        localStorage.setItem('access_token', data.access_token)
-        // 2秒后跳转到控制台
-        setTimeout(() => {
-          router.push('/dashboard')
-        }, 2000)
+        
+        // 使用全局AuthContext的login函数
+        const loginResult = await login(data.access_token)
+        
+        if (loginResult.success) {
+          // 登录成功，跳转到控制台
+          setTimeout(() => {
+            router.push('/dashboard')
+          }, 1500)
+        } else {
+          setError(loginResult.error || '登录处理失败')
+        }
       } else {
         setError(data.detail || '登录失败，请检查您的邮箱和密码')
       }
