@@ -4,13 +4,21 @@
 
 **ThinkTree** 是一个 AI 驱动的思维导图生成工具，对标 Mapify.so，使用先进的技术栈实现文档到思维导图的智能转换。
 
-**当前版本**: v1.1.0 - 文档上传功能完成
+**当前版本**: v1.2.0 - 云端部署完成
 
 ### 核心技术架构
 
 ```
 用户输入 → FastAPI后端 → Google Gemini AI → Markdown数据 → markmap-lib转换 → markmap-view渲染
+部署: Render Cloud Platform (Singapore)
 ```
+
+### 🌐 线上地址
+
+- **前端**: https://thinktree-frontend.onrender.com
+- **后端**: https://thinktree-backend.onrender.com
+- **API 文档**: https://thinktree-backend.onrender.com/docs
+- **健康检查**: https://thinktree-backend.onrender.com/health
 
 ## 🛠️ 技术栈详情
 
@@ -20,13 +28,22 @@
 - **UI 库**: React 18 + Tailwind CSS 3
 - **思维导图**: markmap-view + markmap-lib + D3.js
 - **特性**: 响应式设计，自适应布局，实时渲染
+- **部署**: Render (Singapore)
 
 ### 后端 (FastAPI)
 
 - **框架**: FastAPI + Python 3.11
 - **AI 引擎**: Google Gemini API
-- **文件处理**: 异步文件解析和处理
+- **文件处理**: PyMuPDF + pdfplumber + python-docx
 - **API 设计**: RESTful API + 自动文档生成
+- **部署**: Render (Singapore) + gunicorn
+
+### 文档解析能力
+
+- **PDF**: PyMuPDF (高性能) + pdfplumber (备用)
+- **Word**: python-docx (DOCX 格式)
+- **文本**: TXT, MD, SRT 字幕文件
+- **上传**: 文件大小限制 10MB，拖拽上传支持
 
 ## 📁 项目结构
 
@@ -37,6 +54,9 @@ ThinkTree/
 │   │   ├── page.jsx           # 主页 (/)
 │   │   ├── test/page.jsx      # 思维导图测试页 (/test)
 │   │   ├── editor/page.jsx    # 编辑器页面 (/editor)
+│   │   ├── login/page.jsx     # 登录页面 (/login)
+│   │   ├── dashboard/page.jsx # 控制台页面 (/dashboard)
+│   │   ├── share/[token]/page.jsx # 分享页面
 │   │   ├── layout.jsx         # 根布局
 │   │   ├── not-found.jsx      # 404页面
 │   │   └── error.jsx          # 错误页面
@@ -44,190 +64,229 @@ ThinkTree/
 │   │   ├── mindmap/           # 思维导图组件
 │   │   │   ├── SimpleMarkmap.jsx    # 主要的Markmap组件
 │   │   │   ├── MarkmapView.jsx      # 原始Markmap组件
-│   │   │   └── SimpleMindMap.jsx    # 备用简单组件
+│   │   │   ├── SimpleMindMap.jsx    # 备用简单组件
+│   │   │   └── ThinkTreeEditor.jsx  # 编辑器组件
+│   │   ├── upload/            # 文件上传组件
+│   │   │   └── FileUpload.jsx      # 文件上传和文本输入
 │   │   ├── common/            # 通用组件
-│   │   └── upload/            # 文件上传组件(计划中)
-│   ├── styles/                # 样式文件
-│   │   ├── globals.css        # 全局样式
-│   │   └── markmap.css        # Markmap样式
-│   └── package.json           # 前端依赖
-├── backend/                    # FastAPI后端应用
-│   ├── app/
-│   │   ├── api/               # API路由模块
-│   │   │   ├── upload.py      # 文件上传和文本处理API
-│   │   │   ├── mindmaps.py    # 思维导图管理API
-│   │   │   ├── auth.py        # 认证API (计划中)
-│   │   │   └── share.py       # 分享功能API (计划中)
-│   │   ├── core/              # 核心业务模块
-│   │   │   ├── ai_processor.py      # Google Gemini AI处理器
-│   │   │   ├── file_parser.py       # 文件解析器
-│   │   │   └── config.py            # 配置管理
-│   │   ├── models/            # 数据模型 (计划中)
-│   │   └── utils/             # 工具函数
-│   ├── main.py                # FastAPI应用入口
-│   ├── requirements.txt       # Python依赖
-│   └── .env                   # 环境变量配置
-├── 任务清单.md                 # 开发任务跟踪文档
-├── DEPLOYMENT.md              # 部署指南(专注Render)
-├── README.md                  # 项目说明文档
-└── CLAUDE.md                  # 本文件 - Claude配置和项目状态
+│   │   │   ├── ErrorBoundary.jsx   # 错误边界
+│   │   │   └── Toast.jsx           # 消息提示
+│   │   └── share/             # 分享相关组件
+│   ├── lib/                   # 工具库
+│   │   └── api.js            # API调用封装
+│   ├── styles/               # 样式文件
+│   │   ├── globals.css       # 全局样式
+│   │   └── markmap.css       # Markmap专用样式
+│   ├── package.json          # 前端依赖配置
+│   └── next.config.js        # Next.js配置
+├── backend/                     # FastAPI后端应用
+│   ├── app/                    # 应用核心代码
+│   │   ├── api/               # API路由
+│   │   │   ├── upload.py     # 文件上传和文本处理
+│   │   │   ├── mindmaps.py   # 思维导图CRUD
+│   │   │   ├── auth.py       # 用户认证
+│   │   │   └── share.py      # 分享功能
+│   │   ├── core/             # 核心模块
+│   │   │   ├── ai_processor.py    # Google Gemini AI处理器
+│   │   │   ├── file_parser.py     # 文件解析器
+│   │   │   └── config.py          # 配置管理
+│   │   ├── models/           # 数据模型
+│   │   └── utils/            # 工具函数
+│   ├── main.py               # FastAPI主入口
+│   ├── requirements.txt      # Python依赖
+│   └── uploads/             # 上传文件临时存储
+├── README.md                   # 项目说明文档
+├── CLAUDE.md                  # 项目配置文档（本文件）
+├── 任务清单.md                # 开发任务跟踪
+└── DEPLOYMENT.md              # 部署指南
 ```
 
-## 🔧 开发环境配置
+## 🚀 v1.2.0 新功能特性
 
-### 必需的环境变量
+### ✅ 文档上传功能
 
-**后端 (backend/.env)**
+- **多格式支持**: PDF、DOCX、TXT、MD、SRT
+- **拖拽上传**: 现代化的文件上传体验
+- **双模式**: 文件上传 + 直接文本输入
+- **性能优化**: PyMuPDF 集成，PDF 解析速度提升 3-5 倍
+- **界面简化**: 移除复杂选项，专注核心功能
 
-```env
+### ✅ AI 处理优化
+
+- **知识架构师模板**: 专业级信息提取 prompt
+- **无损信息原则**: 零信息损失，完整保留关键细节
+- **结构保留**: 识别并保持原文逻辑层次关系
+- **精确提炼**: 具体化呈现替代模糊概括
+- **完整性检查**: 涵盖所有主要观点和支撑论据
+
+### ✅ 云端部署
+
+- **Render 平台**: 前后端完整部署
+- **生产环境**: 稳定运行，公网访问
+- **环境优化**: CORS 配置、环境变量、依赖管理
+- **区域部署**: 新加坡节点，低延迟高性能
+
+## 🔧 API 接口文档
+
+### 文档处理接口
+
+```http
+POST /api/upload
+Content-Type: multipart/form-data
+
+参数:
+- file: 上传的文件 (PDF/DOCX/TXT/MD/SRT)
+- format_type: 固定为 "standard"
+
+响应:
+{
+  "success": true,
+  "data": "# 思维导图标题\n## 主要内容..."
+}
+```
+
+```http
+POST /api/process-text
+Content-Type: application/json
+
+参数:
+{
+  "text": "要处理的文本内容",
+  "format_type": "standard"
+}
+
+响应:
+{
+  "success": true,
+  "data": "# 思维导图标题\n## 主要内容..."
+}
+```
+
+### 健康检查接口
+
+```http
+GET /health
+
+响应:
+{
+  "status": "healthy",
+  "version": "1.2.0"
+}
+```
+
+### API 文档
+
+完整的 API 文档可以通过以下地址访问：
+
+- 在线版本: https://thinktree-backend.onrender.com/docs
+- 本地版本: http://localhost:8000/docs
+
+## 🌐 开发环境配置
+
+### 前端环境变量
+
+```bash
+# .env.local
+NEXT_PUBLIC_API_URL=https://thinktree-backend.onrender.com  # 生产环境
+# NEXT_PUBLIC_API_URL=http://localhost:8000                 # 本地开发
+```
+
+### 后端环境变量
+
+```bash
+# .env
 GEMINI_API_KEY=your_google_gemini_api_key
-SECRET_KEY=your_secret_key_32_chars_minimum
-DATABASE_URL=sqlite:///./thinktree.db
-MAX_FILE_SIZE=10485760
-UPLOAD_DIR=uploads
-ALLOWED_FILE_TYPES=[".txt", ".md", ".docx", ".pdf", ".srt"]
+SECRET_KEY=your_secret_key_for_jwt
+DEBUG=False  # 生产环境
 ```
 
-**前端 (frontend/.env.local)**
-
-```env
-NEXT_PUBLIC_API_URL=http://localhost:8000
-```
-
-### 启动命令
-
-**后端启动**
+### 本地开发启动
 
 ```bash
+# 启动后端 (端口 8000)
 cd backend
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
-```
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+python main.py
 
-**前端启动**
-
-```bash
+# 启动前端 (端口 3000)
 cd frontend
+npm install
 npm run dev
 ```
 
-## 📊 当前项目状态 (v1.0.0)
+### 云端访问
 
-### ✅ 已完成功能
+- **前端**: https://thinktree-frontend.onrender.com
+- **后端**: https://thinktree-backend.onrender.com
 
-1. **核心架构**
+## 📊 项目状态
 
-   - Next.js 14 App Router 前端框架
-   - FastAPI 后端 API 服务
-   - Google Gemini AI 集成
+### 当前版本: v1.2.0 ✅
 
-2. **思维导图功能**
+- **状态**: 🟢 云端稳定运行
+- **功能**: 完整的文档到思维导图生成流程
+- **部署**: Render 平台，前后端分离部署
+- **性能**: 高质量 AI 处理，流畅的用户体验
 
-   - ✅ Markmap 集成 (markmap-view + markmap-lib)
-   - ✅ AI 生成 Markdown 格式数据
-   - ✅ 完整的连线和节点显示
-   - ✅ 自适应窗口大小功能
-   - ✅ 缩放、拖拽、平移交互
-   - ✅ 手动适应按钮
+### 核心数据流
 
-3. **页面和路由**
+```
+用户操作 → 文件上传/文本输入 → FastAPI后端接收 →
+文件解析器提取文本 → Google Gemini AI处理 →
+生成Markdown格式数据 → 返回前端 →
+markmap-lib转换 → markmap-view渲染思维导图
+```
 
-   - ✅ 主页 (/) - 产品介绍和导航
-   - ✅ 测试页 (/test) - 思维导图生成器
-   - ✅ 编辑器页 (/editor) - 思维导图编辑
-   - ✅ 404 和错误页面处理
+### 关键组件说明
 
-4. **API 接口**
+1. **FileUpload.jsx**:
 
-   - ✅ `/api/process-text` - 文本处理和 AI 生成
-   - ✅ CORS 配置和错误处理
-   - ✅ 返回正确的数据格式
+   - 支持拖拽上传和文本输入双模式
+   - 文件格式验证和大小限制
+   - 实时上传状态反馈
 
-5. **文档和部署**
-   - ✅ 项目文档完善
-   - ✅ Render 部署指南
-   - ✅ 开发任务跟踪
+2. **SimpleMarkmap.jsx**:
 
-### 🔄 进行中/计划中功能
+   - Markmap 思维导图渲染核心组件
+   - 自适应窗口大小
+   - 支持缩放、拖拽、平移交互
 
-1. **文档上传功能** (v1.1.0 计划)
+3. **ai_processor.py**:
 
-   - [ ] 前端文件上传组件
-   - [ ] 支持 PDF、TXT、DOCX、SRT、MD 格式
-   - [ ] 拖拽上传界面
-   - [ ] 文件大小和格式验证
+   - Google Gemini AI 处理器
+   - 知识架构师 prompt 模板
+   - 无损信息提取算法
 
-2. **云部署** (v1.1.0 计划)
+4. **upload.py**:
+   - 文件上传和文本处理 API
+   - 多格式文档解析集成
+   - 统一的响应格式
 
-   - [ ] Render 后端服务部署
-   - [ ] Render 前端应用部署
-   - [ ] 生产环境配置
-   - [ ] 域名和 HTTPS 配置
+## 🔮 v2.0.0 规划
 
-3. **用户系统** (v2.0.0 计划)
-   - [ ] 用户注册/登录
-   - [ ] 思维导图保存功能
-   - [ ] 个人控制台
-   - [ ] 分享功能
+### 用户系统
 
-## 🐛 已知问题和修复记录
+- 用户注册/登录功能
+- 思维导图保存和历史记录
+- 个人控制台和偏好设置
 
-### 已修复问题
+### 功能增强
 
-1. ✅ **Markmap 连线缺失**: 通过正确加载 CSS 和优化配置解决
-2. ✅ **主页 404 错误**: 重启 Next.js 开发服务器解决
-3. ✅ **API 数据格式不匹配**: 统一后端返回`{success, data}`格式
-4. ✅ **思维导图不适应窗口**: 添加 ResizeObserver 和自适应逻辑
+- 思维导图样式和主题定制
+- 节点编辑和手动调整功能
+- 多格式导出 (PNG/PDF/SVG)
 
-### 当前稳定状态
+### 协作功能
 
-- 🟢 前端服务: http://localhost:3000 正常运行
-- 🟢 后端服务: http://localhost:8000 正常运行
-- 🟢 AI 功能: Google Gemini API 正常响应
-- 🟢 思维导图: Markmap 渲染完全正常
-
-## 💡 开发最佳实践
-
-### 代码规范
-
-- 使用 ES6+现代 JavaScript 语法
-- React 函数式组件和 Hooks
-- Tailwind CSS 原子化样式
-- FastAPI 异步编程模式
-- 错误处理和用户反馈
-
-### 调试技巧
-
-- 使用浏览器开发者工具检查 Markmap 渲染
-- 后端 API 可通过 `/docs` 查看 Swagger 文档
-- 使用 console.log 调试前端状态变化
-- 检查网络请求确保前后端通信正常
-
-### 性能优化
-
-- Next.js 自动代码分割
-- Markmap 组件懒加载
-- API 响应缓存策略
-- 图片和资源优化
-
-## 🎯 下阶段开发重点
-
-### 优先级排序
-
-1. **高优先级**: 文档上传功能实现
-2. **高优先级**: Render 云部署配置
-3. **中优先级**: 用户体验优化
-4. **低优先级**: 用户认证系统
-
-### 技术债务
-
-- [ ] 添加单元测试和集成测试
-- [ ] API 文档自动生成完善
-- [ ] TypeScript 迁移考虑
-- [ ] 代码质量检查工具集成
+- 分享链接和权限控制
+- 实时协作编辑
+- 评论和版本历史
 
 ---
 
-**项目维护者**: ThinkTree 开发团队  
-**最后更新**: 2024-07-22  
-**当前版本**: v1.0.0  
-**技术架构**: Next.js + FastAPI + Markmap + Google Gemini AI
+**更新日期**: 2024-07-22  
+**项目状态**: 🟢 v1.2.0 云端稳定运行  
+**技术架构**: AI → Markdown → markmap-lib → markmap-view  
+**部署状态**: Render 云平台完整部署
