@@ -20,7 +20,7 @@ class TextProcessRequest(BaseModel):
     format_type: Optional[str] = "standard"
 
 # 确保上传目录存在
-os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+os.makedirs(settings.upload_dir, exist_ok=True)
 
 @router.post("/upload")
 async def upload_file(
@@ -34,18 +34,18 @@ async def upload_file(
     """
     # 验证文件类型
     file_ext = Path(file.filename).suffix.lower()
-    if file_ext not in settings.ALLOWED_FILE_TYPES:
+    if file_ext not in settings.allowed_file_types:
         raise HTTPException(
             status_code=400,
-            detail=f"不支持的文件类型: {file_ext}。支持的类型: {', '.join(settings.ALLOWED_FILE_TYPES)}"
+            detail=f"不支持的文件类型: {file_ext}。支持的类型: {', '.join(settings.allowed_file_types)}"
         )
     
     # 验证文件大小
     file_content = await file.read()
-    if len(file_content) > settings.MAX_FILE_SIZE:
+    if len(file_content) > settings.max_file_size:
         raise HTTPException(
             status_code=400,
-            detail=f"文件过大。最大支持 {settings.MAX_FILE_SIZE // (1024*1024)} MB"
+            detail=f"文件过大。最大支持 {settings.max_file_size // (1024*1024)} MB"
         )
     
     try:
