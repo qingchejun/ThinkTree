@@ -12,8 +12,8 @@ class GeminiProcessor:
     
     def __init__(self):
         """初始化 Gemini AI 服务"""
-        if settings.GEMINI_API_KEY:
-            genai.configure(api_key=settings.GEMINI_API_KEY)
+        if settings.gemini_api_key:
+            genai.configure(api_key=settings.gemini_api_key)
             self.model = genai.GenerativeModel('gemini-1.5-flash')
         else:
             self.model = None
