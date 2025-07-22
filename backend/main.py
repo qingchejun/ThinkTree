@@ -43,7 +43,7 @@ app.add_middleware(
 
 # 注册路由
 app.include_router(upload.router, prefix="/api", tags=["upload"])
-app.include_router(mindmaps.router, prefix="/api", tags=["mindmaps"])
+app.include_router(mindmaps.router, prefix="/api/mindmaps", tags=["mindmaps"])
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(share.router, prefix="/api", tags=["share"])
 

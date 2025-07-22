@@ -3,5 +3,6 @@
 """
 
 from .user import User
+from .mindmap import Mindmap
 
-__all__ = ["User"]
+__all__ = ["User", "Mindmap"]

@@ -6,12 +6,16 @@
 import { useState } from 'react'
 import SimpleMarkmap from '../../components/mindmap/SimpleMarkmap'
 import FileUpload from '../../components/upload/FileUpload'
+import { useAuth } from '../../context/AuthContext'
 
 export default function TestPage() {
+  const { user, token } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [mindmapData, setMindmapData] = useState(null)
   const [error, setError] = useState(null)
   const [uploadInfo, setUploadInfo] = useState(null)
+  const [showSaveModal, setShowSaveModal] = useState(false)
+  const [saveLoading, setSaveLoading] = useState(false)
 
   const handleUploadStart = () => {
     setIsLoading(true)
@@ -42,6 +46,52 @@ export default function TestPage() {
     setMindmapData(null)
     setError(null)
     setUploadInfo(null)
+  }
+
+  const handleSave = () => {
+    if (!user) {
+      alert('请先登录才能保存思维导图')
+      return
+    }
+    setShowSaveModal(true)
+  }
+
+  const handleSaveConfirm = async (title, description) => {
+    if (!mindmapData?.data?.markdown) {
+      alert('没有可保存的思维导图内容')
+      return
+    }
+
+    setSaveLoading(true)
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/mindmaps/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          title: title.trim(),
+          content: mindmapData.data.markdown,
+          description: description.trim() || null,
+          is_public: false
+        })
+      })
+
+      if (response.ok) {
+        const savedMindmap = await response.json()
+        alert(`思维导图"${savedMindmap.title}"已成功保存！`)
+        setShowSaveModal(false)
+      } else {
+        const errorData = await response.json()
+        throw new Error(errorData.detail || '保存失败')
+      }
+    } catch (error) {
+      console.error('保存思维导图失败:', error)
+      alert(`保存失败: ${error.message}`)
+    } finally {
+      setSaveLoading(false)
+    }
   }
 
   return (
@@ -124,13 +174,32 @@ export default function TestPage() {
                     <h2 className="text-lg font-semibold text-gray-900">
                       🎨 {mindmapData.data?.title || '思维导图'}
                     </h2>
-                    <div className="text-sm text-gray-500 flex items-center space-x-4">
-                      <span>Markmap 思维导图</span>
-                      {uploadInfo && (
-                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                          📄 {uploadInfo.fileType?.split('/')[1]?.toUpperCase() || 'FILE'}
-                        </span>
+                    <div className="flex items-center space-x-4">
+                      {user && (
+                        <button
+                          onClick={handleSave}
+                          disabled={saveLoading}
+                          className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {saveLoading ? '保存中...' : '💾 保存'}
+                        </button>
                       )}
+                      {!user && (
+                        <a
+                          href="/login"
+                          className="bg-gray-100 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                        >
+                          🔒 登录后保存
+                        </a>
+                      )}
+                      <div className="text-sm text-gray-500 flex items-center space-x-2">
+                        <span>Markmap 思维导图</span>
+                        {uploadInfo && (
+                          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                            📄 {uploadInfo.fileType?.split('/')[1]?.toUpperCase() || 'FILE'}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <div className="h-[calc(600px-65px)]">
@@ -208,6 +277,115 @@ export default function TestPage() {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* 保存对话框 */}
+      {showSaveModal && <SaveModal 
+        onSave={handleSaveConfirm}
+        onCancel={() => setShowSaveModal(false)}
+        isLoading={saveLoading}
+        defaultTitle={mindmapData?.data?.title || uploadInfo?.filename || '思维导图'}
+      />}
+    </div>
+  )
+}
+
+// 保存对话框组件
+function SaveModal({ onSave, onCancel, isLoading, defaultTitle }) {
+  const [title, setTitle] = useState(defaultTitle)
+  const [description, setDescription] = useState('')
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    if (!title.trim()) {
+      alert('请输入思维导图标题')
+      return
+    }
+    onSave(title, description)
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">💾 保存思维导图</h3>
+            <button
+              onClick={onCancel}
+              disabled={isLoading}
+              className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit}>
+            <div className="mb-4">
+              <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
+                标题 <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                disabled={isLoading}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:opacity-50"
+                placeholder="请输入思维导图标题"
+                maxLength={200}
+                required
+              />
+              <p className="text-xs text-gray-500 mt-1">{title.length}/200 字符</p>
+            </div>
+
+            <div className="mb-6">
+              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+                描述 (可选)
+              </label>
+              <textarea
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                disabled={isLoading}
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:opacity-50"
+                placeholder="描述这个思维导图的内容或用途..."
+                maxLength={500}
+              />
+              <p className="text-xs text-gray-500 mt-1">{description.length}/500 字符</p>
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <button
+                type="button"
+                onClick={onCancel}
+                disabled={isLoading}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50"
+              >
+                取消
+              </button>
+              <button
+                type="submit"
+                disabled={isLoading || !title.trim()}
+                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    保存中...
+                  </>
+                ) : (
+                  '保存'
+                )}
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>

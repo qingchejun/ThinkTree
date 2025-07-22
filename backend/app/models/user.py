@@ -4,6 +4,7 @@
 
 from sqlalchemy import Column, Integer, String, DateTime, Boolean
 from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
 from datetime import datetime
 
 from ..core.database import Base
@@ -44,6 +45,14 @@ class User(Base):
     # 可选的用户信息
     display_name = Column(String(100), nullable=True)
     avatar_url = Column(String(500), nullable=True)
+    
+    # 关系定义 - 与思维导图表的关联
+    mindmaps = relationship(
+        "Mindmap", 
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="dynamic"
+    )
     
     def __repr__(self):
         return f"<User(id={self.id}, email='{self.email}', is_active={self.is_active})>"
