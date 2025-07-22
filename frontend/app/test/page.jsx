@@ -108,12 +108,35 @@ export default function TestPage() {
                 上传文档或输入文本，一键生成思维导图
               </p>
             </div>
-            <a
-              href="/"
-              className="text-indigo-600 hover:text-indigo-500 text-sm"
-            >
-              ← 返回首页
-            </a>
+            <div className="flex items-center space-x-4">
+              {user ? (
+                <div className="flex items-center space-x-3">
+                  <span className="text-sm text-gray-600">👋 {user.email}</span>
+                  <a
+                    href="/dashboard"
+                    className="text-indigo-600 hover:text-indigo-500 text-sm"
+                  >
+                    📊 控制台
+                  </a>
+                </div>
+              ) : (
+                <div className="flex items-center space-x-3">
+                  <span className="text-sm text-gray-500">💡 登录后可保存思维导图</span>
+                  <a
+                    href="/login"
+                    className="bg-indigo-600 text-white px-3 py-1 rounded text-sm hover:bg-indigo-700"
+                  >
+                    🔑 登录
+                  </a>
+                </div>
+              )}
+              <a
+                href="/"
+                className="text-indigo-600 hover:text-indigo-500 text-sm"
+              >
+                ← 返回首页
+              </a>
+            </div>
           </div>
         </div>
       </div>

@@ -55,10 +55,10 @@ export default function LoginPage() {
         console.log('login函数返回结果:', loginResult)
         
         if (loginResult.success) {
-          // 登录成功，跳转到控制台
-          console.log('登录成功，准备跳转到dashboard')
+          // 登录成功，跳转到首页
+          console.log('登录成功，准备跳转到首页')
           setTimeout(() => {
-            router.push('/dashboard')
+            router.push('/')
           }, 1500)
         } else {
           setError(loginResult.error || '登录处理失败')

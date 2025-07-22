@@ -1,8 +1,12 @@
 /**
  * ThinkTree 首页 - 简化版
  */
+'use client'
+
+import { useAuth } from '../context/AuthContext'
 
 export default function HomePage() {
+  const { user, logout } = useAuth()
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* 头部 */}
@@ -15,8 +19,23 @@ export default function HomePage() {
             </div>
             <nav className="flex items-center space-x-4">
               <a href="/test" className="text-gray-600 hover:text-indigo-600 text-sm">🎨 思维导图生成器</a>
-              <a href="/login" className="text-gray-600 hover:text-indigo-600 text-sm">登录</a>
-              <a href="/dashboard" className="text-gray-600 hover:text-indigo-600 text-sm">控制台</a>
+              {user ? (
+                <div className="flex items-center space-x-4">
+                  <span className="text-sm text-gray-600">👋 欢迎, {user.email}</span>
+                  <a href="/dashboard" className="text-gray-600 hover:text-indigo-600 text-sm">📊 控制台</a>
+                  <button 
+                    onClick={logout}
+                    className="text-gray-600 hover:text-red-600 text-sm cursor-pointer"
+                  >
+                    🚪 退出
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center space-x-4">
+                  <a href="/login" className="text-gray-600 hover:text-indigo-600 text-sm">🔑 登录</a>
+                  <a href="/register" className="bg-indigo-600 text-white px-3 py-1 rounded text-sm hover:bg-indigo-700">📝 注册</a>
+                </div>
+              )}
             </nav>
           </div>
         </div>
