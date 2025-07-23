@@ -25,7 +25,7 @@
 
 - **用户注册**: https://thinktree-frontend.onrender.com/register
 - **用户登录**: https://thinktree-frontend.onrender.com/login
-- **认证API**: https://thinktree-backend.onrender.com/api/auth/
+- **认证 API**: https://thinktree-backend.onrender.com/api/auth/
 - **数据库**: PostgreSQL (Render 云端数据库)
 
 ## 🛠️ 技术栈详情
@@ -118,10 +118,10 @@ ThinkTree/
 
 ### 🔐 用户认证系统
 
-- **完整认证流程**: 用户注册、登录、JWT令牌管理
-- **安全存储**: bcrypt密码加密 + PostgreSQL数据库
-- **现代化UI**: 响应式登录/注册页面，用户体验优化
-- **生产部署**: 云端数据库 + 环境配置 + API集成
+- **完整认证流程**: 用户注册、登录、JWT 令牌管理
+- **安全存储**: bcrypt 密码加密 + PostgreSQL 数据库
+- **现代化 UI**: 响应式登录/注册页面，用户体验优化
+- **生产部署**: 云端数据库 + 环境配置 + API 集成
 - **错误处理**: 用户友好的提示信息和状态管理
 
 ### ✅ 文档上传功能 (已有)
@@ -290,15 +290,17 @@ markmap-lib转换 → markmap-view渲染思维导图
 ### ✅ 已完成功能
 
 **用户认证系统**:
+
 - ✅ 用户注册/登录功能 (前后端完整实现)
 - ✅ JWT 认证和安全存储
 - ✅ PostgreSQL 数据库集成
 - ✅ 生产环境部署和配置
 
 **基础功能**:
+
 - ✅ AI 思维导图生成 (Google Gemini)
 - ✅ 多格式文档解析 (PDF/DOCX/TXT/MD/SRT)
-- ✅ 现代化UI界面 (Next.js + Tailwind CSS)
+- ✅ 现代化 UI 界面 (Next.js + Tailwind CSS)
 
 ## 🔮 v2.1.0 规划
 
@@ -325,5 +327,13 @@ markmap-lib转换 → markmap-view渲染思维导图
 
 **更新日期**: 2024-07-22  
 **项目状态**: 🟢 v2.0.0 用户认证系统完成  
-**技术架构**: 用户认证 → JWT → AI处理 → 个人数据存储  
+**技术架构**: 用户认证 → JWT → AI 处理 → 个人数据存储  
 **部署状态**: Render 云平台全栈部署 (前端 + 后端 + 数据库)
+
+### 用户认证细节
+
+- 注册账号，邮箱或手机号认证
+
+### 已知问题与调试记录
+
+- 注册后跳转，提示自动登录中，但又跳转到了登录界面，需要再次登录 # 解决中

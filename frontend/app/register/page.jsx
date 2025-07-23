@@ -6,9 +6,11 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useAuth } from '../../context/AuthContext'
 
 export default function RegisterPage() {
   const router = useRouter()
+  const { login } = useAuth()
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -67,11 +69,55 @@ export default function RegisterPage() {
       const data = await response.json()
 
       if (response.ok) {
-        setSuccess('注册成功！正在跳转到登录页面...')
-        // 2秒后跳转到登录页面
-        setTimeout(() => {
-          router.push('/login')
-        }, 2000)
+        setSuccess('注册成功！正在自动登录...')
+        
+        // 注册成功后自动登录
+        try {
+          // 使用注册时的邮箱和密码自动登录
+          const loginResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: formData.email,
+              password: formData.password
+            }),
+          })
+
+          const loginData = await loginResponse.json()
+
+          if (loginResponse.ok) {
+            // 使用全局AuthContext的login函数
+            const loginResult = await login(loginData.access_token)
+            
+            if (loginResult.success) {
+              setSuccess('注册成功！自动登录成功，正在跳转...')
+              // 跳转到首页而不是登录页面
+              setTimeout(() => {
+                router.push('/')
+              }, 1500)
+            } else {
+              // 自动登录失败，跳转到登录页面
+              setSuccess('注册成功！请手动登录...')
+              setTimeout(() => {
+                router.push('/login')
+              }, 2000)
+            }
+          } else {
+            // 自动登录失败，跳转到登录页面
+            setSuccess('注册成功！请手动登录...')
+            setTimeout(() => {
+              router.push('/login')
+            }, 2000)
+          }
+        } catch (loginErr) {
+          console.error('自动登录失败:', loginErr)
+          setSuccess('注册成功！请手动登录...')
+          setTimeout(() => {
+            router.push('/login')
+          }, 2000)
+        }
       } else {
         setError(data.detail || '注册失败，请稍后重试')
       }

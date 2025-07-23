@@ -2,20 +2,22 @@
 
 ## 🚀 Render 部署（推荐）
 
-### 前端部署 (Next.js 到 Render)
+### 第一步：创建 PostgreSQL 数据库
 
-1. **创建 Web Service**
-   - 连接 GitHub 仓库
-   - Root Directory: `frontend`
-   - Build Command: `npm install && npm run build`
-   - Start Command: `npm start`
+1. **在 Render Dashboard 创建数据库**
+   - 前往 [Render Dashboard](https://dashboard.render.com)
+   - 点击 "New +" → "PostgreSQL"
+   - Name: `thinktree-database`
+   - Database: `thinktree`
+   - User: `thinktree_user`
+   - Region: 选择最近的区域
+   - Plan: Free ($0/month)
 
-2. **环境变量配置**
-   ```
-   NEXT_PUBLIC_API_URL=https://your-backend-service.onrender.com
-   ```
+2. **获取数据库连接 URL**
+   - 创建完成后，复制 "External Database URL"
+   - 格式类似：`postgresql://username:password@hostname:port/database`
 
-### 后端部署 (FastAPI 到 Render)
+### 第二步：后端部署 (FastAPI 到 Render)
 
 1. **创建 Web Service**
    - 连接 GitHub 仓库  
@@ -27,8 +29,76 @@
    ```
    GEMINI_API_KEY=your_gemini_api_key
    SECRET_KEY=your_secret_key_32_chars_minimum
-   DATABASE_URL=sqlite:///./thinktree.db
+   DATABASE_URL=postgresql://username:password@hostname:port/database
+   DEBUG=false
    ```
+
+### 第三步：前端部署 (Next.js 到 Render)
+
+1. **创建 Static Site**
+   - 连接 GitHub 仓库
+   - Root Directory: `frontend`
+   - Build Command: `npm install && npm run build`
+   - Publish Directory: `.next` 或 `out`
+
+2. **环境变量配置**
+   ```
+   NEXT_PUBLIC_API_URL=https://your-backend-service.onrender.com
+   ```
+
+### 🔒 数据持久化保证
+
+使用 PostgreSQL 后：
+- ✅ 数据库独立于应用容器，重新部署不会丢失数据
+- ✅ 用户账号、思维导图等数据永久保存
+- ✅ 支持数据备份和恢复
+- ✅ 生产环境级别的可靠性
+
+### 🚀 快速部署指南
+
+1. **创建 PostgreSQL 数据库**
+   ```bash
+   # 在 Render Dashboard 中：
+   # New+ → PostgreSQL → 创建数据库
+   # 复制 External Database URL
+   ```
+
+2. **配置后端环境变量**
+   ```bash
+   DATABASE_URL=postgresql://username:password@hostname:port/database
+   GEMINI_API_KEY=your_gemini_api_key
+   SECRET_KEY=your_32_character_secret_key
+   ```
+
+3. **部署后端服务**
+   ```bash
+   # Build Command: pip install -r requirements.txt
+   # Start Command: python init_db.py && uvicorn main:app --host 0.0.0.0 --port $PORT
+   ```
+
+4. **部署前端服务**
+   ```bash
+   # Build Command: npm install && npm run build
+   # Environment: NEXT_PUBLIC_API_URL=https://your-backend.onrender.com
+   ```
+
+### 📋 数据库迁移管理
+
+项目使用 Alembic 进行数据库版本管理：
+
+```bash
+# 初始化数据库
+python init_db.py
+
+# 生成新的迁移文件
+alembic revision --autogenerate -m "描述变更"
+
+# 运行迁移
+alembic upgrade head
+
+# 回滚迁移
+alembic downgrade -1
+```
 
 ## 🔧 本地开发部署
 
