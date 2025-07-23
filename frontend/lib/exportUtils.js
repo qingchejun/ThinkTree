@@ -1,10 +1,10 @@
 /**
  * ThinkTree 思维导图导出工具库
- * v3.0.0 - 导出功能
+ * v3.0.0 - 导出功能优化版
  */
 
 /**
- * 从 Markmap 实例获取 SVG 内容
+ * 从 Markmap 实例获取 SVG 内容（优化版，避免重绘）
  * @param {Object} markmapInstance - Markmap 实例
  * @returns {string} SVG 字符串
  */
@@ -19,23 +19,29 @@ export function getSVGFromMarkmap(markmapInstance) {
       throw new Error('无法获取 SVG 元素')
     }
 
-    // 克隆SVG元素以避免修改原始元素
+    // 直接克隆当前状态的SVG，不触发任何重新计算
     const clonedSvg = svgElement.cloneNode(true)
     
     // 确保SVG有正确的命名空间
     clonedSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
     clonedSvg.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink')
     
-    // 获取SVG的尺寸
-    const bbox = svgElement.getBBox()
-    const padding = 20
+    // 使用当前SVG的viewBox，避免重新计算bounding box
+    const currentViewBox = svgElement.getAttribute('viewBox')
+    const currentWidth = svgElement.getAttribute('width') || svgElement.style.width || '800'
+    const currentHeight = svgElement.getAttribute('height') || svgElement.style.height || '600'
     
-    // 设置viewBox以包含所有内容
-    clonedSvg.setAttribute('viewBox', `${bbox.x - padding} ${bbox.y - padding} ${bbox.width + 2 * padding} ${bbox.height + 2 * padding}`)
-    clonedSvg.setAttribute('width', bbox.width + 2 * padding)
-    clonedSvg.setAttribute('height', bbox.height + 2 * padding)
+    if (currentViewBox) {
+      clonedSvg.setAttribute('viewBox', currentViewBox)
+    } else {
+      // 如果没有viewBox，使用当前显示尺寸
+      clonedSvg.setAttribute('viewBox', `0 0 ${parseFloat(currentWidth)} ${parseFloat(currentHeight)}`)
+    }
     
-    // 添加必要的样式到SVG中
+    clonedSvg.setAttribute('width', currentWidth)
+    clonedSvg.setAttribute('height', currentHeight)
+    
+    // 内嵌必要的样式，确保导出的SVG独立可用
     const styleElement = document.createElement('style')
     styleElement.textContent = `
       .markmap > g > path {
@@ -43,20 +49,16 @@ export function getSVGFromMarkmap(markmapInstance) {
         stroke: #999;
         stroke-width: 1.5px;
       }
-      .markmap-node > circle {
+      .markmap-node circle {
         fill: #fff;
-        stroke: #999;
         stroke-width: 1.5px;
       }
-      .markmap-node > text {
-        fill: #333;
-        font-size: 12px;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      .markmap-node text {
+        font: 300 16px/20px sans-serif;
+        fill: #000;
       }
-      .markmap-link {
-        fill: none;
-        stroke: #999;
-        stroke-width: 1.5px;
+      .markmap-node > g {
+        cursor: pointer;
       }
     `
     clonedSvg.insertBefore(styleElement, clonedSvg.firstChild)
@@ -121,7 +123,7 @@ export function exportSVG(markmapInstance, filename = 'mindmap') {
 }
 
 /**
- * 将SVG转换为PNG
+ * SVG转PNG（优化版，避免跨域问题）
  * @param {string} svgContent - SVG内容字符串
  * @param {number} scale - 缩放比例（用于提高分辨率）
  * @returns {Promise<Blob>} PNG Blob
@@ -139,16 +141,24 @@ export function svgToPNG(svgContent, scale = 2) {
       }
       
       // 获取SVG尺寸
-      const width = parseFloat(svgElement.getAttribute('width')) || 800
-      const height = parseFloat(svgElement.getAttribute('height')) || 600
+      let width = parseFloat(svgElement.getAttribute('width')) || 800
+      let height = parseFloat(svgElement.getAttribute('height')) || 600
+      
+      // 如果尺寸包含单位，移除单位
+      if (typeof width === 'string') {
+        width = parseFloat(width.replace(/[^0-9.]/g, '')) || 800
+      }
+      if (typeof height === 'string') {
+        height = parseFloat(height.replace(/[^0-9.]/g, '')) || 600
+      }
       
       // 创建Canvas
       const canvas = document.createElement('canvas')
       const ctx = canvas.getContext('2d')
       
       // 设置Canvas尺寸（使用缩放比例提高分辨率）
-      canvas.width = width * scale
-      canvas.height = height * scale
+      canvas.width = Math.round(width * scale)
+      canvas.height = Math.round(height * scale)
       
       // 设置白色背景
       ctx.fillStyle = 'white'
@@ -157,9 +167,12 @@ export function svgToPNG(svgContent, scale = 2) {
       // 创建Image对象
       const img = new Image()
       
+      // 设置跨域属性
+      img.crossOrigin = 'anonymous'
+      
       img.onload = function() {
         try {
-          // 在Canvas上绘制SVG
+          // 在Canvas上绘制SVG（缩放到指定尺寸）
           ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
           
           // 转换为PNG Blob
@@ -175,31 +188,14 @@ export function svgToPNG(svgContent, scale = 2) {
         }
       }
       
-      img.onerror = function() {
-        reject(new Error('SVG图像加载失败'))
+      img.onerror = function(e) {
+        console.error('图像加载失败:', e)
+        reject(new Error('SVG图像加载失败，可能是浏览器安全限制导致'))
       }
       
-      // 将SVG转换为Data URL
-      const svgBlob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' })
-      const url = URL.createObjectURL(svgBlob)
-      img.src = url
-      
-      // 清理URL对象
-      img.onload = function() {
-        URL.revokeObjectURL(url)
-        try {
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
-          canvas.toBlob((blob) => {
-            if (blob) {
-              resolve(blob)
-            } else {
-              reject(new Error('Canvas转换为Blob失败'))
-            }
-          }, 'image/png', 1.0)
-        } catch (error) {
-          reject(new Error(`Canvas绘制失败: ${error.message}`))
-        }
-      }
+      // 使用Data URI方式加载SVG，避免跨域问题
+      const svgDataUri = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgContent)}`
+      img.src = svgDataUri
       
     } catch (error) {
       reject(new Error(`SVG转PNG失败: ${error.message}`))
