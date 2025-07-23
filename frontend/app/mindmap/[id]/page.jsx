@@ -30,6 +30,36 @@ export default function ViewMindmapPage() {
   // Markmap 组件引用
   const markmapRef = useRef(null)
 
+  // 添加父组件渲染追踪
+  const renderCountRef = useRef(0)
+  const prevPropsRef = useRef({})
+  renderCountRef.current++
+
+  const currentProps = {
+    user: !!user,
+    token: !!token,
+    isLoading,
+    mindmap: !!mindmap,
+    mindmapId,
+    loading,
+    error: !!error,
+    isExportingUI,
+    showExportMenu
+  }
+
+  const changedProps = Object.keys(currentProps).filter(key => 
+    currentProps[key] !== prevPropsRef.current[key]
+  )
+
+  console.log(`🔍 [ViewMindmapPage] 父组件渲染 #${renderCountRef.current}`, {
+    changedProps,
+    currentProps,
+    mindmapReference: mindmap === prevPropsRef.current.mindmapObject ? 'SAME_REF' : 'DIFF_REF',
+    timestamp: new Date().toISOString()
+  })
+
+  prevPropsRef.current = { ...currentProps, mindmapObject: mindmap }
+
   // 路由保护 - 未登录用户重定向到登录页
   useEffect(() => {
     if (!isLoading && !user) {
@@ -117,7 +147,13 @@ export default function ViewMindmapPage() {
 
   // 导出SVG（最终优化版 + 调试版）
   const handleExportSVG = async () => {
-    console.log('🔍 [handleExportSVG] 开始SVG导出')
+    console.log('🔍 [handleExportSVG] 开始SVG导出, timestamp:', new Date().toISOString())
+    console.log('🔍 [handleExportSVG] 导出前父组件状态:', {
+      renderCount: renderCountRef.current,
+      isExportingRef: isExportingRef.current,
+      isExportingUI,
+      showExportMenu
+    })
     
     if (!markmapRef.current) {
       console.log('🔍 [handleExportSVG] ❌ markmapRef.current不存在')
@@ -126,16 +162,18 @@ export default function ViewMindmapPage() {
     }
 
     try {
-      console.log('🔍 [handleExportSVG] 设置处理状态为true')
+      console.log('🔍 [handleExportSVG] 步骤1: 设置子组件处理状态为true')
       // 先设置组件处理状态，防止任何重新渲染
       markmapRef.current.setProcessing(true)
       
       // 稍微延迟，确保处理状态已经生效
-      console.log('🔍 [handleExportSVG] 等待50ms确保状态生效')
+      console.log('🔍 [handleExportSVG] 步骤2: 等待50ms确保状态生效')
       await new Promise(resolve => setTimeout(resolve, 50))
       
-      console.log('🔍 [handleExportSVG] 设置isExporting状态')
+      console.log('🔍 [handleExportSVG] 步骤3: 设置父组件导出状态')
+      console.log('🔍 [handleExportSVG] 步骤3.1: 设置isExportingRef.current = true')
       isExportingRef.current = true
+      console.log('🔍 [handleExportSVG] 步骤3.2: 调用setIsExportingUI(true) - 可能触发父组件重新渲染!')
       setIsExportingUI(true)
       
       console.log('�� [handleExportSVG] 获取markmap实例')

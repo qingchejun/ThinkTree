@@ -11,39 +11,51 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
   const mmRef = useRef(null)
   const isProcessingRef = useRef(false) // 使用useRef避免重新渲染
 
-  // 添加调试用的渲染计数器
+  // 添加调试用的渲染计数器和原因追踪
   const renderCountRef = useRef(0)
+  const prevMindmapDataRef = useRef(null)
   renderCountRef.current++
+
+  // 详细分析重新渲染的原因
+  const mindmapDataChanged = mindmapData !== prevMindmapDataRef.current
+  const mindmapDataContentChanged = mindmapData?.markdown !== prevMindmapDataRef.current?.markdown
 
   console.log(`🔍 [SimpleMarkmapBasic] 组件渲染 #${renderCountRef.current}`, {
     isProcessing: isProcessingRef.current,
     hasMindmapData: !!mindmapData?.markdown,
-    mindmapDataLength: mindmapData?.markdown?.length || 0
+    mindmapDataLength: mindmapData?.markdown?.length || 0,
+    mindmapDataChanged,
+    mindmapDataContentChanged,
+    mindmapDataReference: mindmapData === prevMindmapDataRef.current ? 'SAME_REF' : 'DIFF_REF',
+    timestamp: new Date().toISOString()
   })
+
+  // 更新引用
+  prevMindmapDataRef.current = mindmapData
 
   // 暴露 markmap 实例给父组件
   useImperativeHandle(ref, () => ({
     getMarkmapInstance: () => {
-      console.log(`🔍 [getMarkmapInstance] 被调用, isProcessing: ${isProcessingRef.current}`)
+      console.log(`🔍 [getMarkmapInstance] 被调用, isProcessing: ${isProcessingRef.current}, timestamp: ${new Date().toISOString()}`)
       return mmRef.current
     },
     getSVGElement: () => {
-      console.log(`🔍 [getSVGElement] 被调用, isProcessing: ${isProcessingRef.current}`)
+      console.log(`🔍 [getSVGElement] 被调用, isProcessing: ${isProcessingRef.current}, timestamp: ${new Date().toISOString()}`)
       return svgRef.current
     },
     fit: () => {
-      console.log(`🔍 [fit] 被调用, isProcessing: ${isProcessingRef.current}`)
+      console.log(`🔍 [fit] 被调用, isProcessing: ${isProcessingRef.current}, timestamp: ${new Date().toISOString()}`)
       return mmRef.current?.fit()
     },
     setProcessing: (processing) => {
-      console.log(`🔍 [setProcessing] 被调用: ${processing}`)
-      isProcessingRef.current = processing // 直接修改ref，不触发重新渲染
+      console.log(`🔍 [setProcessing] 被调用: ${processing}, 之前状态: ${isProcessingRef.current}, timestamp: ${new Date().toISOString()}`)
+      isProcessingRef.current = processing
     },
   }))
 
   // 自适应窗口大小的函数（优化版，避免导出时重新渲染）
   const handleResize = () => {
-    console.log(`🔍 [handleResize] 被调用, isProcessing: ${isProcessingRef.current}`)
+    console.log(`🔍 [handleResize] 被调用, isProcessing: ${isProcessingRef.current}, timestamp: ${new Date().toISOString()}`)
     
     // 如果正在处理（如导出），跳过resize操作
     if (isProcessingRef.current) {
@@ -67,7 +79,7 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
       setTimeout(() => {
         // 再次检查是否仍在处理中
         if (mmRef.current && !isProcessingRef.current) {
-          console.log(`🔍 [handleResize] 延迟执行fit()`)
+          console.log(`🔍 [handleResize] 延迟执行fit(), timestamp: ${new Date().toISOString()}`)
           mmRef.current.fit()
         } else {
           console.log(`🔍 [handleResize] 延迟执行时跳过fit() - 正在处理中`)
@@ -80,11 +92,14 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
     console.log(`🔍 [useEffect] 开始执行, 依赖变化:`, {
       isProcessing: isProcessingRef.current,
       hasMindmapData: !!mindmapData?.markdown,
-      mindmapDataLength: mindmapData?.markdown?.length || 0
+      mindmapDataLength: mindmapData?.markdown?.length || 0,
+      mindmapDataChanged,
+      mindmapDataContentChanged,
+      timestamp: new Date().toISOString()
     })
 
     const initMarkmap = async () => {
-      console.log(`🔍 [initMarkmap] 开始初始化检查`)
+      console.log(`🔍 [initMarkmap] 开始初始化检查, timestamp: ${new Date().toISOString()}`)
       
       // 如果正在处理中，跳过初始化
       if (isProcessingRef.current) {
@@ -162,12 +177,12 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
         // 设置数据
         console.log('🔍 [initMarkmap] 设置思维导图数据')
         mmRef.current.setData(root)
-        console.log('🔍 [initMarkmap] ✅ 思维导图渲染成功')
+        console.log('🔍 [initMarkmap] ✅ 思维导图渲染成功, timestamp:', new Date().toISOString())
         
         // 延迟执行fit以确保渲染完成（但要检查是否在处理中）
         setTimeout(() => {
           if (mmRef.current && !isProcessingRef.current) {
-            console.log('🔍 [initMarkmap] 延迟执行初始fit()')
+            console.log('🔍 [initMarkmap] 延迟执行初始fit()', new Date().toISOString())
             mmRef.current.fit()
           } else {
             console.log('🔍 [initMarkmap] 延迟执行时跳过初始fit() - 正在处理中')
@@ -208,7 +223,7 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
     if (containerRef.current && window.ResizeObserver) {
       console.log('🔍 [useEffect] 创建ResizeObserver')
       resizeObserver = new ResizeObserver(() => {
-        console.log('🔍 [ResizeObserver] 触发')
+        console.log('🔍 [ResizeObserver] 触发, timestamp:', new Date().toISOString())
         // 防抖处理，避免频繁调用
         if (!isProcessingRef.current) {
           handleResize()
@@ -221,7 +236,7 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
     
     // 清理函数
     return () => {
-      console.log('🔍 [useEffect] 清理函数执行')
+      console.log('🔍 [useEffect] 清理函数执行, timestamp:', new Date().toISOString())
       clearTimeout(timer)
       window.removeEventListener('resize', handleResize)
       if (resizeObserver) {
@@ -232,9 +247,9 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
         mmRef.current = null
       }
     }
-  }, [mindmapData]) // 🎯 移除 isProcessing 依赖，避免重新渲染循环！
+  }, [mindmapData]) // 🎯 只依赖mindmapData！
 
-  console.log(`🔍 [SimpleMarkmapBasic] 组件渲染完成 #${renderCountRef.current}`)
+  console.log(`🔍 [SimpleMarkmapBasic] 组件渲染完成 #${renderCountRef.current}, timestamp: ${new Date().toISOString()}`)
 
   return (
     <div 
