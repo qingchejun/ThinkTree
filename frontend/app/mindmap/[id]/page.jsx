@@ -1,14 +1,15 @@
 /**
- * 思维导图查看页面 - ThinkTree v2.3.0
- * 显示用户保存的思维导图
+ * 思维导图查看页面 - ThinkTree v3.0.0
+ * 显示用户保存的思维导图 + 导出功能
  */
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useAuth } from '../../../context/AuthContext'
 import SimpleMarkmapBasic from '../../../components/mindmap/SimpleMarkmapBasic'
 import { ToastManager } from '../../../components/common/Toast'
+import { exportSVG, exportPNG, getSafeFilename, getTimestamp } from '../../../lib/exportUtils'
 
 export default function ViewMindmapPage() {
   const { user, token, isLoading } = useAuth()
@@ -20,6 +21,13 @@ export default function ViewMindmapPage() {
   const [mindmap, setMindmap] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  
+  // 导出功能状态
+  const [isExporting, setIsExporting] = useState(false)
+  const [showExportMenu, setShowExportMenu] = useState(false)
+  
+  // Markmap 组件引用
+  const markmapRef = useRef(null)
 
   // 路由保护 - 未登录用户重定向到登录页
   useEffect(() => {
@@ -103,6 +111,80 @@ export default function ViewMindmapPage() {
     } catch (err) {
       console.error('删除思维导图失败:', err)
       ToastManager.error(`删除失败: ${err.message}`)
+    }
+  }
+
+  // 导出SVG
+  const handleExportSVG = async () => {
+    if (!markmapRef.current) {
+      ToastManager.error('思维导图未准备就绪，请稍后重试')
+      return
+    }
+
+    try {
+      setIsExporting(true)
+      const markmapInstance = markmapRef.current.getMarkmapInstance()
+      
+      if (!markmapInstance) {
+        throw new Error('无法获取思维导图实例')
+      }
+
+      // 生成文件名
+      const safeTitle = getSafeFilename(mindmap.title)
+      const timestamp = getTimestamp()
+      const filename = `${safeTitle}_${timestamp}`
+      
+      const result = exportSVG(markmapInstance, filename)
+      
+      if (result.success) {
+        ToastManager.success(`SVG文件导出成功: ${result.filename}`)
+        setShowExportMenu(false)
+      } else {
+        throw new Error(result.error)
+      }
+    } catch (error) {
+      console.error('SVG导出失败:', error)
+      ToastManager.error(`SVG导出失败: ${error.message}`)
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  // 导出PNG
+  const handleExportPNG = async () => {
+    if (!markmapRef.current) {
+      ToastManager.error('思维导图未准备就绪，请稍后重试')
+      return
+    }
+
+    try {
+      setIsExporting(true)
+      const markmapInstance = markmapRef.current.getMarkmapInstance()
+      
+      if (!markmapInstance) {
+        throw new Error('无法获取思维导图实例')
+      }
+
+      // 生成文件名
+      const safeTitle = getSafeFilename(mindmap.title)
+      const timestamp = getTimestamp()
+      const filename = `${safeTitle}_${timestamp}`
+      
+      ToastManager.info('正在生成PNG文件，请稍候...')
+      
+      const result = await exportPNG(markmapInstance, filename, 2) // 2x分辨率
+      
+      if (result.success) {
+        ToastManager.success(`PNG文件导出成功: ${result.filename}`)
+        setShowExportMenu(false)
+      } else {
+        throw new Error(result.error)
+      }
+    } catch (error) {
+      console.error('PNG导出失败:', error)
+      ToastManager.error(`PNG导出失败: ${error.message}`)
+    } finally {
+      setIsExporting(false)
     }
   }
 
@@ -204,6 +286,59 @@ export default function ViewMindmapPage() {
             
             <div className="flex items-center space-x-3">
               <span className="text-sm text-gray-600">👋 {user.email}</span>
+              
+              {/* 导出按钮 */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowExportMenu(!showExportMenu)}
+                  disabled={isExporting}
+                  className="bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                >
+                  {isExporting ? (
+                    <>
+                      <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
+                      <span>导出中...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>📥</span>
+                      <span>导出</span>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </>
+                  )}
+                </button>
+                
+                {/* 导出下拉菜单 */}
+                {showExportMenu && !isExporting && (
+                  <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+                    <div className="py-1">
+                      <button
+                        onClick={handleExportSVG}
+                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        <span className="mr-3">🎨</span>
+                        <div className="text-left">
+                          <div className="font-medium">导出为 SVG</div>
+                          <div className="text-xs text-gray-500">矢量格式，可缩放，文件小</div>
+                        </div>
+                      </button>
+                      <button
+                        onClick={handleExportPNG}
+                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        <span className="mr-3">🖼️</span>
+                        <div className="text-left">
+                          <div className="font-medium">导出为 PNG</div>
+                          <div className="text-xs text-gray-500">位图格式，高分辨率</div>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
               <button
                 onClick={() => alert('编辑功能开发中...')}
                 className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700"
@@ -220,6 +355,14 @@ export default function ViewMindmapPage() {
           </div>
         </div>
       </div>
+
+      {/* 点击外部关闭菜单 */}
+      {showExportMenu && (
+        <div 
+          className="fixed inset-0 z-40" 
+          onClick={() => setShowExportMenu(false)}
+        ></div>
+      )}
 
       {/* 思维导图信息 */}
       {(mindmap.description || (mindmap.tags && mindmap.tags.length > 0)) && (
@@ -252,11 +395,12 @@ export default function ViewMindmapPage() {
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
               <h2 className="text-lg font-semibold text-gray-900">思维导图视图</h2>
               <div className="text-sm text-gray-500">
-                Markmap 可视化
+                Markmap 可视化 | 支持 SVG/PNG 导出
               </div>
             </div>
             <div className="h-[calc(100%-65px)]">
               <SimpleMarkmapBasic 
+                ref={markmapRef}
                 mindmapData={{
                   title: mindmap.title,
                   markdown: mindmap.content

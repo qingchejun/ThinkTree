@@ -3,12 +3,19 @@
  */
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
 
-export default function SimpleMarkmapBasic({ mindmapData }) {
+const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
   const svgRef = useRef(null)
   const containerRef = useRef(null)
   const mmRef = useRef(null)
+
+  // 暴露 markmap 实例给父组件
+  useImperativeHandle(ref, () => ({
+    getMarkmapInstance: () => mmRef.current,
+    getSVGElement: () => svgRef.current,
+    fit: () => mmRef.current?.fit(),
+  }))
 
   // 自适应窗口大小的函数
   const handleResize = () => {
@@ -190,4 +197,8 @@ export default function SimpleMarkmapBasic({ mindmapData }) {
       </div>
     </div>
   )
-}
+})
+
+SimpleMarkmapBasic.displayName = 'SimpleMarkmapBasic'
+
+export default SimpleMarkmapBasic
