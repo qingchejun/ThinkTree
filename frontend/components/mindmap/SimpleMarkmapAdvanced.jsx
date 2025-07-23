@@ -38,10 +38,10 @@ export default function SimpleMarkmapAdvanced({ mindmapData }) {
     }
   }
 
-  // 展开/折叠切换函数
+  // 展开/折叠切换函数 - 简化版本，直接操作DOM节点
   const toggleExpandCollapse = () => {
-    if (!mmRef.current || !rootDataRef.current) {
-      console.log('toggleExpandCollapse: 缺少markmap实例或数据')
+    if (!mmRef.current) {
+      console.log('toggleExpandCollapse: 缺少markmap实例')
       return
     }
     
@@ -50,44 +50,54 @@ export default function SimpleMarkmapAdvanced({ mindmapData }) {
       console.log(`toggleExpandCollapse: 切换到${newExpandedState ? '展开' : '折叠'}状态`)
       setIsExpanded(newExpandedState)
       
-      // 创建数据副本避免修改原始数据
-      const dataCopy = JSON.parse(JSON.stringify(rootDataRef.current))
+      // 获取所有一级子节点（depth=1）
+      const svg = mmRef.current.svg
+      const firstLevelNodes = svg.selectAll('g').filter(function(d) {
+        return d && d.depth === 1
+      })
+      
+      console.log('找到一级节点数量:', firstLevelNodes.size())
       
       if (newExpandedState) {
-        // 展开所有节点 - 移除所有fold属性
-        const removeFold = (node) => {
-          delete node.fold
-          if (node.children) {
-            node.children.forEach(removeFold)
+        // 展开：模拟点击已折叠的节点来展开它们
+        console.log('展开所有折叠的节点')
+        firstLevelNodes.each(function(d) {
+          if (d.fold) {
+            console.log('展开节点:', d.data?.content)
+            // 模拟点击事件来展开节点
+            const nodeElement = this
+            const clickEvent = new MouseEvent('click', {
+              bubbles: true,
+              cancelable: true,
+              view: window
+            })
+            nodeElement.dispatchEvent(clickEvent)
           }
-        }
-        removeFold(dataCopy)
+        })
       } else {
-        // 折叠到二级目录 - 深度为2（只显示根节点和一级子节点）
-        setNodeDepth(dataCopy, 2)
+        // 折叠：模拟点击展开的节点来折叠它们
+        console.log('折叠所有展开的节点')
+        firstLevelNodes.each(function(d) {
+          if (!d.fold && d.children && d.children.length > 0) {
+            console.log('折叠节点:', d.data?.content)
+            // 模拟点击事件来折叠节点
+            const nodeElement = this
+            const clickEvent = new MouseEvent('click', {
+              bubbles: true,
+              cancelable: true,
+              view: window
+            })
+            nodeElement.dispatchEvent(clickEvent)
+          }
+        })
       }
-      
-      // 更新markmap数据
-      console.log('toggleExpandCollapse: 更新markmap数据', dataCopy)
-      
-      // 调试：打印节点的fold状态
-      const printFoldState = (node, level = 0) => {
-        const indent = '  '.repeat(level)
-        console.log(`${indent}节点 depth:${level} fold:${node.fold} children:${node.children?.length || 0}`)
-        if (node.children) {
-          node.children.forEach(child => printFoldState(child, level + 1))
-        }
-      }
-      printFoldState(dataCopy)
-      
-      mmRef.current.setData(dataCopy)
       
       // 延迟执行fit以确保渲染完成
       setTimeout(() => {
         if (mmRef.current) {
           mmRef.current.fit()
         }
-      }, 300)
+      }, 500)
     } catch (error) {
       console.error('展开/折叠功能失败:', error)
       // 如果出错，重置状态
