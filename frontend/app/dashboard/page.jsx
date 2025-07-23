@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../../context/AuthContext'
 import { ToastManager } from '../../components/common/Toast'
+import ShareModal from '../../components/share/ShareModal'
 
 export default function DashboardPage() {
   const { user, token, isLoading } = useAuth()
@@ -17,6 +18,13 @@ export default function DashboardPage() {
   const [mindmaps, setMindmaps] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+
+  // 分享模态框状态
+  const [shareModal, setShareModal] = useState({
+    isOpen: false,
+    mindmapId: null,
+    mindmapTitle: ''
+  })
 
   // 路由保护 - 未登录用户重定向到登录页
   useEffect(() => {
@@ -98,8 +106,26 @@ export default function DashboardPage() {
       }
     } catch (err) {
       console.error('删除思维导图失败:', err)
-      ToastManager.error(`删除失败: ${err.message}`)
+      ToastManager.error(err.message)
     }
+  }
+
+  // 打开分享模态框
+  const handleShareClick = (mindmapId, title) => {
+    setShareModal({
+      isOpen: true,
+      mindmapId,
+      mindmapTitle: title
+    })
+  }
+
+  // 关闭分享模态框
+  const handleCloseShareModal = () => {
+    setShareModal({
+      isOpen: false,
+      mindmapId: null,
+      mindmapTitle: ''
+    })
   }
 
   // 加载状态
@@ -258,6 +284,12 @@ export default function DashboardPage() {
                           👁️ 查看
                         </button>
                         <button
+                          onClick={() => handleShareClick(mindmap.id, mindmap.title)}
+                          className="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
+                        >
+                          🔗 分享
+                        </button>
+                        <button
                           onClick={() => handleDelete(mindmap.id, mindmap.title)}
                           className="text-red-600 hover:text-red-700 text-sm font-medium"
                         >
@@ -272,6 +304,14 @@ export default function DashboardPage() {
           </>
         )}
       </div>
+
+      {/* 分享模态框 */}
+      <ShareModal
+        isOpen={shareModal.isOpen}
+        onClose={handleCloseShareModal}
+        mindmapId={shareModal.mindmapId}
+        mindmapTitle={shareModal.mindmapTitle}
+      />
     </div>
   )
 }

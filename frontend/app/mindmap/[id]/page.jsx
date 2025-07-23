@@ -8,6 +8,7 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useAuth } from '../../../context/AuthContext'
 import SimpleMarkmapBasic from '../../../components/mindmap/SimpleMarkmapBasic'
+import ShareModal from '../../../components/share/ShareModal'
 import { ToastManager } from '../../../components/common/Toast'
 import { exportSVG, exportPNG, getSafeFilename, getTimestamp } from '../../../lib/exportUtils.js'
 
@@ -26,6 +27,13 @@ export default function ViewMindmapPage() {
   const isExportingRef = useRef(false)
   const [isExportingUI, setIsExportingUI] = useState(false) // 仅用于UI显示
   const [showExportMenu, setShowExportMenu] = useState(false)
+  
+  // 分享模态框状态
+  const [shareModal, setShareModal] = useState({
+    isOpen: false,
+    mindmapId: null,
+    mindmapTitle: ''
+  })
   
   // Markmap 组件引用
   const markmapRef = useRef(null)
@@ -121,6 +129,24 @@ export default function ViewMindmapPage() {
       console.error('删除思维导图失败:', err)
       ToastManager.error(`删除失败: ${err.message}`)
     }
+  }
+
+  // 打开分享模态框
+  const handleShareClick = () => {
+    setShareModal({
+      isOpen: true,
+      mindmapId: mindmapId,
+      mindmapTitle: mindmap?.title || ''
+    })
+  }
+
+  // 关闭分享模态框
+  const handleCloseShareModal = () => {
+    setShareModal({
+      isOpen: false,
+      mindmapId: null,
+      mindmapTitle: ''
+    })
   }
 
   // 导出SVG（最终优化版 + 调试版）
@@ -383,6 +409,12 @@ export default function ViewMindmapPage() {
               </div>
               
               <button
+                onClick={handleShareClick}
+                className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700"
+              >
+                🔗 分享
+              </button>
+              <button
                 onClick={() => alert('编辑功能开发中...')}
                 className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700"
               >
@@ -450,6 +482,14 @@ export default function ViewMindmapPage() {
           </div>
         </div>
       </div>
+
+      {/* 分享模态框 */}
+      <ShareModal
+        isOpen={shareModal.isOpen}
+        onClose={handleCloseShareModal}
+        mindmapId={shareModal.mindmapId}
+        mindmapTitle={shareModal.mindmapTitle}
+      />
     </div>
   )
 }
