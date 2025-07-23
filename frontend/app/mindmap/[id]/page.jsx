@@ -22,8 +22,9 @@ export default function ViewMindmapPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   
-  // 导出功能状态
-  const [isExporting, setIsExporting] = useState(false)
+  // 导出功能状态 - 使用 useRef 避免重新渲染
+  const isExportingRef = useRef(false)
+  const [isExportingUI, setIsExportingUI] = useState(false) // 仅用于UI显示
   const [showExportMenu, setShowExportMenu] = useState(false)
   
   // Markmap 组件引用
@@ -134,9 +135,10 @@ export default function ViewMindmapPage() {
       await new Promise(resolve => setTimeout(resolve, 50))
       
       console.log('🔍 [handleExportSVG] 设置isExporting状态')
-      setIsExporting(true)
+      isExportingRef.current = true
+      setIsExportingUI(true)
       
-      console.log('🔍 [handleExportSVG] 获取markmap实例')
+      console.log('�� [handleExportSVG] 获取markmap实例')
       const markmapInstance = markmapRef.current.getMarkmapInstance()
       
       if (!markmapInstance) {
@@ -164,7 +166,8 @@ export default function ViewMindmapPage() {
       ToastManager.error(`SVG导出失败: ${error.message}`)
     } finally {
       console.log('🔍 [handleExportSVG] 清理状态')
-      setIsExporting(false)
+      isExportingRef.current = false
+      setIsExportingUI(false)
       // 延迟恢复组件正常状态，确保所有状态变化完成
       setTimeout(() => {
         if (markmapRef.current) {
@@ -195,7 +198,8 @@ export default function ViewMindmapPage() {
       await new Promise(resolve => setTimeout(resolve, 50))
       
       console.log('🔍 [handleExportPNG] 设置isExporting状态')
-      setIsExporting(true)
+      isExportingRef.current = true
+      setIsExportingUI(true)
       
       console.log('🔍 [handleExportPNG] 获取markmap实例')
       const markmapInstance = markmapRef.current.getMarkmapInstance()
@@ -227,7 +231,8 @@ export default function ViewMindmapPage() {
       ToastManager.error(`PNG导出失败: ${error.message}`)
     } finally {
       console.log('🔍 [handleExportPNG] 清理状态')
-      setIsExporting(false)
+      isExportingRef.current = false
+      setIsExportingUI(false)
       // 延迟恢复组件正常状态，确保所有状态变化完成
       setTimeout(() => {
         if (markmapRef.current) {
@@ -339,12 +344,12 @@ export default function ViewMindmapPage() {
               
               {/* 导出按钮 */}
               <div className="relative">
-                <button
-                  onClick={() => setShowExportMenu(!showExportMenu)}
-                  disabled={isExporting}
-                  className="bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-                >
-                  {isExporting ? (
+                                  <button
+                    onClick={() => setShowExportMenu(!showExportMenu)}
+                    disabled={isExportingUI}
+                    className="bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                  >
+                    {isExportingUI ? (
                     <>
                       <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
                       <span>导出中...</span>
@@ -360,8 +365,8 @@ export default function ViewMindmapPage() {
                   )}
                 </button>
                 
-                {/* 导出下拉菜单 */}
-                {showExportMenu && !isExporting && (
+                                  {/* 导出下拉菜单 */}
+                  {showExportMenu && !isExportingUI && (
                   <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50">
                     <div className="py-1">
                       <button
