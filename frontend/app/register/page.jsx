@@ -160,7 +160,7 @@ export default function RegisterPage() {
               注册 ThinkTree 账户
             </h2>
             <p className="text-gray-600 mb-8">
-              使用邀请码创建您的账户，开始使用AI思维导图工具
+              使用邀请码创建您的账户，开始使用AI思维导图工具 (v3.2.0)
             </p>
           </div>
 
