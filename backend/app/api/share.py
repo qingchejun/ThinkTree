@@ -1,13 +1,13 @@
 """
-分享功能 API 路由
+分享功能 API 路由 - ThinkTree v3.0.0
+基于数据库的思维导图分享系统
 """
 
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
-from typing import Dict, Any
-import uuid
-import hashlib
+from typing import Dict, Any, Optional
+import secrets
 from datetime import datetime
 
 from ..core.database import get_db
@@ -17,57 +17,83 @@ from ..api.auth import get_current_user
 
 router = APIRouter()
 
-# 分享链接存储 (临时使用内存存储，后续可改为数据库)
-share_links_storage = {}
 
 @router.post("/mindmaps/{mindmap_id}/share")
 async def create_share_link(
     mindmap_id: str, 
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-    share_config: Dict[str, Any] = None
+    db: Session = Depends(get_db)
 ):
-    """为思维导图创建分享链接"""
-    # 查询思维导图是否存在且属于当前用户
-    mindmap = db.query(Mindmap).filter(
-        Mindmap.id == mindmap_id,
-        Mindmap.user_id == current_user.id
-    ).first()
+    """
+    为思维导图创建分享链接
     
-    if not mindmap:
-        raise HTTPException(
-            status_code=404,
-            detail="思维导图不存在或无权访问"
-        )
+    Args:
+        mindmap_id: 思维导图ID
+        current_user: 当前登录用户
+        db: 数据库会话
     
+    Returns:
+        分享链接信息
+    """
     try:
-        # 生成分享token
-        share_token = hashlib.md5(f"{mindmap_id}_{datetime.now().timestamp()}".encode()).hexdigest()[:16]
+        # 验证思维导图UUID格式
+        if not mindmap_id:
+            raise HTTPException(status_code=400, detail="思维导图ID不能为空")
         
-        share_info = {
-            "token": share_token,
-            "mindmap_id": mindmap_id,
-            "created_at": datetime.now().isoformat(),
-            "access_count": 0,
-            "is_active": True
-        }
+        # 查询思维导图是否存在且属于当前用户
+        mindmap = db.query(Mindmap).filter(
+            Mindmap.id == mindmap_id,
+            Mindmap.user_id == current_user.id
+        ).first()
         
-        if share_config:
-            share_info.update(share_config)
+        if not mindmap:
+            raise HTTPException(
+                status_code=404,
+                detail="思维导图不存在或无权访问"
+            )
         
-        share_links_storage[share_token] = share_info
+        # 如果已经有分享链接，直接返回现有的
+        if mindmap.is_public and mindmap.share_token:
+            return JSONResponse(content={
+                "success": True,
+                "share_token": mindmap.share_token,
+                "share_url": f"/share/{mindmap.share_token}",
+                "is_existing": True,
+                "message": "使用现有分享链接"
+            })
         
-        # 更新思维导图的公开状态
-        mindmap.is_public = '1'
+        # 生成安全的分享token
+        share_token = secrets.token_urlsafe(32)
+        
+        # 确保token唯一性
+        existing_token = db.query(Mindmap).filter(
+            Mindmap.share_token == share_token
+        ).first()
+        
+        while existing_token:
+            share_token = secrets.token_urlsafe(32)
+            existing_token = db.query(Mindmap).filter(
+                Mindmap.share_token == share_token
+            ).first()
+        
+        # 更新思维导图的分享状态
+        mindmap.is_public = True
+        mindmap.share_token = share_token
+        mindmap.updated_at = datetime.utcnow()
+        
         db.commit()
         
         return JSONResponse(content={
             "success": True,
             "share_token": share_token,
             "share_url": f"/share/{share_token}",
+            "is_existing": False,
             "message": "分享链接创建成功"
         })
         
+    except HTTPException:
+        db.rollback()
+        raise
     except Exception as e:
         db.rollback()
         raise HTTPException(
@@ -75,98 +101,168 @@ async def create_share_link(
             detail=f"创建分享链接失败: {str(e)}"
         )
 
+
 @router.get("/share/{share_token}")
-async def get_shared_mindmap(share_token: str, db: Session = Depends(get_db)):
-    """通过分享token获取思维导图"""
-    if share_token not in share_links_storage:
+async def get_shared_mindmap(
+    share_token: str, 
+    db: Session = Depends(get_db)
+):
+    """
+    通过分享token获取思维导图（公开接口，无需认证）
+    
+    Args:
+        share_token: 分享令牌
+        db: 数据库会话
+    
+    Returns:
+        公开的思维导图数据
+    """
+    try:
+        if not share_token:
+            raise HTTPException(status_code=400, detail="分享令牌不能为空")
+        
+        # 查询公开的思维导图
+        mindmap = db.query(Mindmap).join(User).filter(
+            Mindmap.share_token == share_token,
+            Mindmap.is_public == True
+        ).first()
+        
+        if not mindmap:
+            raise HTTPException(
+                status_code=404,
+                detail="分享链接不存在或已失效"
+            )
+        
+        # 返回公开数据（不包含敏感信息）
+        return JSONResponse(content={
+            "success": True,
+            "mindmap": mindmap.to_public_dict(),
+            "share_info": {
+                "token": share_token,
+                "shared_at": mindmap.updated_at.isoformat() if mindmap.updated_at else None
+            }
+        })
+        
+    except HTTPException:
+        raise
+    except Exception as e:
         raise HTTPException(
-            status_code=404,
-            detail="分享链接不存在或已失效"
+            status_code=500,
+            detail=f"获取分享内容失败: {str(e)}"
         )
-    
-    share_info = share_links_storage[share_token]
-    
-    if not share_info["is_active"]:
-        raise HTTPException(
-            status_code=403,
-            detail="分享链接已被禁用"
-        )
-    
-    mindmap_id = share_info["mindmap_id"]
-    
-    # 从数据库查询思维导图
-    mindmap = db.query(Mindmap).filter(Mindmap.id == mindmap_id).first()
-    
-    if not mindmap:
-        raise HTTPException(
-            status_code=404,
-            detail="思维导图不存在"
-        )
-    
-    # 增加访问计数
-    share_links_storage[share_token]["access_count"] += 1
-    
-    return JSONResponse(content={
-        "success": True,
-        "mindmap": {
-            "id": str(mindmap.id),
-            "title": mindmap.title,
-            "content": mindmap.content,
-            "description": mindmap.description,
-            "tags": mindmap.tags.split(',') if mindmap.tags else [],
-            "created_at": mindmap.created_at.isoformat(),
-            "updated_at": mindmap.updated_at.isoformat()
-        },
-        "share_info": {
-            "token": share_token,
-            "created_at": share_info["created_at"],
-            "access_count": share_info["access_count"]
-        }
-    })
 
-@router.delete("/share/{share_token}")
-async def disable_share_link(share_token: str):
-    """禁用分享链接"""
-    if share_token not in share_links_storage:
-        raise HTTPException(
-            status_code=404,
-            detail="分享链接不存在"
-        )
-    
-    share_links_storage[share_token]["is_active"] = False
-    
-    return JSONResponse(content={
-        "success": True,
-        "message": "分享链接已禁用"
-    })
 
-@router.get("/mindmaps/{mindmap_id}/shares")
-async def get_mindmap_shares(
+@router.delete("/mindmaps/{mindmap_id}/share")
+async def disable_share_link(
     mindmap_id: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """获取思维导图的所有分享链接"""
-    # 验证思维导图是否存在且属于当前用户
-    mindmap = db.query(Mindmap).filter(
-        Mindmap.id == mindmap_id,
-        Mindmap.user_id == current_user.id
-    ).first()
+    """
+    禁用思维导图的分享链接
     
-    if not mindmap:
+    Args:
+        mindmap_id: 思维导图ID
+        current_user: 当前登录用户
+        db: 数据库会话
+    
+    Returns:
+        操作结果
+    """
+    try:
+        if not mindmap_id:
+            raise HTTPException(status_code=400, detail="思维导图ID不能为空")
+        
+        # 查询思维导图是否存在且属于当前用户
+        mindmap = db.query(Mindmap).filter(
+            Mindmap.id == mindmap_id,
+            Mindmap.user_id == current_user.id
+        ).first()
+        
+        if not mindmap:
+            raise HTTPException(
+                status_code=404,
+                detail="思维导图不存在或无权访问"
+            )
+        
+        if not mindmap.is_public:
+            raise HTTPException(
+                status_code=400,
+                detail="该思维导图未开启分享"
+            )
+        
+        # 禁用分享
+        mindmap.is_public = False
+        mindmap.share_token = None
+        mindmap.updated_at = datetime.utcnow()
+        
+        db.commit()
+        
+        return JSONResponse(content={
+            "success": True,
+            "message": "分享链接已禁用"
+        })
+        
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
         raise HTTPException(
-            status_code=404,
-            detail="思维导图不存在或无权访问"
+            status_code=500,
+            detail=f"禁用分享链接失败: {str(e)}"
         )
+
+
+@router.get("/mindmaps/{mindmap_id}/share")
+async def get_mindmap_share_info(
+    mindmap_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    获取思维导图的分享信息
     
-    # 查找该思维导图的所有分享链接
-    shares = []
-    for token, share_info in share_links_storage.items():
-        if share_info["mindmap_id"] == mindmap_id:
-            shares.append(share_info)
+    Args:
+        mindmap_id: 思维导图ID
+        current_user: 当前登录用户
+        db: 数据库会话
     
-    return JSONResponse(content={
-        "success": True,
-        "shares": shares,
-        "total": len(shares)
-    })
+    Returns:
+        分享信息
+    """
+    try:
+        if not mindmap_id:
+            raise HTTPException(status_code=400, detail="思维导图ID不能为空")
+        
+        # 查询思维导图是否存在且属于当前用户
+        mindmap = db.query(Mindmap).filter(
+            Mindmap.id == mindmap_id,
+            Mindmap.user_id == current_user.id
+        ).first()
+        
+        if not mindmap:
+            raise HTTPException(
+                status_code=404,
+                detail="思维导图不存在或无权访问"
+            )
+        
+        share_info = {
+            "is_shared": mindmap.is_public,
+            "share_token": mindmap.share_token if mindmap.is_public else None,
+            "share_url": f"/share/{mindmap.share_token}" if mindmap.is_public and mindmap.share_token else None,
+            "updated_at": mindmap.updated_at.isoformat() if mindmap.updated_at else None
+        }
+        
+        return JSONResponse(content={
+            "success": True,
+            "share_info": share_info
+        })
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"获取分享信息失败: {str(e)}"
+        )
