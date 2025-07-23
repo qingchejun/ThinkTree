@@ -25,27 +25,41 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
     },
   }))
 
-  // 递归设置节点的折叠状态 - 简化版本
+  // 递归设置节点的折叠状态 - 调试版本
   const setNodeFoldState = (node, foldDepth, currentDepth = 0) => {
     if (!node) return
     
-    // 如果当前深度大于等于折叠阈值，就折叠这个节点
-    if (currentDepth >= foldDepth && foldDepth > 0) {
-      node.fold = 1
-    } else {
-      delete node.fold
-    }
+    const nodeContent = node.content || node.value || 'unknown'
+    console.log(`[折叠调试] 深度${currentDepth}, 阈值${foldDepth}, 节点: ${nodeContent.substring(0, 30)}`)
     
-    // 递归处理所有子节点
+    // 递归处理所有子节点(在设置折叠状态之前)
     if (node.children && node.children.length > 0) {
+      console.log(`[折叠调试] 处理 ${node.children.length} 个子节点`)
       node.children.forEach(child => {
         setNodeFoldState(child, foldDepth, currentDepth + 1)
       })
+    }
+    
+    // 如果当前深度大于等于折叠阈值，就折叠这个节点
+    // 注意：只有有子节点的节点才需要设置折叠状态
+    if (currentDepth >= foldDepth && foldDepth > 0 && node.children && node.children.length > 0) {
+      node.fold = 1
+      console.log(`[折叠调试] ✂️ 折叠节点: ${nodeContent.substring(0, 30)}`)
+    } else {
+      // 清除fold属性，确保节点是展开的
+      if (node.hasOwnProperty('fold')) {
+        delete node.fold
+        console.log(`[折叠调试] 📖 展开节点: ${nodeContent.substring(0, 30)}`)
+      }
     }
   }
 
   // 展开/折叠切换函数
   const handleToggleExpandCollapse = () => {
+    console.log('🔄 [主调试] 按钮点击，当前状态:', isExpanded)
+    console.log('🔄 [主调试] mmRef存在:', !!mmRef.current)
+    console.log('🔄 [主调试] rootDataRef存在:', !!rootDataRef.current)
+    
     if (!mmRef.current || !rootDataRef.current) {
       console.warn('❌ 思维导图未准备就绪')
       return
@@ -53,32 +67,42 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
 
     try {
       const newExpandedState = !isExpanded
-      console.log('🔄 切换到状态:', newExpandedState ? '展开所有节点' : '折叠到主要分支')
+      console.log('🔄 [主调试] 切换到状态:', newExpandedState ? '展开所有节点' : '折叠到主要分支')
+      console.log('🔄 [主调试] 原始数据结构:', rootDataRef.current)
       
       // 创建数据的深拷贝以避免修改原始数据
       const dataClone = JSON.parse(JSON.stringify(rootDataRef.current))
+      console.log('🔄 [主调试] 拷贝后数据:', dataClone)
       
       // 设置折叠深度：newExpandedState=true表示要展开(foldDepth=0)，false表示要折叠(foldDepth=2)
       const foldDepth = newExpandedState ? 0 : 2
+      console.log('🔄 [主调试] 使用折叠深度:', foldDepth)
+      
       setNodeFoldState(dataClone, foldDepth)
+      console.log('🔄 [主调试] 处理后数据:', dataClone)
       
       // 更新markmap数据
+      console.log('🔄 [主调试] 开始调用setData')
       mmRef.current.setData(dataClone)
+      console.log('🔄 [主调试] setData调用完成')
       
       // 更新状态
       setIsExpanded(newExpandedState)
+      console.log('🔄 [主调试] UI状态已更新到:', newExpandedState)
       
       // 延迟执行fit以确保渲染完成
       setTimeout(() => {
         if (mmRef.current && !isProcessingRef.current) {
+          console.log('🔄 [主调试] 执行fit操作')
           mmRef.current.fit()
         }
       }, 300)
       
-      console.log('✅ 展开/折叠操作完成')
+      console.log('✅ [主调试] 展开/折叠操作完成')
       
     } catch (error) {
-      console.error('❌ 展开/折叠操作失败:', error)
+      console.error('❌ [主调试] 展开/折叠操作失败:', error)
+      console.error('❌ [主调试] 错误栈:', error.stack)
     }
   }
 
