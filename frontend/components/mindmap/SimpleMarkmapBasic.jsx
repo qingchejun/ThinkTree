@@ -43,8 +43,8 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
       const processNode = (node, depth = 0) => {
         if (!node) return
         
-        if (shouldCollapse && depth >= 2 && node.children && node.children.length > 0) {
-          // 只折叠深度>=2的节点，保留第一层分支可见
+        if (shouldCollapse && depth >= 1 && node.children && node.children.length > 0) {
+          // 折叠深度>=1的节点，只保留根节点可见
           node.fold = 1
           node.folded = true
           // 也尝试设置payload属性
