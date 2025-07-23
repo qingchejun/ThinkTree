@@ -166,14 +166,28 @@ export default function SimpleMarkmapBasic({ mindmapData }) {
         }}
       />
       
-      {/* 自适应按钮 */}
-      <button
-        onClick={() => mmRef.current?.fit()}
-        className="absolute top-2 right-2 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm shadow-md transition-colors"
-        title="自适应大小"
-      >
-        🔍 适应
-      </button>
+      {/* 控制按钮组 */}
+      <div className="absolute top-2 right-2 flex space-x-2">
+        {/* 使用提示按钮 */}
+        <button
+          onClick={() => {
+            alert('💡 使用提示：\n\n• 点击任意节点可以折叠/展开该分支\n• 拖拽可以移动视图\n• 滚轮可以缩放\n• 点击"适应"可以重置视图')
+          }}
+          className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm shadow-md transition-colors"
+          title="使用提示"
+        >
+          💡 提示
+        </button>
+        
+        {/* 自适应按钮 */}
+        <button
+          onClick={() => mmRef.current?.fit()}
+          className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm shadow-md transition-colors"
+          title="自适应大小"
+        >
+          🔍 适应
+        </button>
+      </div>
     </div>
   )
 }
