@@ -3,22 +3,30 @@
  */
 'use client'
 
-import { useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
+import { useEffect, useRef, forwardRef, useImperativeHandle, useState } from 'react'
 
 const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
   const svgRef = useRef(null)
   const containerRef = useRef(null)
   const mmRef = useRef(null)
+  const [isProcessing, setIsProcessing] = useState(false) // 添加处理状态
 
   // 暴露 markmap 实例给父组件
   useImperativeHandle(ref, () => ({
     getMarkmapInstance: () => mmRef.current,
     getSVGElement: () => svgRef.current,
     fit: () => mmRef.current?.fit(),
+    setProcessing: (processing) => setIsProcessing(processing), // 暴露设置处理状态的方法
   }))
 
-  // 自适应窗口大小的函数
+  // 自适应窗口大小的函数（优化版，避免导出时重新渲染）
   const handleResize = () => {
+    // 如果正在处理（如导出），跳过resize操作
+    if (isProcessing) {
+      console.log('SimpleMarkmapBasic: 跳过resize - 正在处理中')
+      return
+    }
+
     if (mmRef.current && containerRef.current) {
       const containerRect = containerRef.current.getBoundingClientRect()
       const width = containerRect.width
@@ -32,7 +40,8 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
       
       // 延迟执行以确保容器大小已更新
       setTimeout(() => {
-        if (mmRef.current) {
+        // 再次检查是否仍在处理中
+        if (mmRef.current && !isProcessing) {
           mmRef.current.fit()
         }
       }, 100)

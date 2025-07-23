@@ -123,6 +123,9 @@ export default function ViewMindmapPage() {
 
     try {
       setIsExporting(true)
+      // 设置组件处理状态，防止导出期间重新渲染
+      markmapRef.current.setProcessing(true)
+      
       const markmapInstance = markmapRef.current.getMarkmapInstance()
       
       if (!markmapInstance) {
@@ -147,6 +150,10 @@ export default function ViewMindmapPage() {
       ToastManager.error(`SVG导出失败: ${error.message}`)
     } finally {
       setIsExporting(false)
+      // 恢复组件正常状态
+      if (markmapRef.current) {
+        markmapRef.current.setProcessing(false)
+      }
     }
   }
 
@@ -159,6 +166,9 @@ export default function ViewMindmapPage() {
 
     try {
       setIsExporting(true)
+      // 设置组件处理状态，防止导出期间重新渲染
+      markmapRef.current.setProcessing(true)
+      
       const markmapInstance = markmapRef.current.getMarkmapInstance()
       
       if (!markmapInstance) {
@@ -185,6 +195,10 @@ export default function ViewMindmapPage() {
       ToastManager.error(`PNG导出失败: ${error.message}`)
     } finally {
       setIsExporting(false)
+      // 恢复组件正常状态
+      if (markmapRef.current) {
+        markmapRef.current.setProcessing(false)
+      }
     }
   }
 
