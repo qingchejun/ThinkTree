@@ -43,14 +43,24 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
       const processNode = (node, depth = 0) => {
         if (!node) return
         
-        if (shouldCollapse && depth >= 1 && node.children && node.children.length > 0) {
-          // 折叠有子节点的节点
+        if (shouldCollapse && depth >= 2 && node.children && node.children.length > 0) {
+          // 只折叠深度>=2的节点，保留第一层分支可见
           node.fold = 1
-          console.log(`[简化方法] 折叠深度${depth}节点`)
+          node.folded = true
+          // 也尝试设置payload属性
+          if (!node.payload) node.payload = {}
+          node.payload.fold = 1
+          console.log(`[简化方法] 折叠深度${depth}节点 (设置多个fold属性)`)
         } else if (!shouldCollapse) {
-          // 展开节点
+          // 展开节点 - 清除所有可能的fold属性
           delete node.fold
+          delete node.folded
+          if (node.payload) {
+            delete node.payload.fold
+            delete node.payload.folded
+          }
           console.log(`[简化方法] 展开深度${depth}节点`)
+        }
         }
         
         // 递归处理子节点
