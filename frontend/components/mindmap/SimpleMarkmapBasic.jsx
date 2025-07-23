@@ -3,13 +3,17 @@
  */
 'use client'
 
-import { useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
+import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react'
 
 const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
   const svgRef = useRef(null)
   const containerRef = useRef(null)
   const mmRef = useRef(null)
   const isProcessingRef = useRef(false) // 使用useRef避免重新渲染
+  const rootDataRef = useRef(null) // 保存原始转换后的数据
+  
+  // 展开/折叠状态管理
+  const [isExpanded, setIsExpanded] = useState(true) // 默认全展开
 
   // 暴露 markmap 实例给父组件
   useImperativeHandle(ref, () => ({
@@ -20,6 +24,77 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
       isProcessingRef.current = processing
     },
   }))
+
+  // 递归设置节点的折叠状态
+  const setNodeFoldState = (node, shouldFold, currentDepth = 0) => {
+    if (!node) return
+    
+    // 对于第二级及以下的节点进行折叠控制
+    if (currentDepth >= 1) {
+      if (shouldFold) {
+        // 折叠模式：第二级节点保持展开，第三级及以下折叠
+        if (currentDepth > 1) {
+          node.fold = 1 // markmap使用fold属性控制折叠
+        } else {
+          delete node.fold // 确保第二级节点不被折叠
+        }
+      } else {
+        // 展开模式：移除所有fold属性
+        delete node.fold
+      }
+    }
+    
+    // 递归处理子节点
+    if (node.children && node.children.length > 0) {
+      node.children.forEach(child => {
+        setNodeFoldState(child, shouldFold, currentDepth + 1)
+      })
+    }
+  }
+
+  // 展开/折叠切换函数
+  const handleToggleExpandCollapse = () => {
+    if (!mmRef.current) {
+      console.warn('Markmap实例未就绪')
+      return
+    }
+    
+    if (!rootDataRef.current) {
+      console.warn('思维导图数据未就绪')
+      return
+    }
+
+    try {
+      const newExpandedState = !isExpanded
+      console.log('切换展开/折叠状态:', newExpandedState ? '展开所有节点' : '折叠到主要分支')
+      console.log('当前数据结构:', rootDataRef.current)
+      
+      // 创建数据的深拷贝以避免修改原始数据
+      const dataClone = JSON.parse(JSON.stringify(rootDataRef.current))
+      
+      // 设置折叠状态：newExpandedState=true表示要展开，传入false给setNodeFoldState
+      setNodeFoldState(dataClone, !newExpandedState)
+      
+      console.log('处理后的数据结构:', dataClone)
+      
+      // 更新markmap数据
+      mmRef.current.setData(dataClone)
+      
+      // 更新状态
+      setIsExpanded(newExpandedState)
+      
+      // 延迟执行fit以确保渲染完成
+      setTimeout(() => {
+        if (mmRef.current && !isProcessingRef.current) {
+          mmRef.current.fit()
+        }
+      }, 300)
+      
+    } catch (error) {
+      console.error('展开/折叠操作失败:', error)
+      console.error('错误详情:', error.stack)
+    }
+  }
 
   // 自适应窗口大小的函数
   const handleResize = () => {
@@ -84,6 +159,9 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
         if (!root) {
           throw new Error('思维导图数据转换失败')
         }
+
+        // 保存原始转换后的数据
+        rootDataRef.current = root
 
         // 获取容器尺寸
         const containerRect = containerRef.current.getBoundingClientRect()
@@ -174,6 +252,11 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
     }
   }, [mindmapData])
 
+  // 当数据变化时重置展开状态
+  useEffect(() => {
+    setIsExpanded(true) // 新数据默认全展开
+  }, [mindmapData])
+
   return (
     <div 
       ref={containerRef}
@@ -187,6 +270,36 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
       >
         {/* SVG 内容将由 Markmap 动态生成 */}
       </svg>
+      
+      {/* 展开/折叠控制按钮 */}
+      <div className="absolute top-2 right-2 flex space-x-2">
+        <button
+          onClick={handleToggleExpandCollapse}
+          className={`${
+            isExpanded 
+              ? 'bg-orange-500 hover:bg-orange-600' 
+              : 'bg-green-500 hover:bg-green-600'
+          } text-white px-3 py-1 rounded text-sm shadow-md transition-colors flex items-center space-x-1`}
+          title={isExpanded ? '点击折叠到主要节点' : '点击展开所有节点'}
+        >
+          <span className="text-base">
+            {isExpanded ? '📄' : '📖'}
+          </span>
+          <span>
+            {isExpanded ? '折叠' : '展开'}
+          </span>
+        </button>
+        
+        {/* 适应大小按钮 */}
+        <button
+          onClick={() => mmRef.current?.fit()}
+          className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm shadow-md transition-colors flex items-center space-x-1"
+          title="重新适应窗口大小"
+        >
+          <span className="text-base">🔍</span>
+          <span>适应</span>
+        </button>
+      </div>
     </div>
   )
 })
