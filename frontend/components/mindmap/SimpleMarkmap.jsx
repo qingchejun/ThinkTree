@@ -112,15 +112,26 @@ export default function SimpleMarkmap({ mindmapData }) {
 
         // 动态导入 - 增加重试机制
         let Markmap, Transformer
-        try {
-          const markmapView = await import('markmap-view')
-          const markmapLib = await import('markmap-lib')
-          Markmap = markmapView.Markmap
-          Transformer = markmapLib.Transformer
-          console.log('SimpleMarkmap: markmap库加载成功')
-        } catch (importError) {
-          console.error('SimpleMarkmap: markmap库导入失败:', importError)
-          throw new Error('思维导图库加载失败，请刷新页面重试')
+        let retryCount = 3
+        while (retryCount > 0) {
+          try {
+            const [markmapView, markmapLib] = await Promise.all([
+              import('markmap-view'),
+              import('markmap-lib')
+            ])
+            Markmap = markmapView.Markmap
+            Transformer = markmapLib.Transformer
+            console.log('SimpleMarkmap: markmap库加载成功')
+            break
+          } catch (importError) {
+            retryCount--
+            console.warn(`SimpleMarkmap: markmap库导入失败，剩余重试次数: ${retryCount}`, importError)
+            if (retryCount === 0) {
+              throw new Error('思维导图库加载失败，请刷新页面重试')
+            }
+            // 等待一段时间后重试
+            await new Promise(resolve => setTimeout(resolve, 1000))
+          }
         }
 
         // 数据验证
