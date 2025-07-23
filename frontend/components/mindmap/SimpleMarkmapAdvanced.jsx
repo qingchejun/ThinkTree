@@ -20,18 +20,21 @@ export default function SimpleMarkmapAdvanced({ mindmapData }) {
   const setNodeDepth = (node, maxDepth, currentDepth = 0) => {
     if (!node) return
     
-    // 设置节点的展开状态 - fold应该直接设置在节点上
-    if (currentDepth >= maxDepth) {
-      node.fold = true
-    } else {
-      node.fold = false
-    }
-    
-    // 递归处理子节点
-    if (node.children) {
+    // 先递归处理子节点
+    if (node.children && node.children.length > 0) {
       node.children.forEach(child => {
         setNodeDepth(child, maxDepth, currentDepth + 1)
       })
+      
+      // 如果当前深度达到最大深度，则折叠这个节点（隐藏子节点）
+      if (currentDepth >= maxDepth - 1) {
+        node.fold = true
+      } else {
+        delete node.fold // 确保不折叠
+      }
+    } else {
+      // 叶子节点不需要fold属性
+      delete node.fold
     }
   }
 
@@ -60,12 +63,23 @@ export default function SimpleMarkmapAdvanced({ mindmapData }) {
         }
         removeFold(dataCopy)
       } else {
-        // 折叠到二级目录 - 深度为2
+        // 折叠到二级目录 - 深度为2（只显示根节点和一级子节点）
         setNodeDepth(dataCopy, 2)
       }
       
       // 更新markmap数据
       console.log('toggleExpandCollapse: 更新markmap数据', dataCopy)
+      
+      // 调试：打印节点的fold状态
+      const printFoldState = (node, level = 0) => {
+        const indent = '  '.repeat(level)
+        console.log(`${indent}节点 depth:${level} fold:${node.fold} children:${node.children?.length || 0}`)
+        if (node.children) {
+          node.children.forEach(child => printFoldState(child, level + 1))
+        }
+      }
+      printFoldState(dataCopy)
+      
       mmRef.current.setData(dataCopy)
       
       // 延迟执行fit以确保渲染完成
