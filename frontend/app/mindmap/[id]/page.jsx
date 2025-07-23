@@ -30,44 +30,8 @@ export default function ViewMindmapPage() {
   // Markmap 组件引用
   const markmapRef = useRef(null)
 
-  // 添加父组件渲染追踪
-  const renderCountRef = useRef(0)
-  const prevPropsRef = useRef({})
-  renderCountRef.current++
-
-  const currentProps = {
-    user: !!user,
-    token: !!token,
-    isLoading,
-    mindmap: !!mindmap,
-    mindmapId,
-    loading,
-    error: !!error,
-    isExportingUI,
-    showExportMenu
-  }
-
-  const changedProps = Object.keys(currentProps).filter(key => 
-    currentProps[key] !== prevPropsRef.current[key]
-  )
-
-  console.log(`🔍 [ViewMindmapPage] 父组件渲染 #${renderCountRef.current}`, {
-    changedProps,
-    currentProps,
-    mindmapReference: mindmap === prevPropsRef.current.mindmapObject ? 'SAME_REF' : 'DIFF_REF',
-    timestamp: new Date().toISOString()
-  })
-
-  prevPropsRef.current = { ...currentProps, mindmapObject: mindmap }
-
   // 稳定化mindmapData引用，避免不必要的子组件重新渲染
   const stableMindmapData = useMemo(() => {
-    console.log('🔍 [useMemo] 创建新的mindmapData对象', {
-      hasMindmap: !!mindmap,
-      title: mindmap?.title,
-      contentLength: mindmap?.content?.length || 0,
-      timestamp: new Date().toISOString()
-    })
     return mindmap ? {
       title: mindmap.title,
       markdown: mindmap.content
@@ -161,36 +125,24 @@ export default function ViewMindmapPage() {
 
   // 导出SVG（最终优化版 + 调试版）
   const handleExportSVG = async () => {
-    console.log('🔍 [handleExportSVG] 开始SVG导出, timestamp:', new Date().toISOString())
-    console.log('🔍 [handleExportSVG] 导出前父组件状态:', {
-      renderCount: renderCountRef.current,
-      isExportingRef: isExportingRef.current,
-      isExportingUI,
-      showExportMenu
-    })
     
     if (!markmapRef.current) {
-      console.log('🔍 [handleExportSVG] ❌ markmapRef.current不存在')
       ToastManager.error('思维导图未准备就绪，请稍后重试')
       return
     }
 
     try {
-      console.log('🔍 [handleExportSVG] 步骤1: 设置子组件处理状态为true')
       // 先设置组件处理状态，防止任何重新渲染
       markmapRef.current.setProcessing(true)
       
       // 稍微延迟，确保处理状态已经生效
-      console.log('🔍 [handleExportSVG] 步骤2: 等待50ms确保状态生效')
       await new Promise(resolve => setTimeout(resolve, 50))
       
-      console.log('🔍 [handleExportSVG] 步骤3: 设置父组件导出状态')
-      console.log('🔍 [handleExportSVG] 步骤3.1: 设置isExportingRef.current = true')
+      // 设置父组件导出状态
       isExportingRef.current = true
-      console.log('🔍 [handleExportSVG] 步骤3.2: 调用setIsExportingUI(true) - 可能触发父组件重新渲染!')
       setIsExportingUI(true)
       
-      console.log('�� [handleExportSVG] 获取markmap实例')
+      // 获取markmap实例
       const markmapInstance = markmapRef.current.getMarkmapInstance()
       
       if (!markmapInstance) {
@@ -198,62 +150,52 @@ export default function ViewMindmapPage() {
       }
 
       // 生成文件名
-      console.log('🔍 [handleExportSVG] 生成文件名')
       const safeTitle = getSafeFilename(mindmap.title)
       const timestamp = getTimestamp()
       const filename = `${safeTitle}_${timestamp}`
       
-      console.log('🔍 [handleExportSVG] 调用exportSVG函数')
       const result = exportSVG(markmapInstance, filename)
       
       if (result.success) {
-        console.log('🔍 [handleExportSVG] ✅ SVG导出成功')
         ToastManager.success(`SVG文件导出成功: ${result.filename}`)
         setShowExportMenu(false)
       } else {
         throw new Error(result.error)
       }
-    } catch (error) {
-      console.error('🔍 [handleExportSVG] ❌ SVG导出失败:', error)
-      ToastManager.error(`SVG导出失败: ${error.message}`)
-    } finally {
-      console.log('🔍 [handleExportSVG] 清理状态')
-      isExportingRef.current = false
-      setIsExportingUI(false)
-      // 延迟恢复组件正常状态，确保所有状态变化完成
-      setTimeout(() => {
-        if (markmapRef.current) {
-          console.log('🔍 [handleExportSVG] 恢复处理状态为false')
-          markmapRef.current.setProcessing(false)
-        }
-      }, 100)
+          } catch (error) {
+        ToastManager.error(`SVG导出失败: ${error.message}`)
+      } finally {
+        isExportingRef.current = false
+        setIsExportingUI(false)
+        // 延迟恢复组件正常状态，确保所有状态变化完成
+        setTimeout(() => {
+          if (markmapRef.current) {
+            markmapRef.current.setProcessing(false)
+          }
+        }, 100)
+      }
     }
-  }
 
   // 导出PNG（最终优化版 + 调试版）
   const handleExportPNG = async () => {
-    console.log('🔍 [handleExportPNG] 开始PNG导出')
     
     if (!markmapRef.current) {
-      console.log('🔍 [handleExportPNG] ❌ markmapRef.current不存在')
       ToastManager.error('思维导图未准备就绪，请稍后重试')
       return
     }
 
     try {
-      console.log('🔍 [handleExportPNG] 设置处理状态为true')
       // 先设置组件处理状态，防止任何重新渲染
       markmapRef.current.setProcessing(true)
       
       // 稍微延迟，确保处理状态已经生效
-      console.log('🔍 [handleExportPNG] 等待50ms确保状态生效')
       await new Promise(resolve => setTimeout(resolve, 50))
       
-      console.log('🔍 [handleExportPNG] 设置isExporting状态')
+      // 设置isExporting状态
       isExportingRef.current = true
       setIsExportingUI(true)
       
-      console.log('🔍 [handleExportPNG] 获取markmap实例')
+      // 获取markmap实例
       const markmapInstance = markmapRef.current.getMarkmapInstance()
       
       if (!markmapInstance) {
@@ -261,39 +203,33 @@ export default function ViewMindmapPage() {
       }
 
       // 生成文件名
-      console.log('🔍 [handleExportPNG] 生成文件名')
       const safeTitle = getSafeFilename(mindmap.title)
       const timestamp = getTimestamp()
       const filename = `${safeTitle}_${timestamp}`
       
       ToastManager.info('正在生成PNG文件，请稍候...')
       
-      console.log('🔍 [handleExportPNG] 调用exportPNG函数')
       const result = await exportPNG(markmapInstance, filename, 2) // 2x分辨率
       
       if (result.success) {
-        console.log('🔍 [handleExportPNG] ✅ PNG导出成功')
         ToastManager.success(`PNG文件导出成功: ${result.filename}`)
         setShowExportMenu(false)
       } else {
         throw new Error(result.error)
       }
-    } catch (error) {
-      console.error('🔍 [handleExportPNG] ❌ PNG导出失败:', error)
-      ToastManager.error(`PNG导出失败: ${error.message}`)
-    } finally {
-      console.log('🔍 [handleExportPNG] 清理状态')
-      isExportingRef.current = false
-      setIsExportingUI(false)
-      // 延迟恢复组件正常状态，确保所有状态变化完成
-      setTimeout(() => {
-        if (markmapRef.current) {
-          console.log('🔍 [handleExportPNG] 恢复处理状态为false')
-          markmapRef.current.setProcessing(false)
-        }
-      }, 100)
+          } catch (error) {
+        ToastManager.error(`PNG导出失败: ${error.message}`)
+      } finally {
+        isExportingRef.current = false
+        setIsExportingUI(false)
+        // 延迟恢复组件正常状态，确保所有状态变化完成
+        setTimeout(() => {
+          if (markmapRef.current) {
+            markmapRef.current.setProcessing(false)
+          }
+        }, 100)
+      }
     }
-  }
 
   // 加载状态
   if (isLoading || loading) {

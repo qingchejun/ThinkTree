@@ -4,36 +4,28 @@
  */
 
 /**
- * 从 Markmap 实例获取 SVG 内容（最优化版，完全避免重绘 + 调试版）
+ * 从 Markmap 实例获取 SVG 内容（优化版，避免重绘）
  * @param {Object} markmapInstance - Markmap 实例
  * @returns {string} SVG 字符串
  */
 export function getSVGFromMarkmap(markmapInstance) {
-  console.log('🔍 [getSVGFromMarkmap] 开始获取SVG内容')
-  
   if (!markmapInstance || !markmapInstance.svg) {
-    console.log('🔍 [getSVGFromMarkmap] ❌ Markmap实例无效')
     throw new Error('Markmap 实例无效')
   }
 
   try {
-    console.log('🔍 [getSVGFromMarkmap] 获取SVG节点')
     const svgElement = markmapInstance.svg.node()
     if (!svgElement) {
-      console.log('🔍 [getSVGFromMarkmap] ❌ 无法获取SVG元素')
       throw new Error('无法获取 SVG 元素')
     }
 
-    console.log('🔍 [getSVGFromMarkmap] 开始克隆SVG节点')
     // 完全静态化获取：不触发任何重新计算或重新渲染
     const clonedSvg = svgElement.cloneNode(true)
     
-    console.log('🔍 [getSVGFromMarkmap] 设置SVG命名空间')
     // 确保SVG有正确的命名空间
     clonedSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
     clonedSvg.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink')
     
-    console.log('🔍 [getSVGFromMarkmap] 获取当前尺寸和样式')
     // 获取当前的显示状态，完全不触发重新计算
     const computedStyle = window.getComputedStyle(svgElement)
     const currentWidth = svgElement.getAttribute('width') || 
@@ -45,24 +37,19 @@ export function getSVGFromMarkmap(markmapInstance) {
                          computedStyle.height || 
                          '600'
     
-    console.log('🔍 [getSVGFromMarkmap] 当前尺寸:', { currentWidth, currentHeight })
-    
     // 使用当前viewBox，避免任何重新计算
     let currentViewBox = svgElement.getAttribute('viewBox')
     if (!currentViewBox) {
-      console.log('🔍 [getSVGFromMarkmap] 生成viewBox')
       // 从当前尺寸创建viewBox，不使用getBBox等方法
       const width = parseFloat(currentWidth.toString().replace(/[^0-9.]/g, '')) || 800
       const height = parseFloat(currentHeight.toString().replace(/[^0-9.]/g, '')) || 600
       currentViewBox = `0 0 ${width} ${height}`
     }
     
-    console.log('🔍 [getSVGFromMarkmap] 设置克隆SVG的属性')
     clonedSvg.setAttribute('viewBox', currentViewBox)
     clonedSvg.setAttribute('width', currentWidth.toString())
     clonedSvg.setAttribute('height', currentHeight.toString())
     
-    console.log('🔍 [getSVGFromMarkmap] 添加内嵌样式')
     // 内嵌样式，确保导出的SVG完全独立
     const styleElement = document.createElement('style')
     styleElement.textContent = `
@@ -90,15 +77,12 @@ export function getSVGFromMarkmap(markmapInstance) {
     `
     clonedSvg.insertBefore(styleElement, clonedSvg.firstChild)
     
-    console.log('🔍 [getSVGFromMarkmap] 序列化SVG')
     // 将SVG元素转换为字符串
     const serializer = new XMLSerializer()
     const result = serializer.serializeToString(clonedSvg)
     
-    console.log('🔍 [getSVGFromMarkmap] ✅ 导出SVG获取成功，无重新渲染')
     return result
   } catch (error) {
-    console.error('🔍 [getSVGFromMarkmap] ❌ 获取SVG内容失败:', error)
     throw new Error(`获取SVG内容失败: ${error.message}`)
   }
 }
