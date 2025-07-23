@@ -3,13 +3,14 @@
  */
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '../../context/AuthContext'
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { login } = useAuth()
   const [formData, setFormData] = useState({
     email: '',
@@ -18,6 +19,16 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [verificationSuccess, setVerificationSuccess] = useState(false)
+
+  // 检查是否从邮箱验证页面跳转过来
+  useEffect(() => {
+    const verified = searchParams.get('verified')
+    if (verified === 'true') {
+      setVerificationSuccess(true)
+      setSuccess('邮箱验证成功！现在您可以登录使用所有功能了。')
+    }
+  }, [searchParams])
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -133,7 +144,17 @@ export default function LoginPage() {
               </div>
             )}
             {success && (
-              <div className="bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded-md text-sm">
+              <div className={`px-4 py-3 rounded-md text-sm ${
+                verificationSuccess 
+                  ? 'bg-blue-50 border border-blue-200 text-blue-600' 
+                  : 'bg-green-50 border border-green-200 text-green-600'
+              }`}>
+                {verificationSuccess && (
+                  <div className="flex items-center mb-2">
+                    <span className="text-lg mr-2">🎉</span>
+                    <span className="font-medium">账户激活成功！</span>
+                  </div>
+                )}
                 {success}
               </div>
             )}
