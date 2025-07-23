@@ -18,7 +18,7 @@ export default function HomePage() {
               <span className="ml-2 text-sm text-gray-500">AI驱动的思维导图生成工具</span>
             </div>
             <nav className="flex items-center space-x-4">
-              <a href="/test" className="text-gray-600 hover:text-indigo-600 text-sm">🎨 思维导图生成器</a>
+              <a href="/create" className="text-gray-600 hover:text-indigo-600 text-sm">🎨 思维导图生成器</a>
               {user ? (
                 <div className="flex items-center space-x-4">
                   <span className="text-sm text-gray-600">👋 欢迎, {user.email}</span>
@@ -54,7 +54,7 @@ export default function HomePage() {
           {/* 快速开始按钮 */}
           <div className="space-y-4">
             <a
-              href="/test"
+              href="/create"
               className="inline-block bg-indigo-600 text-white px-8 py-3 rounded-lg text-lg font-medium hover:bg-indigo-700 transition-colors"
             >
               🚀 开始生成思维导图
@@ -98,7 +98,7 @@ export default function HomePage() {
               <h3 className="text-lg font-medium text-green-800">正式版已发布</h3>
               <p className="text-green-700 mt-1">
                 ThinkTree v1.0 正式版现已可用！点击
-                <a href="/test" className="font-medium underline hover:no-underline mx-1">思维导图生成器</a>
+                <a href="/create" className="font-medium underline hover:no-underline mx-1">思维导图生成器</a>
                 开始使用 AI 驱动的思维导图生成功能。
               </p>
             </div>

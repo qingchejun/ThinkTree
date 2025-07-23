@@ -136,7 +136,7 @@ export default function DashboardPage() {
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-600">👋 {user.email}</span>
               <a
-                href="/test"
+                href="/create"
                 className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
               >
                 ➕ 创建新思维导图
@@ -189,7 +189,7 @@ export default function DashboardPage() {
                   创建您的第一个 AI 思维导图，开始整理和可视化您的想法
                 </p>
                 <a
-                  href="/test"
+                  href="/create"
                   className="inline-block bg-indigo-600 text-white px-6 py-3 rounded-md text-sm font-medium hover:bg-indigo-700"
                 >
                   🚀 创建第一个思维导图

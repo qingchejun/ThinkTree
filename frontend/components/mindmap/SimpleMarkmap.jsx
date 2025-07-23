@@ -90,35 +90,68 @@ export default function SimpleMarkmap({ mindmapData }) {
 
   useEffect(() => {
     const initMarkmap = async () => {
-      if (!mindmapData?.markdown || !svgRef.current) return
+      if (!mindmapData?.markdown || !svgRef.current || !containerRef.current) {
+        console.log('SimpleMarkmap: 缺少必要数据或DOM元素')
+        return
+      }
 
       try {
-        // 动态导入
-        const { Markmap } = await import('markmap-view')
-        const { Transformer } = await import('markmap-lib')
-
+        console.log('SimpleMarkmap: 开始初始化，数据:', mindmapData.markdown.substring(0, 100) + '...')
+        
         // 清空SVG
         svgRef.current.innerHTML = ''
+        
+        // 显示加载状态
+        svgRef.current.innerHTML = `
+          <text x="50%" y="50%" text-anchor="middle" fill="#6b7280" font-size="12">
+            正在渲染思维导图...
+          </text>
+        `
+
+        // 动态导入 - 增加重试机制
+        let Markmap, Transformer
+        try {
+          const markmapView = await import('markmap-view')
+          const markmapLib = await import('markmap-lib')
+          Markmap = markmapView.Markmap
+          Transformer = markmapLib.Transformer
+          console.log('SimpleMarkmap: markmap库加载成功')
+        } catch (importError) {
+          console.error('SimpleMarkmap: markmap库导入失败:', importError)
+          throw new Error('思维导图库加载失败，请刷新页面重试')
+        }
+
+        // 数据验证
+        if (!mindmapData.markdown || typeof mindmapData.markdown !== 'string') {
+          throw new Error('思维导图数据格式错误')
+        }
 
         // 创建transformer并转换数据
         const transformer = new Transformer()
         const { root } = transformer.transform(mindmapData.markdown)
         
+        if (!root) {
+          throw new Error('思维导图数据转换失败')
+        }
+        
         // 保存原始数据的引用
         rootDataRef.current = root
+        console.log('SimpleMarkmap: 数据转换成功')
 
         // 获取容器尺寸
-        const containerRect = containerRef.current?.getBoundingClientRect()
-        const width = containerRect?.width || 800
-        const height = containerRect?.height || 600
+        const containerRect = containerRef.current.getBoundingClientRect()
+        const width = Math.max(containerRect.width, 400)
+        const height = Math.max(containerRect.height, 300)
 
+        // 重新清空SVG（移除加载提示）
+        svgRef.current.innerHTML = ''
+        
         // 设置SVG尺寸
         svgRef.current.setAttribute('width', width)
         svgRef.current.setAttribute('height', height)
 
         // 创建markmap实例
         mmRef.current = Markmap.create(svgRef.current, {
-          // 优化布局参数
           spacingVertical: 20,
           spacingHorizontal: 80,
           paddingX: 8,
@@ -127,28 +160,44 @@ export default function SimpleMarkmap({ mindmapData }) {
           zoom: true,
         })
         
+        if (!mmRef.current) {
+          throw new Error('思维导图实例创建失败')
+        }
+        
         // 设置初始数据（默认全展开）
         mmRef.current.setData(root)
+        console.log('SimpleMarkmap: 思维导图渲染成功')
         
         // 延迟执行fit以确保渲染完成
         setTimeout(() => {
-          mmRef.current.fit()
+          if (mmRef.current) {
+            mmRef.current.fit()
+          }
         }, 300)
 
       } catch (error) {
-        console.error('Markmap error:', error)
-        // 显示错误信息
+        console.error('SimpleMarkmap 渲染失败:', error)
+        // 显示详细错误信息
         if (svgRef.current) {
           svgRef.current.innerHTML = `
-            <text x="50%" y="50%" text-anchor="middle" fill="#ef4444" font-size="14">
-              思维导图渲染失败
-            </text>
+            <g>
+              <text x="50%" y="45%" text-anchor="middle" fill="#ef4444" font-size="16" font-weight="bold">
+                思维导图渲染失败
+              </text>
+              <text x="50%" y="55%" text-anchor="middle" fill="#6b7280" font-size="12">
+                ${error.message || '未知错误'}
+              </text>
+              <text x="50%" y="65%" text-anchor="middle" fill="#9ca3af" font-size="10">
+                请刷新页面重试或联系技术支持
+              </text>
+            </g>
           `
         }
       }
     }
 
-    initMarkmap()
+    // 延迟初始化，确保DOM已准备好
+    const timer = setTimeout(initMarkmap, 100)
 
     // 添加窗口大小变化监听
     window.addEventListener('resize', handleResize)
@@ -164,6 +213,7 @@ export default function SimpleMarkmap({ mindmapData }) {
     
     // 清理函数
     return () => {
+      clearTimeout(timer)
       window.removeEventListener('resize', handleResize)
       if (resizeObserver) {
         resizeObserver.disconnect()

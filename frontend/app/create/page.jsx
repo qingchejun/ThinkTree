@@ -1,5 +1,5 @@
 /**
- * 思维导图生成测试页面 - 支持文件上传和文本输入
+ * 思维导图创建页面 - 支持文件上传和文本输入
  */
 'use client'
 
@@ -9,7 +9,7 @@ import FileUpload from '../../components/upload/FileUpload'
 import { useAuth } from '../../context/AuthContext'
 import { ToastManager } from '../../components/common/Toast'
 
-export default function TestPage() {
+export default function CreatePage() {
   const { user, token } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [mindmapData, setMindmapData] = useState(null)
@@ -103,10 +103,10 @@ export default function TestPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
-                🧪 ThinkTree 思维导图生成
+                🎨 ThinkTree 思维导图创建
               </h1>
               <p className="text-gray-600 text-sm mt-1">
-                上传文档或输入文本，一键生成思维导图
+                上传文档或输入文本，AI智能生成专业思维导图
               </p>
             </div>
             <div className="flex items-center space-x-4">
