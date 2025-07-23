@@ -43,14 +43,15 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
     // 如果当前深度大于等于折叠阈值，就折叠这个节点
     // 注意：只有有子节点的节点才需要设置折叠状态
     if (currentDepth >= foldDepth && foldDepth > 0 && node.children && node.children.length > 0) {
-      node.fold = 1
-      console.log(`[折叠调试] ✂️ 折叠节点: ${nodeContent.substring(0, 30)}`)
+      // 尝试不同的fold值格式
+      node.fold = true  // 改为布尔值
+      node.folded = true  // 备用属性
+      console.log(`[折叠调试] ✂️ 折叠节点: ${nodeContent.substring(0, 30)} (fold=${node.fold})`)
     } else {
       // 清除fold属性，确保节点是展开的
-      if (node.hasOwnProperty('fold')) {
-        delete node.fold
-        console.log(`[折叠调试] 📖 展开节点: ${nodeContent.substring(0, 30)}`)
-      }
+      delete node.fold
+      delete node.folded
+      console.log(`[折叠调试] 📖 展开节点: ${nodeContent.substring(0, 30)}`)
     }
   }
 
@@ -85,6 +86,15 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
       console.log('🔄 [主调试] 开始调用setData')
       mmRef.current.setData(dataClone)
       console.log('🔄 [主调试] setData调用完成')
+      
+      // 强制刷新markmap渲染
+      setTimeout(() => {
+        if (mmRef.current) {
+          console.log('🔄 [主调试] 强制刷新markmap')
+          mmRef.current.rescale()  // 尝试rescale
+          mmRef.current.fit()      // 然后fit
+        }
+      }, 100)
       
       // 更新状态
       setIsExpanded(newExpandedState)
