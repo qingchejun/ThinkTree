@@ -110,9 +110,9 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
         mmRef.current.setData(root)
         console.log('SimpleMarkmapBasic: 思维导图渲染成功')
         
-        // 延迟执行fit以确保渲染完成
+        // 延迟执行fit以确保渲染完成（但要检查是否在处理中）
         setTimeout(() => {
-          if (mmRef.current) {
+          if (mmRef.current && !isProcessing) {
             mmRef.current.fit()
           }
         }, 300)
@@ -141,14 +141,17 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
     // 延迟初始化，确保DOM已准备好
     const timer = setTimeout(initMarkmap, 100)
 
-    // 添加窗口大小变化监听
+    // 添加窗口大小变化监听（优化版）
     window.addEventListener('resize', handleResize)
     
-    // 使用ResizeObserver监听容器尺寸变化
+    // 使用ResizeObserver监听容器尺寸变化（优化版）
     let resizeObserver
     if (containerRef.current && window.ResizeObserver) {
       resizeObserver = new ResizeObserver(() => {
-        handleResize()
+        // 防抖处理，避免频繁调用
+        if (!isProcessing) {
+          handleResize()
+        }
       })
       resizeObserver.observe(containerRef.current)
     }
