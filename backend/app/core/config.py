@@ -16,7 +16,11 @@ class Settings(BaseSettings):
     
     # API 配置
     secret_key: str = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
+    algorithm: str = "HS256"
     access_token_expire_minutes: int = 60 * 24 * 7  # 7 天
+    
+    # 前端配置
+    next_public_api_url: str = "http://localhost:8000"
     
     # Google Gemini AI
     gemini_api_key: str = os.getenv("GEMINI_API_KEY", "")
