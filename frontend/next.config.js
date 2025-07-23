@@ -51,8 +51,8 @@ const nextConfig = {
     ]
   },
   
-  // 输出配置
-  output: 'standalone',
+  // 移除 standalone 配置以修复 Render 部署问题
+  // output: 'standalone',
   
   // 压缩配置
   compress: true,
