@@ -3,12 +3,12 @@
  */
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '../../context/AuthContext'
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { login } = useAuth()
@@ -326,6 +326,23 @@ export default function RegisterPage() {
             </Link>
           </div>
         </div>
+      </div>
+    </div>
+  )
+}
+
+export default function RegisterPage() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-100">
+      <div className="max-w-md w-full space-y-8 p-8">
+        <Suspense fallback={
+          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
+            <p>加载中...</p>
+          </div>
+        }>
+          <RegisterForm />
+        </Suspense>
       </div>
     </div>
   )
