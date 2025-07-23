@@ -7,7 +7,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useAuth } from '../../../context/AuthContext'
-import SimpleMarkmapBasic from '../../../components/mindmap/SimpleMarkmapBasic'
+import SimpleMarkmapAdvanced from '../../../components/mindmap/SimpleMarkmapAdvanced'
 import { ToastManager } from '../../../components/common/Toast'
 
 export default function ViewMindmapPage() {
@@ -256,7 +256,7 @@ export default function ViewMindmapPage() {
               </div>
             </div>
             <div className="h-[calc(100%-65px)]">
-              <SimpleMarkmapBasic 
+              <SimpleMarkmapAdvanced 
                 mindmapData={{
                   title: mindmap.title,
                   markdown: mindmap.content
