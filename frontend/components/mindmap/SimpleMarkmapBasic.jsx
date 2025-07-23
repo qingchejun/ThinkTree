@@ -3,20 +3,20 @@
  */
 'use client'
 
-import { useEffect, useRef, forwardRef, useImperativeHandle, useState } from 'react'
+import { useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
 
 const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
   const svgRef = useRef(null)
   const containerRef = useRef(null)
   const mmRef = useRef(null)
-  const [isProcessing, setIsProcessing] = useState(false) // 添加处理状态
+  const isProcessingRef = useRef(false) // 使用useRef避免重新渲染
 
   // 添加调试用的渲染计数器
   const renderCountRef = useRef(0)
   renderCountRef.current++
 
   console.log(`🔍 [SimpleMarkmapBasic] 组件渲染 #${renderCountRef.current}`, {
-    isProcessing,
+    isProcessing: isProcessingRef.current,
     hasMindmapData: !!mindmapData?.markdown,
     mindmapDataLength: mindmapData?.markdown?.length || 0
   })
@@ -24,29 +24,29 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
   // 暴露 markmap 实例给父组件
   useImperativeHandle(ref, () => ({
     getMarkmapInstance: () => {
-      console.log(`🔍 [getMarkmapInstance] 被调用, isProcessing: ${isProcessing}`)
+      console.log(`🔍 [getMarkmapInstance] 被调用, isProcessing: ${isProcessingRef.current}`)
       return mmRef.current
     },
     getSVGElement: () => {
-      console.log(`🔍 [getSVGElement] 被调用, isProcessing: ${isProcessing}`)
+      console.log(`🔍 [getSVGElement] 被调用, isProcessing: ${isProcessingRef.current}`)
       return svgRef.current
     },
     fit: () => {
-      console.log(`🔍 [fit] 被调用, isProcessing: ${isProcessing}`)
+      console.log(`🔍 [fit] 被调用, isProcessing: ${isProcessingRef.current}`)
       return mmRef.current?.fit()
     },
     setProcessing: (processing) => {
       console.log(`🔍 [setProcessing] 被调用: ${processing}`)
-      setIsProcessing(processing)
-    }, // 暴露设置处理状态的方法
+      isProcessingRef.current = processing // 直接修改ref，不触发重新渲染
+    },
   }))
 
   // 自适应窗口大小的函数（优化版，避免导出时重新渲染）
   const handleResize = () => {
-    console.log(`🔍 [handleResize] 被调用, isProcessing: ${isProcessing}`)
+    console.log(`🔍 [handleResize] 被调用, isProcessing: ${isProcessingRef.current}`)
     
     // 如果正在处理（如导出），跳过resize操作
-    if (isProcessing) {
+    if (isProcessingRef.current) {
       console.log('🔍 [handleResize] 跳过resize - 正在处理中')
       return
     }
@@ -66,7 +66,7 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
       // 延迟执行以确保容器大小已更新
       setTimeout(() => {
         // 再次检查是否仍在处理中
-        if (mmRef.current && !isProcessing) {
+        if (mmRef.current && !isProcessingRef.current) {
           console.log(`🔍 [handleResize] 延迟执行fit()`)
           mmRef.current.fit()
         } else {
@@ -78,7 +78,7 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
 
   useEffect(() => {
     console.log(`🔍 [useEffect] 开始执行, 依赖变化:`, {
-      isProcessing,
+      isProcessing: isProcessingRef.current,
       hasMindmapData: !!mindmapData?.markdown,
       mindmapDataLength: mindmapData?.markdown?.length || 0
     })
@@ -87,7 +87,7 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
       console.log(`🔍 [initMarkmap] 开始初始化检查`)
       
       // 如果正在处理中，跳过初始化
-      if (isProcessing) {
+      if (isProcessingRef.current) {
         console.log('🔍 [initMarkmap] 跳过初始化 - 正在处理中')
         return
       }
@@ -166,7 +166,7 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
         
         // 延迟执行fit以确保渲染完成（但要检查是否在处理中）
         setTimeout(() => {
-          if (mmRef.current && !isProcessing) {
+          if (mmRef.current && !isProcessingRef.current) {
             console.log('🔍 [initMarkmap] 延迟执行初始fit()')
             mmRef.current.fit()
           } else {
@@ -210,7 +210,7 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
       resizeObserver = new ResizeObserver(() => {
         console.log('🔍 [ResizeObserver] 触发')
         // 防抖处理，避免频繁调用
-        if (!isProcessing) {
+        if (!isProcessingRef.current) {
           handleResize()
         } else {
           console.log('🔍 [ResizeObserver] 跳过 - 正在处理中')
@@ -232,7 +232,7 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
         mmRef.current = null
       }
     }
-  }, [mindmapData, isProcessing]) // 添加isProcessing到依赖数组
+  }, [mindmapData]) // 🎯 移除 isProcessing 依赖，避免重新渲染循环！
 
   console.log(`🔍 [SimpleMarkmapBasic] 组件渲染完成 #${renderCountRef.current}`)
 
