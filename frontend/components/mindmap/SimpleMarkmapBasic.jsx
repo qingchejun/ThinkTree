@@ -61,7 +61,6 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
           }
           console.log(`[简化方法] 展开深度${depth}节点`)
         }
-        }
         
         // 递归处理子节点
         if (node.children) {
