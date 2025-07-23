@@ -139,3 +139,7 @@ backend/uploads/
 *.njsproj
 *.sln
 *.sw?
+
+# Project Documentation (Private)
+CLAUDE.md
+任务清单.md
