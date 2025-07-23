@@ -7,20 +7,25 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api import upload, mindmaps, auth, share
 from app.core.config import settings
-from app.core.database import create_tables
 
 # 创建FastAPI应用实例
 app = FastAPI(
     title="ThinkTree API",
     description="ThinkTree 思维导图生成 API",
-    version="2.0.0"
+    version="3.0.0"
 )
 
-# 数据库初始化事件
+# 数据库初始化事件 - 仅在开发环境使用
 @app.on_event("startup")
 async def startup_event():
-    """应用启动时创建数据表"""
-    create_tables()
+    """应用启动事件 - 生产环境使用Alembic管理数据库"""
+    # 仅在使用SQLite的开发环境中创建表
+    if "sqlite" in settings.database_url:
+        from app.core.database import create_tables
+        create_tables()
+        print("Development mode: Created tables using SQLAlchemy")
+    else:
+        print("Production mode: Using Alembic for database management")
 
 # 配置CORS - 支持环境变量配置允许的域名
 allowed_origins = [
@@ -49,11 +54,11 @@ app.include_router(share.router, prefix="/api", tags=["share"])
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to ThinkTree API v2.0.0"}
+    return {"message": "Welcome to ThinkTree API v3.0.0"}
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "version": "2.0.0"}
+    return {"status": "healthy", "version": "3.0.0"}
 
 if __name__ == "__main__":
     import uvicorn
