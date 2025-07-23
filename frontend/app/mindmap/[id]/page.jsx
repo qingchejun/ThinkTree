@@ -9,7 +9,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { useAuth } from '../../../context/AuthContext'
 import SimpleMarkmapBasic from '../../../components/mindmap/SimpleMarkmapBasic'
 import { ToastManager } from '../../../components/common/Toast'
-import { exportSVG, exportPNG, getSafeFilename, getTimestamp } from '../../../lib/exportUtils'
+import { exportSVG, exportPNG, getSafeFilename, getTimestamp } from '../../../lib/exportUtils.js'
 
 export default function ViewMindmapPage() {
   const { user, token, isLoading } = useAuth()
