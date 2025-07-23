@@ -5,13 +5,13 @@ services:
     name: thinktree-backend
     env: python
     buildCommand: cd backend && pip install -r requirements.txt
-    startCommand: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
+    startCommand: cd backend && chmod +x start.sh && ./start.sh
     healthCheckPath: /health
     envVars:
       - key: GEMINI_API_KEY
-        sync: false  # 敏感信息，需在 Render 控制台手动设置
+        sync: false # 敏感信息，需在 Render 控制台手动设置
       - key: SECRET_KEY
-        sync: false  # 敏感信息，需在 Render 控制台手动设置
+        sync: false # 敏感信息，需在 Render 控制台手动设置
       - key: DATABASE_URL
         fromDatabase:
           name: thinktree-db
@@ -33,9 +33,9 @@ services:
     startCommand: cd frontend && npm start
     envVars:
       - key: NEXT_PUBLIC_API_URL
-        value: https://thinktree-backend.onrender.com  # 替换为实际的后端服务 URL
+        value: https://thinktree-backend.onrender.com # 替换为实际的后端服务 URL
 
 # PostgreSQL 数据库
 databases:
   - name: thinktree-db
-    plan: free  # 免费版 PostgreSQL
+    plan: free # 免费版 PostgreSQL
