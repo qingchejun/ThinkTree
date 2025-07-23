@@ -4,7 +4,7 @@
  */
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useAuth } from '../../../context/AuthContext'
 import SimpleMarkmapBasic from '../../../components/mindmap/SimpleMarkmapBasic'
@@ -59,6 +59,20 @@ export default function ViewMindmapPage() {
   })
 
   prevPropsRef.current = { ...currentProps, mindmapObject: mindmap }
+
+  // 稳定化mindmapData引用，避免不必要的子组件重新渲染
+  const stableMindmapData = useMemo(() => {
+    console.log('🔍 [useMemo] 创建新的mindmapData对象', {
+      hasMindmap: !!mindmap,
+      title: mindmap?.title,
+      contentLength: mindmap?.content?.length || 0,
+      timestamp: new Date().toISOString()
+    })
+    return mindmap ? {
+      title: mindmap.title,
+      markdown: mindmap.content
+    } : null
+  }, [mindmap?.title, mindmap?.content])
 
   // 路由保护 - 未登录用户重定向到登录页
   useEffect(() => {
@@ -494,10 +508,7 @@ export default function ViewMindmapPage() {
             <div className="h-[calc(100%-65px)]">
               <SimpleMarkmapBasic 
                 ref={markmapRef}
-                mindmapData={{
-                  title: mindmap.title,
-                  markdown: mindmap.content
-                }}
+                mindmapData={stableMindmapData}
               />
             </div>
           </div>

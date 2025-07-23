@@ -179,15 +179,15 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
         mmRef.current.setData(root)
         console.log('🔍 [initMarkmap] ✅ 思维导图渲染成功, timestamp:', new Date().toISOString())
         
-        // 延迟执行fit以确保渲染完成（但要检查是否在处理中）
-        setTimeout(() => {
-          if (mmRef.current && !isProcessingRef.current) {
-            console.log('🔍 [initMarkmap] 延迟执行初始fit()', new Date().toISOString())
-            mmRef.current.fit()
-          } else {
-            console.log('🔍 [initMarkmap] 延迟执行时跳过初始fit() - 正在处理中')
-          }
-        }, 300)
+        // 暂时注释掉自动fit，避免触发resize
+        // setTimeout(() => {
+        //   if (mmRef.current && !isProcessingRef.current) {
+        //     console.log('🔍 [initMarkmap] 延迟执行初始fit()', new Date().toISOString())
+        //     mmRef.current.fit()
+        //   } else {
+        //     console.log('🔍 [initMarkmap] 延迟执行时跳过初始fit() - 正在处理中')
+        //   }
+        // }, 300)
 
       } catch (error) {
         console.error('🔍 [initMarkmap] ❌ 渲染失败:', error)
@@ -214,34 +214,35 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
     console.log('🔍 [useEffect] 设置延迟初始化定时器')
     const timer = setTimeout(initMarkmap, 100)
 
-    // 添加窗口大小变化监听（优化版）
-    console.log('🔍 [useEffect] 添加resize监听器')
-    window.addEventListener('resize', handleResize)
+    // 暂时禁用所有resize监听，测试是否是resize导致的重新渲染
+    console.log('🔍 [useEffect] 暂时禁用resize监听器进行测试')
+    // window.addEventListener('resize', handleResize)
     
-    // 使用ResizeObserver监听容器尺寸变化（优化版）
-    let resizeObserver
-    if (containerRef.current && window.ResizeObserver) {
-      console.log('🔍 [useEffect] 创建ResizeObserver')
-      resizeObserver = new ResizeObserver(() => {
-        console.log('🔍 [ResizeObserver] 触发, timestamp:', new Date().toISOString())
-        // 防抖处理，避免频繁调用
-        if (!isProcessingRef.current) {
-          handleResize()
-        } else {
-          console.log('🔍 [ResizeObserver] 跳过 - 正在处理中')
-        }
-      })
-      resizeObserver.observe(containerRef.current)
-    }
+    // 暂时禁用ResizeObserver，测试是否是它导致的重新渲染
+    console.log('🔍 [useEffect] 暂时禁用ResizeObserver进行测试')
+    // let resizeObserver
+    // if (containerRef.current && window.ResizeObserver) {
+    //   console.log('🔍 [useEffect] 创建ResizeObserver')
+    //   resizeObserver = new ResizeObserver(() => {
+    //     console.log('🔍 [ResizeObserver] 触发, timestamp:', new Date().toISOString())
+    //     // 防抖处理，避免频繁调用
+    //     if (!isProcessingRef.current) {
+    //       handleResize()
+    //     } else {
+    //       console.log('🔍 [ResizeObserver] 跳过 - 正在处理中')
+    //     }
+    //   })
+    //   resizeObserver.observe(containerRef.current)
+    // }
     
     // 清理函数
     return () => {
       console.log('🔍 [useEffect] 清理函数执行, timestamp:', new Date().toISOString())
       clearTimeout(timer)
-      window.removeEventListener('resize', handleResize)
-      if (resizeObserver) {
-        resizeObserver.disconnect()
-      }
+      // window.removeEventListener('resize', handleResize)
+      // if (resizeObserver) {
+      //   resizeObserver.disconnect()
+      // }
       if (mmRef.current) {
         mmRef.current.destroy?.()
         mmRef.current = null
