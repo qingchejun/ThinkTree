@@ -153,3 +153,6 @@ start_services.sh
 
 # Claude IDE Configuration
 .claude/
+
+# Cursor IDE Configuration
+.cursor/
