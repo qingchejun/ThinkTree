@@ -25,19 +25,14 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
     },
   }))
 
-  // 更简单的方法：直接操作节点的fold状态
+  // 展开折叠控制函数
   const toggleMarkmapFold = (shouldCollapse) => {
     if (!mmRef.current) return
     
     try {
-      console.log(`[简化方法] ${shouldCollapse ? '折叠' : '展开'}所有深度>=2的节点`)
-      
       // 获取当前的数据树
       const currentData = mmRef.current.state?.data
-      if (!currentData) {
-        console.warn('无法获取当前数据')
-        return
-      }
+      if (!currentData) return
       
       // 递归处理节点
       const processNode = (node, depth = 0) => {
@@ -47,19 +42,16 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
           // 折叠深度>=1的节点，只保留根节点可见
           node.fold = 1
           node.folded = true
-          // 也尝试设置payload属性
           if (!node.payload) node.payload = {}
           node.payload.fold = 1
-          console.log(`[简化方法] 折叠深度${depth}节点 (设置多个fold属性)`)
         } else if (!shouldCollapse) {
-          // 展开节点 - 清除所有可能的fold属性
+          // 展开节点 - 清除所有fold属性
           delete node.fold
           delete node.folded
           if (node.payload) {
             delete node.payload.fold
             delete node.payload.folded
           }
-          console.log(`[简化方法] 展开深度${depth}节点`)
         }
         
         // 递归处理子节点
@@ -70,9 +62,8 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
       
       processNode(currentData)
       
-      // 强制重新渲染
+      // 重新渲染并适应视图
       mmRef.current.setData(currentData)
-      
       setTimeout(() => {
         if (mmRef.current) {
           mmRef.current.fit()
@@ -80,34 +71,26 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
       }, 200)
       
     } catch (error) {
-      console.error('[简化方法] 操作失败:', error)
+      console.error('展开/折叠操作失败:', error)
     }
   }
 
-  // 展开/折叠切换函数 - 使用原生API
+  // 展开/折叠切换函数
   const handleToggleExpandCollapse = () => {
-    console.log('🔄 [新方法] 按钮点击，当前状态:', isExpanded)
-    
-    if (!mmRef.current) {
-      console.warn('❌ 思维导图未准备就绪')
-      return
-    }
+    if (!mmRef.current) return
 
     try {
       const newExpandedState = !isExpanded
-      const shouldCollapse = !newExpandedState  // true=折叠, false=展开
+      const shouldCollapse = !newExpandedState
       
-      console.log('🔄 [新方法] 切换到状态:', newExpandedState ? '展开所有节点' : '折叠到主要分支')
-      
-      // 使用原生API方法
+      // 执行展开/折叠操作
       toggleMarkmapFold(shouldCollapse)
       
-      // 更新状态
+      // 更新UI状态
       setIsExpanded(newExpandedState)
-      console.log('✅ [新方法] 展开/折叠操作完成，状态:', newExpandedState)
       
     } catch (error) {
-      console.error('❌ [新方法] 展开/折叠操作失败:', error)
+      console.error('展开/折叠操作失败:', error)
     }
   }
 
