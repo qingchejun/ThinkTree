@@ -5,7 +5,7 @@ ThinkTree FastAPI 主应用入口
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import upload, mindmaps, auth, share
+from app.api import upload, mindmaps, auth, share, invitations
 from app.core.config import settings
 
 # 创建FastAPI应用实例
@@ -51,6 +51,7 @@ app.include_router(upload.router, prefix="/api", tags=["upload"])
 app.include_router(mindmaps.router, prefix="/api/mindmaps", tags=["mindmaps"])
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(share.router, prefix="/api", tags=["share"])
+app.include_router(invitations.router, prefix="/api/invitations", tags=["invitations"])
 
 @app.get("/")
 async def root():

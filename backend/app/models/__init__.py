@@ -4,5 +4,6 @@
 
 from .user import User
 from .mindmap import Mindmap
+from .invitation import InvitationCode
 
-__all__ = ["User", "Mindmap"]
+__all__ = ["User", "Mindmap", "InvitationCode"]

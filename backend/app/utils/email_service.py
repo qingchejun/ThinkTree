@@ -1,0 +1,295 @@
+"""
+邮件服务模块
+"""
+
+import secrets
+import random
+from typing import List, Optional
+from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
+from pydantic import EmailStr
+import jwt
+from datetime import datetime, timedelta
+
+from ..core.config import settings
+
+
+class EmailService:
+    """邮件服务类"""
+    
+    def __init__(self):
+        """初始化邮件配置"""
+        self.conf = ConnectionConfig(
+            MAIL_USERNAME=settings.mail_username,
+            MAIL_PASSWORD=settings.mail_password,
+            MAIL_FROM=settings.mail_from,
+            MAIL_FROM_NAME=settings.mail_from_name,
+            MAIL_PORT=settings.mail_port,
+            MAIL_SERVER=settings.mail_server,
+            MAIL_STARTTLS=settings.mail_tls,
+            MAIL_SSL_TLS=settings.mail_ssl,
+            USE_CREDENTIALS=True,
+            VALIDATE_CERTS=True
+            # 暂不使用模板文件，直接在代码中构建HTML
+        )
+        self.fm = FastMail(self.conf)
+    
+    def generate_verification_token(self, email: str, expires_hours: int = 24) -> str:
+        """生成邮箱验证令牌"""
+        expire = datetime.utcnow() + timedelta(hours=expires_hours)
+        token_data = {
+            "email": email,
+            "exp": expire,
+            "type": "email_verification",
+            "jti": secrets.token_urlsafe(32)  # 唯一标识符
+        }
+        return jwt.encode(token_data, settings.secret_key, algorithm=settings.algorithm)
+    
+    def verify_verification_token(self, token: str) -> Optional[str]:
+        """验证邮箱验证令牌"""
+        try:
+            payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
+            email: str = payload.get("email")
+            token_type: str = payload.get("type")
+            
+            if email is None or token_type != "email_verification":
+                return None
+            
+            return email
+        except jwt.ExpiredSignatureError:
+            return None
+        except jwt.JWTError:
+            return None
+    
+    async def send_verification_email(self, email: EmailStr, user_name: Optional[str] = None) -> bool:
+        """发送邮箱验证邮件"""
+        try:
+            # 生成验证令牌
+            verification_token = self.generate_verification_token(email)
+            
+            # 生成验证链接
+            verification_url = f"{settings.frontend_url}/verify-email?token={verification_token}"
+            
+            # 生成6位纯数字验证码用于邮件标题
+            verification_code = str(random.randint(100000, 999999))
+            
+            # 邮件内容 - 统一称呼为"ThinkTree用户"
+            display_name = "ThinkTree用户"
+            
+            html_body = f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <title>验证您的 ThinkTree 账户</title>
+                <style>
+                    body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; }}
+                    .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                    .header {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }}
+                    .content {{ background: #f8f9fa; padding: 30px; border-radius: 0 0 8px 8px; }}
+                    .button {{ display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 20px 0; }}
+                    .footer {{ text-align: center; margin-top: 30px; color: #666; font-size: 14px; }}
+                    .logo {{ font-size: 24px; font-weight: bold; }}
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <div class="logo">🌳 ThinkTree</div>
+                        <h2>欢迎加入 ThinkTree！</h2>
+                    </div>
+                    <div class="content">
+                        <p>尊敬的 <strong>{display_name}</strong>，</p>
+                        
+                        <p>感谢您注册 ThinkTree AI 驱动的思维导图生成工具！为了确保您的账户安全，请点击下面的按钮验证您的邮箱地址：</p>
+                        
+                        <div style="text-align: center;">
+                            <a href="{verification_url}" class="button">🔐 验证邮箱地址</a>
+                        </div>
+                        
+                        <p>如果上面的按钮无法点击，请复制以下链接到浏览器地址栏：</p>
+                        <p style="background: #e9ecef; padding: 10px; border-radius: 4px; word-break: break-all;">
+                            <code>{verification_url}</code>
+                        </p>
+                        
+                        <p><strong>注意事项：</strong></p>
+                        <ul>
+                            <li>此验证链接有效期为 24 小时</li>
+                            <li>验证成功后即可正常使用所有功能</li>
+                            <li>如果您没有注册 ThinkTree 账户，请忽略此邮件</li>
+                        </ul>
+                        
+                        <p>验证完成后，您将能够：</p>
+                        <ul>
+                            <li>📄 上传文档并生成AI思维导图</li>
+                            <li>💾 保存和管理您的思维导图</li>
+                            <li>🔗 分享思维导图给他人</li>
+                            <li>📥 导出为 SVG/PNG 格式</li>
+                        </ul>
+                    </div>
+                    <div class="footer">
+                        <p>此邮件由 ThinkTree 系统自动发送，请勿回复。</p>
+                        <p>如有问题，请联系客服支持。</p>
+                        <p>© 2024 ThinkTree Team. All rights reserved.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """
+            
+            # 纯文本版本
+            text_body = f"""
+            欢迎加入 ThinkTree！
+            
+            尊敬的 {display_name}，
+            
+            感谢您注册 ThinkTree AI 驱动的思维导图生成工具！
+            
+            请点击以下链接验证您的邮箱地址：
+            {verification_url}
+            
+            注意：此验证链接有效期为 24 小时。
+            
+            如果您没有注册 ThinkTree 账户，请忽略此邮件。
+            
+            ThinkTree Team
+            """
+            
+            # 创建邮件消息
+            message = MessageSchema(
+                subject=f"ThinkTree注册验证码：{verification_code}",
+                recipients=[email],
+                body=text_body,
+                html=html_body,
+                subtype=MessageType.html
+            )
+            
+            # 发送邮件
+            await self.fm.send_message(message)
+            return True
+            
+        except Exception as e:
+            print(f"发送验证邮件失败: {str(e)}")
+            return False
+    
+    async def send_welcome_email(self, email: EmailStr, user_name: Optional[str] = None) -> bool:
+        """发送欢迎邮件 (验证完成后)"""
+        try:
+            display_name = "ThinkTree用户"
+            
+            html_body = f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <title>欢迎来到 ThinkTree</title>
+                <style>
+                    body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; }}
+                    .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                    .header {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }}
+                    .content {{ background: #f8f9fa; padding: 30px; border-radius: 0 0 8px 8px; }}
+                    .button {{ display: inline-block; background: #28a745; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 20px 0; }}
+                    .feature {{ background: white; padding: 15px; margin: 10px 0; border-radius: 6px; border-left: 4px solid #667eea; }}
+                    .footer {{ text-align: center; margin-top: 30px; color: #666; font-size: 14px; }}
+                    .logo {{ font-size: 24px; font-weight: bold; }}
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <div class="logo">🌳 ThinkTree</div>
+                        <h2>账户验证成功！</h2>
+                    </div>
+                    <div class="content">
+                        <p>恭喜 <strong>{display_name}</strong>！</p>
+                        
+                        <p>您的 ThinkTree 账户已成功验证，现在可以开始使用所有功能了！</p>
+                        
+                        <div style="text-align: center;">
+                            <a href="{settings.frontend_url}" class="button">🚀 开始使用 ThinkTree</a>
+                        </div>
+                        
+                        <h3>🎯 您现在可以使用的功能：</h3>
+                        
+                        <div class="feature">
+                            <strong>📄 智能文档解析</strong><br>
+                            上传 PDF、Word、文本等格式文档，AI 自动提取关键信息
+                        </div>
+                        
+                        <div class="feature">
+                            <strong>🗺️ 专业思维导图</strong><br>
+                            基于 Markmap 技术生成高质量、交互式思维导图
+                        </div>
+                        
+                        <div class="feature">
+                            <strong>💾 云端存储</strong><br>
+                            思维导图自动保存到云端，随时随地访问您的创作
+                        </div>
+                        
+                        <div class="feature">
+                            <strong>🔗 轻松分享</strong><br>
+                            一键生成分享链接，与团队成员协作讨论
+                        </div>
+                        
+                        <div class="feature">
+                            <strong>📥 多格式导出</strong><br>
+                            支持 SVG、PNG 高清格式导出，满足不同使用场景
+                        </div>
+                        
+                        <p><strong>💡 小贴士：</strong></p>
+                        <ul>
+                            <li>首次使用建议先上传一个小文档熟悉流程</li>
+                            <li>思维导图支持展开/折叠功能，便于查看不同层次信息</li>
+                            <li>记得定期保存重要的思维导图到个人账户</li>
+                        </ul>
+                    </div>
+                    <div class="footer">
+                        <p>感谢您选择 ThinkTree，期待您的精彩创作！</p>
+                        <p>© 2024 ThinkTree Team. All rights reserved.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """
+            
+            text_body = f"""
+            恭喜 {display_name}！
+            
+            您的 ThinkTree 账户已成功验证，现在可以开始使用所有功能了！
+            
+            访问 ThinkTree: {settings.frontend_url}
+            
+            可用功能：
+            - 智能文档解析
+            - 专业思维导图生成
+            - 云端存储
+            - 轻松分享
+            - 多格式导出
+            
+            感谢您选择 ThinkTree！
+            
+            ThinkTree Team
+            """
+            
+            message = MessageSchema(
+                subject="🎉 欢迎来到 ThinkTree - 开始您的思维导图之旅",
+                recipients=[email],
+                body=text_body,
+                html=html_body,
+                subtype=MessageType.html
+            )
+            
+            await self.fm.send_message(message)
+            return True
+            
+        except Exception as e:
+            print(f"发送欢迎邮件失败: {str(e)}")
+            return False
+
+
+# 全局邮件服务实例
+email_service = EmailService()
+
+
+def get_email_service() -> EmailService:
+    """获取邮件服务实例"""
+    return email_service
