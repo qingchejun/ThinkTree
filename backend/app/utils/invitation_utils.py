@@ -101,6 +101,16 @@ def validate_invitation_code(db: Session, code: str) -> tuple[bool, Optional[str
     Returns:
         (是否有效, 错误信息, 邀请码对象)
     """
+    # 特殊处理：管理员初始化邀请码
+    if code == "ADMIN_INIT":
+        # 检查是否已有管理员用户
+        existing_admin = db.query(User).filter(User.email == "admin@thinktree.com").first()
+        if existing_admin:
+            return False, "管理员账户已存在，无法使用初始化邀请码", None
+        
+        # 返回特殊的成功标识（invitation为None表示这是特殊邀请码）
+        return True, None, None
+    
     # 查找邀请码
     invitation = db.query(InvitationCode).filter(InvitationCode.code == code).first()
     
@@ -132,6 +142,10 @@ def use_invitation_code(db: Session, code: str, used_by_user_id: int) -> bool:
     
     if not is_valid:
         return False
+    
+    # 特殊处理：管理员初始化邀请码不需要标记为已使用
+    if code == "ADMIN_INIT":
+        return True
     
     # 标记为已使用
     invitation.is_used = True
