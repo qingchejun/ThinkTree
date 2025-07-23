@@ -13,6 +13,8 @@ export default function SimpleMarkmap({ mindmapData }) {
   
   // 展开/折叠状态：true为全展开，false为只显示二级目录
   const [isExpanded, setIsExpanded] = useState(true)
+  // 控制按钮显示的状态
+  const [showButtons, setShowButtons] = useState(false)
 
   // 控制节点展开深度的函数
   const setNodeDepth = (node, maxDepth, currentDepth = 0) => {
@@ -168,6 +170,9 @@ export default function SimpleMarkmap({ mindmapData }) {
         mmRef.current.setData(root)
         console.log('SimpleMarkmap: 思维导图渲染成功')
         
+        // 显示控制按钮
+        setShowButtons(true)
+        
         // 延迟执行fit以确保渲染完成
         setTimeout(() => {
           if (mmRef.current) {
@@ -177,6 +182,8 @@ export default function SimpleMarkmap({ mindmapData }) {
 
       } catch (error) {
         console.error('SimpleMarkmap 渲染失败:', error)
+        // 隐藏控制按钮
+        setShowButtons(false)
         // 显示详细错误信息
         if (svgRef.current) {
           svgRef.current.innerHTML = `
@@ -222,12 +229,14 @@ export default function SimpleMarkmap({ mindmapData }) {
         mmRef.current.destroy?.()
         mmRef.current = null
       }
+      setShowButtons(false)
     }
   }, [mindmapData])
 
-  // 当数据变化时重置展开状态
+  // 当数据变化时重置展开状态和按钮显示
   useEffect(() => {
     setIsExpanded(true)
+    setShowButtons(false)
   }, [mindmapData])
 
   return (
@@ -246,7 +255,7 @@ export default function SimpleMarkmap({ mindmapData }) {
       />
       
       {/* 控制按钮组 */}
-      {mmRef.current && (
+      {showButtons && (
         <div className="absolute top-2 right-2 flex space-x-2">
           {/* 展开/折叠按钮 */}
           <button
