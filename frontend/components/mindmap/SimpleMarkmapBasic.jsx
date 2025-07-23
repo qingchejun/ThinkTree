@@ -50,6 +50,12 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
 
   useEffect(() => {
     const initMarkmap = async () => {
+      // 如果正在处理中，跳过初始化
+      if (isProcessing) {
+        console.log('SimpleMarkmapBasic: 跳过初始化 - 正在处理中')
+        return
+      }
+      
       if (!mindmapData?.markdown || !svgRef.current || !containerRef.current) {
         console.log('SimpleMarkmapBasic: 缺少必要数据或DOM元素')
         return
@@ -63,15 +69,17 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
         
         // 显示加载状态
         svgRef.current.innerHTML = `
-          <text x="50%" y="50%" text-anchor="middle" fill="#6b7280" font-size="12">
-            正在渲染思维导图...
-          </text>
+          <g>
+            <text x="50%" y="50%" text-anchor="middle" fill="#6b7280" font-size="14">
+              正在加载思维导图...
+            </text>
+          </g>
         `
 
-        // 动态导入
-        const { Markmap } = await import('markmap-view')
+        // 动态导入markmap库
         const { Transformer } = await import('markmap-lib')
-
+        const { Markmap } = await import('markmap-view')
+        
         // 创建transformer并转换数据
         const transformer = new Transformer()
         const { root } = transformer.transform(mindmapData.markdown)
@@ -168,7 +176,7 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
         mmRef.current = null
       }
     }
-  }, [mindmapData])
+  }, [mindmapData, isProcessing]) // 添加isProcessing到依赖数组
 
   return (
     <div 

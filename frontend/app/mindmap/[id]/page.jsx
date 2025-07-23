@@ -114,7 +114,7 @@ export default function ViewMindmapPage() {
     }
   }
 
-  // 导出SVG
+  // 导出SVG（最终优化版）
   const handleExportSVG = async () => {
     if (!markmapRef.current) {
       ToastManager.error('思维导图未准备就绪，请稍后重试')
@@ -122,9 +122,13 @@ export default function ViewMindmapPage() {
     }
 
     try {
-      setIsExporting(true)
-      // 设置组件处理状态，防止导出期间重新渲染
+      // 先设置组件处理状态，防止任何重新渲染
       markmapRef.current.setProcessing(true)
+      
+      // 稍微延迟，确保处理状态已经生效
+      await new Promise(resolve => setTimeout(resolve, 50))
+      
+      setIsExporting(true)
       
       const markmapInstance = markmapRef.current.getMarkmapInstance()
       
@@ -150,14 +154,16 @@ export default function ViewMindmapPage() {
       ToastManager.error(`SVG导出失败: ${error.message}`)
     } finally {
       setIsExporting(false)
-      // 恢复组件正常状态
-      if (markmapRef.current) {
-        markmapRef.current.setProcessing(false)
-      }
+      // 延迟恢复组件正常状态，确保所有状态变化完成
+      setTimeout(() => {
+        if (markmapRef.current) {
+          markmapRef.current.setProcessing(false)
+        }
+      }, 100)
     }
   }
 
-  // 导出PNG
+  // 导出PNG（最终优化版）
   const handleExportPNG = async () => {
     if (!markmapRef.current) {
       ToastManager.error('思维导图未准备就绪，请稍后重试')
@@ -165,9 +171,13 @@ export default function ViewMindmapPage() {
     }
 
     try {
-      setIsExporting(true)
-      // 设置组件处理状态，防止导出期间重新渲染
+      // 先设置组件处理状态，防止任何重新渲染
       markmapRef.current.setProcessing(true)
+      
+      // 稍微延迟，确保处理状态已经生效
+      await new Promise(resolve => setTimeout(resolve, 50))
+      
+      setIsExporting(true)
       
       const markmapInstance = markmapRef.current.getMarkmapInstance()
       
@@ -195,10 +205,12 @@ export default function ViewMindmapPage() {
       ToastManager.error(`PNG导出失败: ${error.message}`)
     } finally {
       setIsExporting(false)
-      // 恢复组件正常状态
-      if (markmapRef.current) {
-        markmapRef.current.setProcessing(false)
-      }
+      // 延迟恢复组件正常状态，确保所有状态变化完成
+      setTimeout(() => {
+        if (markmapRef.current) {
+          markmapRef.current.setProcessing(false)
+        }
+      }, 100)
     }
   }
 
