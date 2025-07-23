@@ -7,6 +7,7 @@ import { useState } from 'react'
 import SimpleMarkmap from '../../components/mindmap/SimpleMarkmap'
 import FileUpload from '../../components/upload/FileUpload'
 import { useAuth } from '../../context/AuthContext'
+import { ToastManager } from '../../components/common/Toast'
 
 export default function TestPage() {
   const { user, token } = useAuth()
@@ -50,7 +51,7 @@ export default function TestPage() {
 
   const handleSave = () => {
     if (!user) {
-      alert('请先登录才能保存思维导图')
+      ToastManager.warning('请先登录才能保存思维导图')
       return
     }
     setShowSaveModal(true)
@@ -58,7 +59,7 @@ export default function TestPage() {
 
   const handleSaveConfirm = async (title, description) => {
     if (!mindmapData?.data?.markdown) {
-      alert('没有可保存的思维导图内容')
+      ToastManager.error('没有可保存的思维导图内容')
       return
     }
 
@@ -80,7 +81,7 @@ export default function TestPage() {
 
       if (response.ok) {
         const savedMindmap = await response.json()
-        alert(`思维导图"${savedMindmap.title}"已成功保存！`)
+        ToastManager.success(`思维导图"${savedMindmap.title}"已成功保存！`)
         setShowSaveModal(false)
       } else {
         const errorData = await response.json()
@@ -88,7 +89,7 @@ export default function TestPage() {
       }
     } catch (error) {
       console.error('保存思维导图失败:', error)
-      alert(`保存失败: ${error.message}`)
+      ToastManager.error(`保存失败: ${error.message}`)
     } finally {
       setSaveLoading(false)
     }
@@ -322,7 +323,7 @@ function SaveModal({ onSave, onCancel, isLoading, defaultTitle }) {
   const handleSubmit = (e) => {
     e.preventDefault()
     if (!title.trim()) {
-      alert('请输入思维导图标题')
+      ToastManager.error('请输入思维导图标题')
       return
     }
     onSave(title, description)

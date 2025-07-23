@@ -1,5 +1,6 @@
 import '../styles/globals.css'
 import { AuthProvider } from '../context/AuthContext'
+import { ToastContainer } from '../components/common/Toast'
 
 export const metadata = {
   title: 'ThinkTree - AI驱动的思维导图生成工具',
@@ -15,6 +16,7 @@ export default function RootLayout({ children }) {
           <div id="root">
             {children}
           </div>
+          <ToastContainer />
         </AuthProvider>
       </body>
     </html>

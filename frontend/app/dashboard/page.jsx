@@ -7,6 +7,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../../context/AuthContext'
+import { ToastManager } from '../../components/common/Toast'
 
 export default function DashboardPage() {
   const { user, token, isLoading } = useAuth()
@@ -90,14 +91,14 @@ export default function DashboardPage() {
       if (response.ok) {
         // 从列表中移除已删除的思维导图
         setMindmaps(prev => prev.filter(mindmap => mindmap.id !== mindmapId))
-        alert(`思维导图"${title}"已成功删除`)
+        ToastManager.success(`思维导图"${title}"已成功删除`)
       } else {
         const errorData = await response.json()
         throw new Error(errorData.detail || '删除失败')
       }
     } catch (err) {
       console.error('删除思维导图失败:', err)
-      alert(`删除失败: ${err.message}`)
+      ToastManager.error(`删除失败: ${err.message}`)
     }
   }
 
@@ -251,7 +252,7 @@ export default function DashboardPage() {
                       </div>
                       <div className="flex items-center space-x-2">
                         <button
-                          onClick={() => alert('查看功能开发中...')}
+                          onClick={() => router.push(`/mindmap/${mindmap.id}`)}
                           className="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
                         >
                           👁️ 查看
