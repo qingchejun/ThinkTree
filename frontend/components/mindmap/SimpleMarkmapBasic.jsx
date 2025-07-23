@@ -27,26 +27,38 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
 
   // 递归设置节点的折叠状态
   const setNodeFoldState = (node, shouldFold, currentDepth = 0) => {
-    if (!node) return
+    if (!node) {
+      console.log(`🔍 [DEBUG] setNodeFoldState: 节点为空，深度${currentDepth}`)
+      return
+    }
+    
+    console.log(`🔍 [DEBUG] setNodeFoldState: 处理节点，深度${currentDepth}，shouldFold=${shouldFold}`)
+    console.log(`🔍 [DEBUG] 节点内容:`, node.content || node.value || '无内容')
+    console.log(`🔍 [DEBUG] 节点有children:`, !!node.children, node.children?.length || 0)
     
     // 对于第二级及以下的节点进行折叠控制
     if (currentDepth >= 1) {
       if (shouldFold) {
         // 折叠模式：第二级节点保持展开，第三级及以下折叠
         if (currentDepth > 1) {
+          console.log(`🔍 [DEBUG] 设置节点折叠，深度${currentDepth}`)
           node.fold = 1 // markmap使用fold属性控制折叠
         } else {
+          console.log(`🔍 [DEBUG] 保持节点展开，深度${currentDepth}`)
           delete node.fold // 确保第二级节点不被折叠
         }
       } else {
         // 展开模式：移除所有fold属性
+        console.log(`🔍 [DEBUG] 移除节点fold属性，深度${currentDepth}`)
         delete node.fold
       }
     }
     
     // 递归处理子节点
     if (node.children && node.children.length > 0) {
-      node.children.forEach(child => {
+      console.log(`🔍 [DEBUG] 递归处理${node.children.length}个子节点`)
+      node.children.forEach((child, index) => {
+        console.log(`🔍 [DEBUG] 处理第${index + 1}个子节点`)
         setNodeFoldState(child, shouldFold, currentDepth + 1)
       })
     }
@@ -54,45 +66,62 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
 
   // 展开/折叠切换函数
   const handleToggleExpandCollapse = () => {
+    console.log('🔄 [DEBUG] 按钮被点击了！')
+    console.log('🔄 [DEBUG] 当前展开状态:', isExpanded)
+    console.log('🔄 [DEBUG] mmRef.current存在?', !!mmRef.current)
+    console.log('🔄 [DEBUG] rootDataRef.current存在?', !!rootDataRef.current)
+    
     if (!mmRef.current) {
-      console.warn('Markmap实例未就绪')
+      console.warn('❌ [ERROR] Markmap实例未就绪')
       return
     }
     
     if (!rootDataRef.current) {
-      console.warn('思维导图数据未就绪')
+      console.warn('❌ [ERROR] 思维导图数据未就绪')
       return
     }
 
     try {
       const newExpandedState = !isExpanded
-      console.log('切换展开/折叠状态:', newExpandedState ? '展开所有节点' : '折叠到主要分支')
-      console.log('当前数据结构:', rootDataRef.current)
+      console.log('🔄 [DEBUG] 即将切换到状态:', newExpandedState ? '展开所有节点' : '折叠到主要分支')
+      console.log('🔄 [DEBUG] 原始数据结构:', rootDataRef.current)
+      console.log('🔄 [DEBUG] 数据类型:', typeof rootDataRef.current)
+      console.log('🔄 [DEBUG] 数据是否有children:', !!rootDataRef.current?.children)
       
       // 创建数据的深拷贝以避免修改原始数据
       const dataClone = JSON.parse(JSON.stringify(rootDataRef.current))
+      console.log('🔄 [DEBUG] 数据拷贝完成:', dataClone)
       
       // 设置折叠状态：newExpandedState=true表示要展开，传入false给setNodeFoldState
+      console.log('🔄 [DEBUG] 开始调用setNodeFoldState，shouldFold参数:', !newExpandedState)
       setNodeFoldState(dataClone, !newExpandedState)
       
-      console.log('处理后的数据结构:', dataClone)
+      console.log('🔄 [DEBUG] setNodeFoldState执行完成')
+      console.log('🔄 [DEBUG] 处理后的数据结构:', dataClone)
       
       // 更新markmap数据
+      console.log('🔄 [DEBUG] 开始调用mmRef.current.setData')
       mmRef.current.setData(dataClone)
+      console.log('🔄 [DEBUG] setData调用完成')
       
       // 更新状态
+      console.log('🔄 [DEBUG] 更新React状态:', newExpandedState)
       setIsExpanded(newExpandedState)
       
       // 延迟执行fit以确保渲染完成
       setTimeout(() => {
+        console.log('🔄 [DEBUG] 延迟fit执行')
         if (mmRef.current && !isProcessingRef.current) {
           mmRef.current.fit()
+          console.log('🔄 [DEBUG] fit调用完成')
         }
       }, 300)
       
+      console.log('✅ [SUCCESS] 展开/折叠操作完成')
+      
     } catch (error) {
-      console.error('展开/折叠操作失败:', error)
-      console.error('错误详情:', error.stack)
+      console.error('❌ [ERROR] 展开/折叠操作失败:', error)
+      console.error('❌ [ERROR] 错误详情:', error.stack)
     }
   }
 
@@ -161,6 +190,9 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
         }
 
         // 保存原始转换后的数据
+        console.log('💾 [DEBUG] 保存原始数据到rootDataRef:', root)
+        console.log('💾 [DEBUG] 数据结构类型:', typeof root)
+        console.log('💾 [DEBUG] 数据是否有children:', !!root?.children, root?.children?.length || 0)
         rootDataRef.current = root
 
         // 获取容器尺寸
@@ -274,7 +306,13 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
       {/* 展开/折叠控制按钮 */}
       <div className="absolute top-2 right-2 flex space-x-2">
         <button
-          onClick={handleToggleExpandCollapse}
+          onClick={(e) => {
+            console.log('🖱️ [DEBUG] 按钮onClick事件触发')
+            console.log('🖱️ [DEBUG] 事件对象:', e)
+            e.preventDefault()
+            e.stopPropagation()
+            handleToggleExpandCollapse()
+          }}
           className={`${
             isExpanded 
               ? 'bg-orange-500 hover:bg-orange-600' 
