@@ -143,3 +143,10 @@ backend/uploads/
 # Project Documentation (Private)
 CLAUDE.md
 任务清单.md
+
+# Development Scripts (Personal)
+diagnose.sh
+start_services.sh
+
+# Claude IDE Configuration
+.claude/
