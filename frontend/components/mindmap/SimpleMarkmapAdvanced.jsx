@@ -20,11 +20,11 @@ export default function SimpleMarkmapAdvanced({ mindmapData }) {
   const setNodeDepth = (node, maxDepth, currentDepth = 0) => {
     if (!node) return
     
-    // 设置节点的展开状态
+    // 设置节点的展开状态 - fold应该直接设置在节点上
     if (currentDepth >= maxDepth) {
-      node.data = { ...node.data, fold: true }
+      node.fold = true
     } else {
-      node.data = { ...node.data, fold: false }
+      node.fold = false
     }
     
     // 递归处理子节点
@@ -37,10 +37,14 @@ export default function SimpleMarkmapAdvanced({ mindmapData }) {
 
   // 展开/折叠切换函数
   const toggleExpandCollapse = () => {
-    if (!mmRef.current || !rootDataRef.current) return
+    if (!mmRef.current || !rootDataRef.current) {
+      console.log('toggleExpandCollapse: 缺少markmap实例或数据')
+      return
+    }
     
     try {
       const newExpandedState = !isExpanded
+      console.log(`toggleExpandCollapse: 切换到${newExpandedState ? '展开' : '折叠'}状态`)
       setIsExpanded(newExpandedState)
       
       // 创建数据副本避免修改原始数据
@@ -49,9 +53,7 @@ export default function SimpleMarkmapAdvanced({ mindmapData }) {
       if (newExpandedState) {
         // 展开所有节点 - 移除所有fold属性
         const removeFold = (node) => {
-          if (node.data) {
-            delete node.data.fold
-          }
+          delete node.fold
           if (node.children) {
             node.children.forEach(removeFold)
           }
@@ -63,6 +65,7 @@ export default function SimpleMarkmapAdvanced({ mindmapData }) {
       }
       
       // 更新markmap数据
+      console.log('toggleExpandCollapse: 更新markmap数据', dataCopy)
       mmRef.current.setData(dataCopy)
       
       // 延迟执行fit以确保渲染完成
