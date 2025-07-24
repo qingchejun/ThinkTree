@@ -545,3 +545,24 @@ async def reset_password(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"密码重置失败: {str(e)}"
         )
+
+
+@router.get("/debug/mail-config")
+async def debug_mail_config():
+    """
+    调试邮件配置状态 (仅用于开发调试)
+    """
+    from ..core.config import settings
+    
+    config_status = {
+        "mail_configured": bool(settings.mail_username and settings.mail_password),
+        "mail_server": settings.mail_server,
+        "mail_port": settings.mail_port,
+        "mail_from": settings.mail_from,
+        "mail_username_set": bool(settings.mail_username),
+        "mail_password_set": bool(settings.mail_password),
+        "mail_tls": settings.mail_tls,
+        "mail_ssl": settings.mail_ssl
+    }
+    
+    return config_status
