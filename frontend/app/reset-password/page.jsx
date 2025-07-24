@@ -7,6 +7,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { ToastManager } from '../../components/common/Toast'
+import PasswordStrengthIndicator from '../../components/common/PasswordStrengthIndicator'
 
 function ResetPasswordForm() {
   const router = useRouter()
@@ -19,6 +20,7 @@ function ResetPasswordForm() {
   const [success, setSuccess] = useState(false)
   const [token, setToken] = useState('')
   const [tokenError, setTokenError] = useState('')
+  const [passwordStrength, setPasswordStrength] = useState(null)
 
   useEffect(() => {
     const urlToken = searchParams.get('token')
@@ -38,8 +40,8 @@ function ResetPasswordForm() {
   }
 
   const validatePassword = (password) => {
-    if (password.length < 8) {
-      return '密码长度至少8位'
+    if (!passwordStrength?.is_valid) {
+      return '密码不符合安全要求，请参考密码强度指示器'
     }
     return ''
   }
@@ -200,11 +202,15 @@ function ResetPasswordForm() {
                 onChange={handleInputChange}
                 disabled={loading}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
-                placeholder="请输入新密码（至少8位）"
+                placeholder="请输入新密码"
                 required
-                minLength={8}
               />
-              <p className="text-xs text-gray-500 mt-1">密码长度至少8位</p>
+              
+              {/* 密码强度指示器 */}
+              <PasswordStrengthIndicator 
+                password={formData.newPassword}
+                onStrengthChange={setPasswordStrength}
+              />
             </div>
 
             <div>
@@ -229,7 +235,7 @@ function ResetPasswordForm() {
 
             <button
               type="submit"
-              disabled={loading || !formData.newPassword || !formData.confirmPassword || formData.newPassword !== formData.confirmPassword}
+              disabled={loading || !formData.newPassword || !formData.confirmPassword || formData.newPassword !== formData.confirmPassword || !passwordStrength?.is_valid}
               className="w-full bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
             >
               {loading ? (

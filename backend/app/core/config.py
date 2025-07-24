@@ -62,6 +62,10 @@ class Settings(BaseSettings):
     
     # 前端URL配置 (用于邮箱验证链接)
     frontend_url: str = os.getenv("FRONTEND_URL", "https://thinktree-frontend.onrender.com")
+    
+    # Google reCAPTCHA 配置
+    recaptcha_secret_key: str = os.getenv("RECAPTCHA_SECRET_KEY", "")
+    recaptcha_score_threshold: float = float(os.getenv("RECAPTCHA_SCORE_THRESHOLD", "0.5"))
 
     class Config:
         """Pydantic 配置"""

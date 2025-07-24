@@ -3,10 +3,16 @@ ThinkTree FastAPI 主应用入口
 """
 
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 from app.api import upload, mindmaps, auth, share, invitations
 from app.core.config import settings
+
+# 创建rate limiter实例
+limiter = Limiter(key_func=get_remote_address)
 
 # 创建FastAPI应用实例
 app = FastAPI(
@@ -14,6 +20,10 @@ app = FastAPI(
     description="ThinkTree 思维导图生成 API",
     version="3.0.0"
 )
+
+# 添加rate limiting中间件
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # 数据库初始化事件 - 仅在开发环境使用
 @app.on_event("startup")

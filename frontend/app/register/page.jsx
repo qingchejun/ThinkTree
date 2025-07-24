@@ -6,7 +6,9 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { GoogleReCaptchaProvider, useGoogleReCaptcha } from 'react-google-recaptcha-v3'
 import { useAuth } from '../../context/AuthContext'
+import PasswordStrengthIndicator from '../../components/common/PasswordStrengthIndicator'
 
 function RegisterForm() {
   const router = useRouter()
@@ -24,6 +26,8 @@ function RegisterForm() {
   const [success, setSuccess] = useState('')
   const [invitationInfo, setInvitationInfo] = useState(null)
   const [validatingInvitation, setValidatingInvitation] = useState(false)
+  const [passwordStrength, setPasswordStrength] = useState(null)
+  const { executeRecaptcha } = useGoogleReCaptcha()
 
   // 从URL参数获取邀请码
   useEffect(() => {
@@ -97,8 +101,8 @@ function RegisterForm() {
       setError('两次输入的密码不一致')
       return false
     }
-    if (formData.password.length < 8) {
-      setError('密码长度至少8位')
+    if (!passwordStrength?.is_valid) {
+      setError('密码不符合安全要求，请参考密码强度指示器')
       return false
     }
     return true
@@ -117,6 +121,19 @@ function RegisterForm() {
     setSuccess('')
 
     try {
+      // 获取reCAPTCHA令牌
+      let recaptchaToken = null
+      if (executeRecaptcha) {
+        try {
+          recaptchaToken = await executeRecaptcha('register')
+        } catch (recaptchaError) {
+          console.error('reCAPTCHA执行失败:', recaptchaError)
+          setError('人机验证失败，请刷新页面重试')
+          setLoading(false)
+          return
+        }
+      }
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/register`, {
         method: 'POST',
         headers: {
@@ -126,7 +143,8 @@ function RegisterForm() {
           email: formData.email,
           password: formData.password,
           invitation_code: formData.invitationCode,
-          display_name: formData.displayName || formData.email.split('@')[0]
+          display_name: formData.displayName || formData.email.split('@')[0],
+          recaptcha_token: recaptchaToken
         }),
       })
 
@@ -237,7 +255,13 @@ function RegisterForm() {
                 value={formData.password}
                 onChange={handleInputChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="请输入密码（至少8位）"
+                placeholder="请输入密码"
+              />
+              
+              {/* 密码强度指示器 */}
+              <PasswordStrengthIndicator 
+                password={formData.password}
+                onStrengthChange={setPasswordStrength}
               />
             </div>
 
@@ -332,18 +356,42 @@ function RegisterForm() {
 }
 
 export default function RegisterPage() {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-100">
-      <div className="max-w-md w-full space-y-8 p-8">
-        <Suspense fallback={
-          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
-            <p>加载中...</p>
-          </div>
-        }>
-          <RegisterForm />
-        </Suspense>
+  // 检查是否配置了reCAPTCHA
+  const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY
+  
+  if (!siteKey) {
+    // 如果没有配置reCAPTCHA，直接渲染表单
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-100">
+        <div className="max-w-md w-full space-y-8 p-8">
+          <Suspense fallback={
+            <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
+              <p>加载中...</p>
+            </div>
+          }>
+            <RegisterForm />
+          </Suspense>
+        </div>
       </div>
-    </div>
+    )
+  }
+
+  // 如果配置了reCAPTCHA，使用Provider包装
+  return (
+    <GoogleReCaptchaProvider reCaptchaKey={siteKey}>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-100">
+        <div className="max-w-md w-full space-y-8 p-8">
+          <Suspense fallback={
+            <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
+              <p>加载中...</p>
+            </div>
+          }>
+            <RegisterForm />
+          </Suspense>
+        </div>
+      </div>
+    </GoogleReCaptchaProvider>
   )
 }

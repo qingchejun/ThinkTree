@@ -2,11 +2,13 @@
 用户认证 API 路由
 """
 
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, HTTPException, Depends, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
 from typing import Optional
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from ..core.database import get_db
 from ..models.user import User
@@ -17,13 +19,16 @@ from ..utils.security import (
     create_access_token,
     get_user_id_from_token,
     validate_email,
-    validate_password
+    validate_password,
+    get_password_strength
 )
 from ..utils.email_service import email_service
 from ..utils.invitation_utils import validate_invitation_code, use_invitation_code
+from ..utils.recaptcha import verify_recaptcha_with_action, is_recaptcha_enabled
 
 router = APIRouter()
 security = HTTPBearer()
+limiter = Limiter(key_func=get_remote_address)
 
 
 @router.post("/admin-verify")
@@ -57,6 +62,7 @@ class UserRegister(BaseModel):
     password: str
     invitation_code: str
     display_name: Optional[str] = None
+    recaptcha_token: Optional[str] = None
 
 
 class UserLogin(BaseModel):
@@ -111,6 +117,23 @@ class PasswordResetResponse(BaseModel):
     message: str
 
 
+class PasswordStrengthRequest(BaseModel):
+    """密码强度检查请求模型"""
+    password: str
+
+
+class PasswordStrengthResponse(BaseModel):
+    """密码强度检查响应模型"""
+    length: bool
+    has_uppercase: bool
+    has_lowercase: bool
+    has_numbers: bool
+    has_special: bool
+    is_valid: bool
+    strength_level: str
+    score: int
+
+
 # 依赖注入：获取当前用户
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
@@ -156,10 +179,23 @@ class RegisterResponse(BaseModel):
 
 
 @router.post("/register", response_model=RegisterResponse)
-async def register(user_data: UserRegister, db: Session = Depends(get_db)):
+@limiter.limit("10/minute")
+async def register(request: Request, user_data: UserRegister, db: Session = Depends(get_db)):
     """
     用户注册 - 需要邀请码，注册后发送验证邮件
     """
+    # reCAPTCHA验证 (如果启用)
+    if is_recaptcha_enabled():
+        is_valid, error_msg, score = await verify_recaptcha_with_action(
+            user_data.recaptcha_token, 
+            "register"
+        )
+        if not is_valid:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"人机验证失败: {error_msg}"
+            )
+    
     # 邮箱格式验证（Pydantic EmailStr 已处理）
     if not validate_email(user_data.email):
         raise HTTPException(
@@ -240,7 +276,8 @@ async def register(user_data: UserRegister, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(credentials: UserLogin, db: Session = Depends(get_db)):
+@limiter.limit("10/minute")
+async def login(request: Request, credentials: UserLogin, db: Session = Depends(get_db)):
     """
     用户登录
     """
@@ -394,8 +431,10 @@ async def verify_email(request: VerifyEmailRequest, db: Session = Depends(get_db
 
 
 @router.post("/request-password-reset", response_model=PasswordResetResponse)
+@limiter.limit("10/minute")
 async def request_password_reset(
-    request: PasswordResetRequest,
+    request: Request,
+    reset_request: PasswordResetRequest,
     db: Session = Depends(get_db)
 ):
     """
@@ -403,7 +442,7 @@ async def request_password_reset(
     """
     try:
         # 查找用户
-        user = db.query(User).filter(User.email == request.email).first()
+        user = db.query(User).filter(User.email == reset_request.email).first()
         
         # 防止邮箱枚举攻击：无论邮箱是否存在都返回成功
         if not user:
@@ -554,6 +593,25 @@ async def reset_password(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"密码重置失败: {str(e)}"
         )
+
+
+@router.post("/check-password-strength", response_model=PasswordStrengthResponse)
+async def check_password_strength(request: PasswordStrengthRequest):
+    """
+    检查密码强度 - 供前端实时验证使用
+    """
+    strength_info = get_password_strength(request.password)
+    
+    return PasswordStrengthResponse(
+        length=strength_info["length"],
+        has_uppercase=strength_info["has_uppercase"],
+        has_lowercase=strength_info["has_lowercase"],
+        has_numbers=strength_info["has_numbers"],
+        has_special=strength_info["has_special"],
+        is_valid=strength_info["is_valid"],
+        strength_level=strength_info["strength_level"],
+        score=strength_info["score"]
+    )
 
 
 @router.post("/admin/verify-early-user")

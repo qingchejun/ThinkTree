@@ -136,7 +136,12 @@ def validate_email(email: str) -> bool:
 
 def validate_password(password: str) -> tuple[bool, str]:
     """
-    密码强度验证
+    强密码验证 - 确保密码符合安全策略
+    
+    密码策略要求：
+    - 最小长度：8位
+    - 最大长度：128位
+    - 复杂度：必须同时包含大写字母、小写字母、数字和特殊字符中的至少三种
     
     Args:
         password: 密码
@@ -144,20 +149,111 @@ def validate_password(password: str) -> tuple[bool, str]:
     Returns:
         tuple: (是否有效, 错误信息)
     """
+    import re
+    
+    # 基础长度检查
     if len(password) < 8:
         return False, "密码长度至少 8 位"
     
     if len(password) > 128:
         return False, "密码长度不能超过 128 位"
     
-    # 可以添加更多密码复杂度要求
-    # if not re.search(r"[A-Z]", password):
-    #     return False, "密码必须包含至少一个大写字母"
+    # 复杂度检查 - 统计包含的字符类型
+    character_types = 0
+    requirements = []
     
-    # if not re.search(r"[a-z]", password):
-    #     return False, "密码必须包含至少一个小写字母"
+    # 检查大写字母
+    if re.search(r"[A-Z]", password):
+        character_types += 1
+    else:
+        requirements.append("大写字母")
     
-    # if not re.search(r"\d", password):
-    #     return False, "密码必须包含至少一个数字"
+    # 检查小写字母
+    if re.search(r"[a-z]", password):
+        character_types += 1
+    else:
+        requirements.append("小写字母")
     
-    return True, "" 
+    # 检查数字
+    if re.search(r"\d", password):
+        character_types += 1
+    else:
+        requirements.append("数字")
+    
+    # 检查特殊字符
+    if re.search(r"[!@#$%^&*()_+\-=\[\]{};':\"\\|,.<>\/?~`]", password):
+        character_types += 1
+    else:
+        requirements.append("特殊字符")
+    
+    # 需要至少包含三种字符类型
+    if character_types < 3:
+        missing_count = 3 - character_types
+        if len(requirements) >= missing_count:
+            missing_types = requirements[:missing_count]
+            return False, f"密码必须至少包含以下{missing_count}种字符类型中的任意组合：{', '.join(missing_types)}"
+        else:
+            return False, "密码必须包含大写字母、小写字母、数字和特殊字符中的至少三种"
+    
+    return True, ""
+
+
+def get_password_strength(password: str) -> dict:
+    """
+    获取密码强度详细信息 - 用于前端显示
+    
+    Args:
+        password: 密码
+        
+    Returns:
+        dict: 密码强度详细信息
+    """
+    import re
+    
+    strength_info = {
+        "length": len(password) >= 8,
+        "has_uppercase": bool(re.search(r"[A-Z]", password)),
+        "has_lowercase": bool(re.search(r"[a-z]", password)),
+        "has_numbers": bool(re.search(r"\d", password)),
+        "has_special": bool(re.search(r"[!@#$%^&*()_+\-=\[\]{};':\"\\|,.<>\/?~`]", password)),
+        "is_valid": False,
+        "strength_level": "weak",
+        "score": 0
+    }
+    
+    # 计算强度分数
+    score = 0
+    if strength_info["length"]:
+        score += 1
+    if strength_info["has_uppercase"]:
+        score += 1
+    if strength_info["has_lowercase"]:
+        score += 1
+    if strength_info["has_numbers"]:
+        score += 1
+    if strength_info["has_special"]:
+        score += 1
+    
+    strength_info["score"] = score
+    
+    # 判断是否符合强密码策略（至少3种字符类型且长度>=8）
+    character_types = sum([
+        strength_info["has_uppercase"],
+        strength_info["has_lowercase"], 
+        strength_info["has_numbers"],
+        strength_info["has_special"]
+    ])
+    
+    strength_info["is_valid"] = strength_info["length"] and character_types >= 3
+    
+    # 设置强度等级
+    if score <= 2:
+        strength_info["strength_level"] = "weak"
+    elif score == 3:
+        strength_info["strength_level"] = "medium"
+    elif score == 4:
+        strength_info["strength_level"] = "strong"
+    else:  # score == 5
+        strength_info["strength_level"] = "very_strong"
+    
+    return strength_info 
