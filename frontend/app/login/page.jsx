@@ -47,13 +47,7 @@ function LoginForm() {
     setSuccess('')
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL
-      console.log('🔍 调试信息:')
-      console.log('API URL:', apiUrl)
-      console.log('完整请求URL:', `${apiUrl}/api/auth/login`)
-      console.log('请求数据:', formData)
-      
-      const response = await fetch(`${apiUrl}/api/auth/login`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -61,24 +55,17 @@ function LoginForm() {
         body: JSON.stringify(formData),
       })
 
-      console.log('响应状态:', response.status)
-      console.log('响应头:', Object.fromEntries(response.headers.entries()))
-
       const data = await response.json()
-      console.log('响应数据:', data)
 
       if (response.ok) {
         setSuccess('登录成功！正在跳转...')
         
         // 使用全局AuthContext的login函数
-        console.log('调用全局login函数，token:', data.access_token?.substring(0, 20) + '...')
         const loginResult = await login(data.access_token)
-        console.log('login函数返回结果:', loginResult)
         
         if (loginResult.success) {
           // 登录成功，检查是否有重定向参数
           const redirectUrl = searchParams.get('redirect') || '/'
-          console.log('登录成功，准备跳转到:', redirectUrl)
           setTimeout(() => {
             router.push(redirectUrl)
           }, 1500)
@@ -89,10 +76,8 @@ function LoginForm() {
         setError(data.detail || '登录失败，请检查您的邮箱和密码')
       }
     } catch (err) {
-      console.error('登录错误详情:', err)
-      console.error('错误名称:', err.name)
-      console.error('错误消息:', err.message)
-      setError(`网络错误: ${err.message}`)  // 显示具体错误信息
+      setError('网络错误，请稍后重试')
+      console.error('登录错误:', err)
     } finally {
       setLoading(false)
     }
@@ -111,13 +96,6 @@ function LoginForm() {
               使用您的账户登录访问思维导图工具
             </p>
             
-            {/* 调试信息 */}
-            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 mb-4 text-xs text-left">
-              <p><strong>调试信息:</strong></p>
-              <p>API URL: {process.env.NEXT_PUBLIC_API_URL || '未设置'}</p>
-              <p>环境: {process.env.NODE_ENV || '未设置'}</p>
-              <p>时间: {new Date().toLocaleString()}</p>
-            </div>
           </div>
 
           {/* 表单 */}
