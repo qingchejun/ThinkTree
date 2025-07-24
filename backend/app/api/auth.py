@@ -575,3 +575,46 @@ async def debug_mail_config():
     }
     
     return config_status
+
+
+@router.post("/admin/verify-early-user")
+async def verify_early_user(
+    request: dict,
+    db: Session = Depends(get_db)
+):
+    """
+    管理员功能：手动验证早期注册用户（邮箱验证功能之前的用户）
+    需要提供邮箱地址
+    """
+    email = request.get("email")
+    if not email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="请提供邮箱地址"
+        )
+    
+    # 查找用户
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="用户不存在"
+        )
+    
+    # 检查是否已经验证
+    if user.is_verified:
+        return {
+            "success": True,
+            "message": f"用户 {email} 已经是验证状态",
+            "was_already_verified": True
+        }
+    
+    # 手动设置为已验证
+    user.is_verified = True
+    db.commit()
+    
+    return {
+        "success": True,
+        "message": f"用户 {email} 已手动设置为验证状态",
+        "was_already_verified": False
+    }
