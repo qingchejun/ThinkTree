@@ -32,12 +32,15 @@ limiter = Limiter(key_func=get_remote_address)
 
 
 @router.post("/admin-verify")
-async def admin_verify_direct(db: Session = Depends(get_db)):
+async def admin_verify_direct(request: dict, db: Session = Depends(get_db)):
     """
     直接验证管理员账户并设置管理员权限（仅用于初始化）
     """
+    # 获取要设置为管理员的邮箱
+    email = request.get("email", "admin@thinktree.com")
+    
     # 查找管理员用户
-    admin_user = db.query(User).filter(User.email == "admin@thinktree.com").first()
+    admin_user = db.query(User).filter(User.email == email).first()
     
     if not admin_user:
         raise HTTPException(
