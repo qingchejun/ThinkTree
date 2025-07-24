@@ -374,6 +374,7 @@ async def login(request: Request, credentials: UserLogin, db: Session = Depends(
         display_name=user.display_name,
         is_active=user.is_active,
         is_verified=user.is_verified,
+        is_superuser=user.is_superuser,  # 添加缺失的字段
         created_at=user.created_at.isoformat()
     )
     
