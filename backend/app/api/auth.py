@@ -75,6 +75,46 @@ async def admin_verify_direct(db: Session = Depends(get_db)):
     }
 
 
+@router.post("/admin-reset-password")
+async def admin_reset_password_direct(request: dict, db: Session = Depends(get_db)):
+    """
+    直接重置管理员密码（仅用于管理员账户恢复）
+    """
+    new_password = request.get("new_password")
+    if not new_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="请提供新密码"
+        )
+    
+    # 密码强度验证
+    is_valid, error_message = validate_password(new_password)
+    if not is_valid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=error_message
+        )
+    
+    # 查找管理员用户
+    admin_user = db.query(User).filter(User.email == "admin@thinktree.com").first()
+    
+    if not admin_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="管理员账户不存在"
+        )
+    
+    # 重置密码
+    admin_user.password_hash = get_password_hash(new_password)
+    db.commit()
+    
+    return {
+        "success": True,
+        "message": "管理员密码重置成功",
+        "email": admin_user.email
+    }
+
+
 # Pydantic 模型用于请求验证
 class UserRegister(BaseModel):
     """用户注册请求模型"""
