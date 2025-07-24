@@ -4,15 +4,21 @@
 
 import os
 from pathlib import Path
-from fastapi import APIRouter, File, UploadFile, HTTPException, BackgroundTasks
+from fastapi import APIRouter, File, UploadFile, HTTPException, BackgroundTasks, Depends
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.file_parser import file_parser
 from app.core.ai_processor import ai_processor
+from app.core.database import get_db
+from app.models.user import User
 from typing import Optional
 
 router = APIRouter()
+
+# 导入认证依赖
+from .auth import get_current_user
 
 # 请求体模型
 class TextProcessRequest(BaseModel):
@@ -26,7 +32,9 @@ os.makedirs(settings.upload_dir, exist_ok=True)
 async def upload_file(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
-    format_type: str = "standard"
+    format_type: str = "standard",
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
 ):
     """
     文件上传和处理API
@@ -86,7 +94,11 @@ async def upload_file(
         )
 
 @router.post("/process-text")
-async def process_text(request: TextProcessRequest):
+async def process_text(
+    request: TextProcessRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """
     直接处理文本内容生成思维导图
     """

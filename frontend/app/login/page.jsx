@@ -66,10 +66,11 @@ function LoginForm() {
         console.log('login函数返回结果:', loginResult)
         
         if (loginResult.success) {
-          // 登录成功，跳转到首页
-          console.log('登录成功，准备跳转到首页')
+          // 登录成功，检查是否有重定向参数
+          const redirectUrl = searchParams.get('redirect') || '/'
+          console.log('登录成功，准备跳转到:', redirectUrl)
           setTimeout(() => {
-            router.push('/')
+            router.push(redirectUrl)
           }, 1500)
         } else {
           setError(loginResult.error || '登录处理失败')

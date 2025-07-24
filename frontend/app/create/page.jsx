@@ -1,22 +1,48 @@
 /**
  * 思维导图创建页面 - 支持文件上传和文本输入
+ * 需要登录才能访问
  */
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import SimpleMarkmap from '../../components/mindmap/SimpleMarkmap'
 import FileUpload from '../../components/upload/FileUpload'
 import { useAuth } from '../../context/AuthContext'
 import { ToastManager } from '../../components/common/Toast'
 
 export default function CreatePage() {
-  const { user, token } = useAuth()
+  const { user, token, loading } = useAuth()
+  const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [mindmapData, setMindmapData] = useState(null)
   const [error, setError] = useState(null)
   const [uploadInfo, setUploadInfo] = useState(null)
   const [showSaveModal, setShowSaveModal] = useState(false)
   const [saveLoading, setSaveLoading] = useState(false)
+
+  // 认证检查 - 未登录用户重定向到登录页
+  useEffect(() => {
+    if (!loading && !user) {
+      ToastManager.warning('请先登录才能创建思维导图')
+      router.push('/login?redirect=/create')
+    }
+  }, [user, loading, router])
+
+  // 如果正在加载认证状态或未登录，显示加载页面
+  if (loading || !user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            {loading ? '正在验证登录状态...' : '正在跳转到登录页面...'}
+          </h3>
+          <p className="text-gray-600">请稍候</p>
+        </div>
+      </div>
+    )
+  }
 
   const handleUploadStart = () => {
     setIsLoading(true)
