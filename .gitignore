@@ -161,3 +161,8 @@ start_services.sh
 create_admin.py
 init_admin.sh
 admin_setup.*
+*admin*.py
+*admin*.sh
+check_*.sh
+manage_*.py
+reset_*.py
