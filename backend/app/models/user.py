@@ -28,6 +28,7 @@ class User(Base):
     # 用户状态
     is_active = Column(Boolean, default=True, nullable=False)
     is_verified = Column(Boolean, default=False, nullable=False)
+    is_superuser = Column(Boolean, default=False, nullable=False)
     
     # 时间戳
     created_at = Column(
@@ -55,7 +56,7 @@ class User(Base):
     )
     
     def __repr__(self):
-        return f"<User(id={self.id}, email='{self.email}', is_active={self.is_active})>"
+        return f"<User(id={self.id}, email='{self.email}', is_active={self.is_active}, is_superuser={self.is_superuser})>"
     
     def to_dict(self):
         """
@@ -66,6 +67,7 @@ class User(Base):
             "email": self.email,
             "is_active": self.is_active,
             "is_verified": self.is_verified,
+            "is_superuser": self.is_superuser,
             "display_name": self.display_name,
             "avatar_url": self.avatar_url,
             "created_at": self.created_at.isoformat() if self.created_at else None,

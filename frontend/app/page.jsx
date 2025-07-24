@@ -4,42 +4,14 @@
 'use client'
 
 import { useAuth } from '../context/AuthContext'
+import Header from '../components/common/Header'
 
 export default function HomePage() {
   const { user, logout } = useAuth()
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* 头部 */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-indigo-600">🌳 ThinkTree</h1>
-              <span className="ml-2 text-sm text-gray-500">AI驱动的思维导图生成工具</span>
-            </div>
-            <nav className="flex items-center space-x-4">
-              <a href="/create" className="text-gray-600 hover:text-indigo-600 text-sm">🎨 思维导图生成器</a>
-              {user ? (
-                <div className="flex items-center space-x-4">
-                  <span className="text-sm text-gray-600">👋 欢迎, {user.email}</span>
-                  <a href="/dashboard" className="text-gray-600 hover:text-indigo-600 text-sm">📊 控制台</a>
-                  <button 
-                    onClick={logout}
-                    className="text-gray-600 hover:text-red-600 text-sm cursor-pointer"
-                  >
-                    🚪 退出
-                  </button>
-                </div>
-              ) : (
-                <div className="flex items-center space-x-4">
-                  <a href="/login" className="text-gray-600 hover:text-indigo-600 text-sm">🔑 登录</a>
-                  <a href="/register" className="bg-indigo-600 text-white px-3 py-1 rounded text-sm hover:bg-indigo-700">📝 注册</a>
-                </div>
-              )}
-            </nav>
-          </div>
-        </div>
-      </header>
+      {/* 头部导航 */}
+      <Header showCreateButton={true} />
 
       {/* 主内容区 */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">

@@ -10,6 +10,7 @@ import SimpleMarkmap from '../../components/mindmap/SimpleMarkmap'
 import FileUpload from '../../components/upload/FileUpload'
 import { useAuth } from '../../context/AuthContext'
 import { ToastManager } from '../../components/common/Toast'
+import Header from '../../components/common/Header'
 
 export default function CreatePage() {
   const { user, token, loading } = useAuth()
@@ -123,50 +124,11 @@ export default function CreatePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* 顶部操作区 */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                🎨 ThinkTree 思维导图创建
-              </h1>
-              <p className="text-gray-600 text-sm mt-1">
-                上传文档或输入文本，AI智能生成专业思维导图
-              </p>
-            </div>
-            <div className="flex items-center space-x-4">
-              {user ? (
-                <div className="flex items-center space-x-3">
-                  <span className="text-sm text-gray-600">👋 {user.email}</span>
-                  <a
-                    href="/dashboard"
-                    className="text-indigo-600 hover:text-indigo-500 text-sm"
-                  >
-                    📊 控制台
-                  </a>
-                </div>
-              ) : (
-                <div className="flex items-center space-x-3">
-                  <span className="text-sm text-gray-500">💡 登录后可保存思维导图</span>
-                  <a
-                    href="/login"
-                    className="bg-indigo-600 text-white px-3 py-1 rounded text-sm hover:bg-indigo-700"
-                  >
-                    🔑 登录
-                  </a>
-                </div>
-              )}
-              <a
-                href="/"
-                className="text-indigo-600 hover:text-indigo-500 text-sm"
-              >
-                ← 返回首页
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* 头部导航 */}
+      <Header 
+        title="🎨 思维导图创建"
+        subtitle="上传文档或输入文本，AI智能生成专业思维导图"
+      />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

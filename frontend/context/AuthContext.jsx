@@ -141,7 +141,8 @@ export function AuthProvider({ children }) {
     logout,
     refreshUser,
     // 辅助状态
-    isAuthenticated: !!user && !!token
+    isAuthenticated: !!user && !!token,
+    isAdmin: !!user && user.is_superuser
   }
 
   // 开发环境调试日志
@@ -151,6 +152,7 @@ export function AuthProvider({ children }) {
       hasToken: !!token,
       isLoading,
       isAuthenticated: !!user && !!token,
+      isAdmin: !!user && user.is_superuser,
       userEmail: user?.email
     })
   }

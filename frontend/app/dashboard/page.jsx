@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '../../context/AuthContext'
 import { ToastManager } from '../../components/common/Toast'
 import ShareModal from '../../components/share/ShareModal'
+import Header from '../../components/common/Header'
 
 export default function DashboardPage() {
   const { user, token, isLoading } = useAuth()
@@ -148,35 +149,11 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* 头部导航 */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                📊 我的思维导图
-              </h1>
-              <p className="text-gray-600 text-sm mt-1">
-                管理您保存的所有思维导图
-              </p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-600">👋 {user.email}</span>
-              <a
-                href="/create"
-                className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-              >
-                ➕ 创建新思维导图
-              </a>
-              <a
-                href="/"
-                className="text-indigo-600 hover:text-indigo-500 text-sm"
-              >
-                ← 返回首页
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
+      <Header 
+        title="📊 我的思维导图"
+        subtitle="管理您保存的所有思维导图"
+        showCreateButton={true}
+      />
 
       {/* 主内容区 */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
