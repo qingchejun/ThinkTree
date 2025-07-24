@@ -15,7 +15,7 @@ from app.models.user import User
 from app.models.mindmap import Mindmap
 from app.models.invitation import InvitationCode
 from app.utils.admin_auth import get_current_admin, log_admin_action
-from app.utils.invitation_utils import generate_invitation_code
+from app.utils.invitation_utils import create_invitation_code
 from pydantic import BaseModel
 
 # 配置日志
@@ -377,7 +377,7 @@ async def get_user_detail(
         mindmaps = db.query(Mindmap).filter(Mindmap.user_id == user_id).order_by(desc(Mindmap.created_at)).limit(10).all()
         
         # 获取用户创建的邀请码
-        created_invitations = db.query(InvitationCode).filter(InvitationCode.created_by_user_id == user_id).count()
+        created_invitations = db.query(InvitationCode).filter(InvitationCode.generated_by_user_id == user_id).count()
         
         # 获取用户使用的邀请码
         used_invitation = db.query(InvitationCode).filter(InvitationCode.used_by_user_id == user_id).first()
@@ -436,9 +436,9 @@ async def create_admin_invitations(
         
         for i in range(request.count):
             # 生成邀请码
-            invitation_code = generate_invitation_code(
+            invitation_code = create_invitation_code(
                 db=db,
-                created_by_user_id=admin_user.id,
+                generated_by_user_id=admin_user.id,
                 description=request.description or f"管理员批量生成 {i+1}/{request.count}"
             )
             created_codes.append({
@@ -505,7 +505,7 @@ async def get_admin_invitations(
         invitation_list = []
         for invitation in invitations:
             # 获取创建者信息
-            creator = db.query(User).filter(User.id == invitation.created_by_user_id).first()
+            creator = db.query(User).filter(User.id == invitation.generated_by_user_id).first()
             # 获取使用者信息
             used_by = None
             if invitation.used_by_user_id:
