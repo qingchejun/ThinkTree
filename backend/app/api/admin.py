@@ -174,7 +174,7 @@ async def get_users_list(
                 is_verified=user.is_verified,
                 is_superuser=user.is_superuser,
                 created_at=user.created_at,
-                last_login_at=user.last_login_at,
+                last_login_at=None,  # TODO: 实现登录时间追踪
                 mindmap_count=mindmap_count
             ))
         

@@ -104,13 +104,6 @@ const AdminDashboard = () => {
                 <span className="mr-2">🎫</span>
                 邀请码管理
               </button>
-              <button
-                onClick={() => router.push('/dashboard')}
-                className="bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200 hover:border-indigo-300 hover:shadow-md transition-all flex items-center"
-              >
-                <span className="mr-2">📊</span>
-                我的思维导图
-              </button>
             </div>
           </div>
 
