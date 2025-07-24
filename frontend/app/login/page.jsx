@@ -89,8 +89,10 @@ function LoginForm() {
         setError(data.detail || '登录失败，请检查您的邮箱和密码')
       }
     } catch (err) {
-      setError('网络错误，请稍后重试')
-      console.error('登录错误:', err)
+      console.error('登录错误详情:', err)
+      console.error('错误名称:', err.name)
+      console.error('错误消息:', err.message)
+      setError(`网络错误: ${err.message}`)  // 显示具体错误信息
     } finally {
       setLoading(false)
     }
