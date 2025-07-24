@@ -41,6 +41,7 @@ async def startup_event():
 allowed_origins = [
     "http://localhost:3000",  # 本地开发
     "https://thinktree-frontend.onrender.com",  # Render前端域名
+    "https://thinkso.io",  # 新的生产域名
 ]
 
 # 从环境变量获取额外的允许域名
