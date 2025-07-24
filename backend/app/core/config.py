@@ -57,8 +57,8 @@ class Settings(BaseSettings):
     mail_from_name: str = os.getenv("MAIL_FROM_NAME", "ThinkTree")
     mail_port: int = int(os.getenv("MAIL_PORT", "587"))
     mail_server: str = os.getenv("MAIL_SERVER", "smtp.gmail.com")
-    mail_tls: bool = os.getenv("MAIL_TLS", "true").lower() == "true"
-    mail_ssl: bool = os.getenv("MAIL_SSL", "false").lower() == "true"
+    mail_tls: bool = os.getenv("MAIL_STARTTLS", os.getenv("MAIL_TLS", "true")).lower() == "true"
+    mail_ssl: bool = os.getenv("MAIL_SSL_TLS", os.getenv("MAIL_SSL", "false")).lower() == "true"
     
     # 前端URL配置 (用于邮箱验证链接)
     frontend_url: str = os.getenv("FRONTEND_URL", "https://thinktree-frontend.onrender.com")
