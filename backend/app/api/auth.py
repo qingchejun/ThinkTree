@@ -618,3 +618,50 @@ async def verify_early_user(
         "message": f"用户 {email} 已手动设置为验证状态",
         "was_already_verified": False
     }
+
+
+@router.post("/admin/create-test-invitation")
+async def create_test_invitation(db: Session = Depends(get_db)):
+    """
+    管理员功能：创建测试邀请码
+    """
+    from ..models.invitation import InvitationCode
+    from datetime import datetime, timedelta
+    
+    # 创建一个7天有效的测试邀请码
+    test_code = "TEST2024"
+    
+    # 检查是否已存在
+    existing = db.query(InvitationCode).filter(InvitationCode.code == test_code).first()
+    if existing:
+        if existing.is_expired:
+            # 如果过期了，删除旧的
+            db.delete(existing)
+            db.commit()
+        else:
+            return {
+                "success": True,
+                "code": test_code,
+                "message": "测试邀请码已存在且有效",
+                "expires_at": existing.expires_at.isoformat() if existing.expires_at else None
+            }
+    
+    # 创建新的测试邀请码
+    new_invitation = InvitationCode(
+        code=test_code,
+        generated_by_user_id=1,  # 假设管理员ID为1
+        description="密码重置功能测试专用邀请码",
+        expires_at=datetime.utcnow() + timedelta(days=7),
+        is_used=False
+    )
+    
+    db.add(new_invitation)
+    db.commit()
+    db.refresh(new_invitation)
+    
+    return {
+        "success": True,
+        "code": test_code,
+        "message": "测试邀请码创建成功",
+        "expires_at": new_invitation.expires_at.isoformat()
+    }
