@@ -284,6 +284,163 @@ class EmailService:
         except Exception as e:
             print(f"发送欢迎邮件失败: {str(e)}")
             return False
+    
+    async def send_password_reset_email(self, email: EmailStr, user_name: str, reset_link: str) -> bool:
+        """发送密码重置邮件"""
+        try:
+            display_name = user_name if user_name else email.split('@')[0]
+            
+            html_body = f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>重置您的 ThinkTree 密码</title>
+                <style>
+                    body {{
+                        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                        line-height: 1.6;
+                        color: #333;
+                        background-color: #f5f5f5;
+                        margin: 0;
+                        padding: 20px;
+                    }}
+                    .container {{
+                        max-width: 600px;
+                        margin: 0 auto;
+                        background-color: #ffffff;
+                        border-radius: 10px;
+                        overflow: hidden;
+                        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                    }}
+                    .header {{
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        padding: 30px 20px;
+                        text-align: center;
+                    }}
+                    .header h1 {{
+                        margin: 0;
+                        font-size: 28px;
+                        font-weight: 600;
+                    }}
+                    .content {{
+                        padding: 30px;
+                    }}
+                    .button {{
+                        display: inline-block;
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        text-decoration: none;
+                        padding: 15px 30px;
+                        border-radius: 8px;
+                        font-weight: 600;
+                        margin: 20px 0;
+                        transition: transform 0.2s;
+                    }}
+                    .button:hover {{
+                        transform: translateY(-2px);
+                    }}
+                    .warning-box {{
+                        background-color: #fff3cd;
+                        border: 1px solid #ffeaa7;
+                        border-radius: 8px;
+                        padding: 15px;
+                        margin: 20px 0;
+                        color: #856404;
+                    }}
+                    .footer {{
+                        background-color: #f8f9fa;
+                        padding: 20px;
+                        text-align: center;
+                        color: #666;
+                        font-size: 14px;
+                    }}
+                    .logo {{
+                        font-size: 24px;
+                        margin-bottom: 10px;
+                    }}
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <div class="logo">🌳 ThinkTree</div>
+                        <h1>密码重置请求</h1>
+                    </div>
+                    <div class="content">
+                        <p>您好 <strong>{display_name}</strong>，</p>
+                        
+                        <p>我们收到了您重置 ThinkTree 账户密码的请求。如果这是您本人的操作，请点击下方按钮重置密码：</p>
+                        
+                        <div style="text-align: center;">
+                            <a href="{reset_link}" class="button">🔑 重置密码</a>
+                        </div>
+                        
+                        <div class="warning-box">
+                            <strong>⚠️ 重要提醒：</strong>
+                            <ul>
+                                <li>此链接仅在 <strong>15 分钟</strong> 内有效</li>
+                                <li>出于安全考虑，链接只能使用一次</li>
+                                <li>如果链接过期，请重新申请密码重置</li>
+                            </ul>
+                        </div>
+                        
+                        <p><strong>🛡️ 安全提示：</strong></p>
+                        <ul>
+                            <li>如果您没有申请密码重置，请忽略此邮件</li>
+                            <li>请勿将此链接分享给他人</li>
+                            <li>设置强密码以保护您的账户安全</li>
+                            <li>如有疑问，请联系我们的客服团队</li>
+                        </ul>
+                        
+                        <p>如果按钮无法点击，请复制以下链接到浏览器地址栏：</p>
+                        <p style="word-break: break-all; background-color: #f8f9fa; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 12px;">
+                            {reset_link}
+                        </p>
+                    </div>
+                    <div class="footer">
+                        <p>此邮件由系统自动发送，请勿回复</p>
+                        <p>© 2024 ThinkTree Team. All rights reserved.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """
+            
+            text_body = f"""
+            您好 {display_name}，
+            
+            我们收到了您重置 ThinkTree 账户密码的请求。
+            
+            请点击以下链接重置密码（15分钟内有效）：
+            {reset_link}
+            
+            重要提醒：
+            - 此链接仅在 15 分钟内有效
+            - 出于安全考虑，链接只能使用一次
+            - 如果您没有申请密码重置，请忽略此邮件
+            
+            如有疑问，请联系我们的客服团队。
+            
+            ThinkTree Team
+            """
+            
+            message = MessageSchema(
+                subject="🔑 ThinkTree 密码重置 - 请在15分钟内完成",
+                recipients=[email],
+                body=text_body,
+                html=html_body,
+                subtype=MessageType.html
+            )
+            
+            await self.fm.send_message(message)
+            return True
+            
+        except Exception as e:
+            print(f"发送密码重置邮件失败: {str(e)}")
+            return False
 
 
 # 全局邮件服务实例

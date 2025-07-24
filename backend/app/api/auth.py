@@ -94,6 +94,23 @@ class VerifyEmailResponse(BaseModel):
     user: Optional[UserResponse] = None
 
 
+class PasswordResetRequest(BaseModel):
+    """密码重置请求模型"""
+    email: EmailStr
+
+
+class PasswordResetExecute(BaseModel):
+    """密码重置执行模型"""
+    token: str
+    new_password: str
+
+
+class PasswordResetResponse(BaseModel):
+    """密码重置响应模型"""
+    success: bool
+    message: str
+
+
 # 依赖注入：获取当前用户
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
@@ -373,4 +390,158 @@ async def verify_email(request: VerifyEmailRequest, db: Session = Depends(get_db
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"邮箱验证失败: {str(e)}"
+        )
+
+
+@router.post("/request-password-reset", response_model=PasswordResetResponse)
+async def request_password_reset(
+    request: PasswordResetRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    请求密码重置 - 发送重置链接到用户邮箱
+    """
+    try:
+        # 查找用户
+        user = db.query(User).filter(User.email == request.email).first()
+        
+        # 防止邮箱枚举攻击：无论邮箱是否存在都返回成功
+        if not user:
+            return PasswordResetResponse(
+                success=True,
+                message="如果该邮箱已注册，您将收到密码重置链接。请检查您的邮箱（包括垃圾邮件文件夹）。"
+            )
+        
+        # 检查用户是否已验证邮箱
+        if not user.is_verified:
+            return PasswordResetResponse(
+                success=True,
+                message="如果该邮箱已注册，您将收到密码重置链接。请检查您的邮箱（包括垃圾邮件文件夹）。"
+            )
+        
+        # 检查用户是否激活
+        if not user.is_active:
+            return PasswordResetResponse(
+                success=True,
+                message="如果该邮箱已注册，您将收到密码重置链接。请检查您的邮箱（包括垃圾邮件文件夹）。"
+            )
+        
+        # 生成密码重置令牌（15分钟有效期）
+        from datetime import timedelta
+        reset_token = create_access_token(
+            data={"sub": str(user.id), "type": "password_reset"},
+            expires_delta=timedelta(minutes=15)
+        )
+        
+        # 构建重置链接
+        reset_link = f"https://thinktree-frontend.onrender.com/reset-password?token={reset_token}"
+        
+        # 发送密码重置邮件
+        try:
+            await email_service.send_password_reset_email(
+                email=user.email,
+                user_name=user.display_name or user.email.split('@')[0],
+                reset_link=reset_link
+            )
+        except Exception as e:
+            print(f"发送密码重置邮件失败: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="邮件发送失败，请稍后重试"
+            )
+        
+        return PasswordResetResponse(
+            success=True,
+            message="如果该邮箱已注册，您将收到密码重置链接。请检查您的邮箱（包括垃圾邮件文件夹）。"
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"请求处理失败: {str(e)}"
+        )
+
+
+@router.post("/reset-password", response_model=PasswordResetResponse)
+async def reset_password(
+    request: PasswordResetExecute,
+    db: Session = Depends(get_db)
+):
+    """
+    执行密码重置 - 使用重置令牌更新用户密码
+    """
+    try:
+        # 验证令牌
+        from ..utils.security import verify_token
+        payload = verify_token(request.token)
+        
+        if not payload:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="重置链接无效或已过期"
+            )
+        
+        # 检查令牌类型
+        if payload.get("type") != "password_reset":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="重置链接无效"
+            )
+        
+        # 获取用户ID
+        user_id_str = payload.get("sub")
+        if not user_id_str:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="重置链接无效"
+            )
+        
+        try:
+            user_id = int(user_id_str)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="重置链接无效"
+            )
+        
+        # 查找用户
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="用户不存在"
+            )
+        
+        # 检查用户状态
+        if not user.is_active or not user.is_verified:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="账户状态异常"
+            )
+        
+        # 密码强度验证
+        is_valid, error_message = validate_password(request.new_password)
+        if not is_valid:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=error_message
+            )
+        
+        # 更新密码
+        user.password_hash = get_password_hash(request.new_password)
+        db.commit()
+        
+        return PasswordResetResponse(
+            success=True,
+            message="密码重置成功！您现在可以使用新密码登录了。"
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"密码重置失败: {str(e)}"
         )
