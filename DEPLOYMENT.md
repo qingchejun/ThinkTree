@@ -159,11 +159,83 @@ services:
 - [ ] Markmap 渲染正常
 - [ ] API 响应正常 (/docs)
 
+## 👑 管理员初始化指南
+
+### 概述
+
+ThinkTree 支持邀请码注册系统。要开始使用，您需要先创建管理员账户和邀请码。
+
+### 方法一：使用 Python 脚本（推荐）
+
+1. **准备脚本**
+   ```bash
+   # 复制模板文件
+   cp create_admin.py.template create_admin.py
+   ```
+
+2. **设置环境变量**
+   ```bash
+   export ADMIN_EMAIL="your-admin@example.com"
+   export ADMIN_PASSWORD="YourSecurePassword123!"
+   export API_BASE_URL="https://thinktree-backend.onrender.com"
+   export INVITATION_COUNT="10"  # 可选，默认5个
+   ```
+
+3. **运行初始化脚本**
+   ```bash
+   python create_admin.py
+   ```
+
+### 方法二：使用 Shell 脚本
+
+1. **准备脚本**
+   ```bash
+   # 复制模板文件
+   cp init_admin.sh.template init_admin.sh
+   chmod +x init_admin.sh
+   ```
+
+2. **设置环境变量（可选）**
+   ```bash
+   export ADMIN_EMAIL="your-admin@example.com"
+   export ADMIN_PASSWORD="YourSecurePassword123!"
+   export API_BASE_URL="https://thinktree-backend.onrender.com"
+   export INVITATION_COUNT="10"
+   ```
+
+3. **运行初始化脚本**
+   ```bash
+   ./init_admin.sh
+   ```
+
+### 初始化完成后
+
+脚本会输出：
+- 管理员账户信息
+- 创建的邀请码列表
+- 测试注册链接
+
+### 安全注意事项
+
+⚠️ **重要安全提醒**:
+- 模板文件 (`*.template`) 可以安全提交到代码库
+- 实际使用的脚本 (`create_admin.py`, `init_admin.sh`) 已被 `.gitignore` 排除
+- 请勿将包含真实密码的脚本提交到代码库
+- 生产环境中使用强密码和环境变量
+
+### 故障排除
+
+**常见问题**:
+- **"ADMIN_INIT 邀请码不存在"**: 需要后端支持特殊管理员邀请码
+- **"网络连接失败"**: 检查 API 地址和网络连接
+- **"创建失败"**: 检查邮件服务配置和数据库连接
+
 ## 🐛 常见问题
 
 **CORS 错误**: 检查前端API_URL配置
 **API密钥错误**: 验证GEMINI_API_KEY有效性
 **Markmap不显示**: 检查浏览器控制台错误
+**管理员初始化失败**: 检查邮件服务配置和数据库连接
 
 ---
 **技术栈**: Next.js 14 + FastAPI + Markmap + Google Gemini AI

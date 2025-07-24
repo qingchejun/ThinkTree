@@ -156,3 +156,8 @@ start_services.sh
 
 # Cursor IDE Configuration
 .cursor/
+
+# Admin Initialization Scripts (Sensitive)
+create_admin.py
+init_admin.sh
+admin_setup.*
