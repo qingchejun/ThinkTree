@@ -87,9 +87,17 @@ async def get_admin_stats(
         # 思维导图统计
         total_mindmaps = db.query(Mindmap).count()
         
-        # 邀请码统计
-        total_invitations = db.query(InvitationCode).count()
-        used_invitations = db.query(InvitationCode).filter(InvitationCode.used_by_user_id.isnot(None)).count()
+        # 邀请码统计 - 添加错误处理
+        total_invitations = 0
+        used_invitations = 0
+        try:
+            total_invitations = db.query(InvitationCode).count()
+            used_invitations = db.query(InvitationCode).filter(InvitationCode.used_by_user_id.isnot(None)).count()
+        except Exception as invitation_error:
+            logger.warning(f"邀请码表查询失败，可能表不存在: {str(invitation_error)}")
+            # 使用默认值
+            total_invitations = 0
+            used_invitations = 0
         
         # 今日新增统计
         today = datetime.now().date()
@@ -485,21 +493,33 @@ async def get_admin_invitations(
     管理员可以查看所有邀请码的使用情况
     """
     try:
-        # 构建查询
-        query = db.query(InvitationCode)
-        
-        # 状态筛选
-        if status_filter == "used":
-            query = query.filter(InvitationCode.used_by_user_id.isnot(None))
-        elif status_filter == "unused":
-            query = query.filter(InvitationCode.used_by_user_id.is_(None))
-        
-        # 获取总数
-        total = query.count()
-        
-        # 分页
-        offset = (page - 1) * per_page
-        invitations = query.order_by(desc(InvitationCode.created_at)).offset(offset).limit(per_page).all()
+        # 检查invitation_codes表是否存在
+        try:
+            # 构建查询
+            query = db.query(InvitationCode)
+            
+            # 状态筛选
+            if status_filter == "used":
+                query = query.filter(InvitationCode.used_by_user_id.isnot(None))
+            elif status_filter == "unused":
+                query = query.filter(InvitationCode.used_by_user_id.is_(None))
+            
+            # 获取总数
+            total = query.count()
+            
+            # 分页
+            offset = (page - 1) * per_page
+            invitations = query.order_by(desc(InvitationCode.created_at)).offset(offset).limit(per_page).all()
+        except Exception as table_error:
+            logger.warning(f"邀请码表查询失败，可能表不存在: {str(table_error)}")
+            # 返回空结果
+            return {
+                "invitations": [],
+                "total": 0,
+                "page": page,
+                "per_page": per_page,
+                "total_pages": 0
+            }
         
         # 构建邀请码列表
         invitation_list = []
