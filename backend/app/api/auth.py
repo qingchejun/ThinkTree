@@ -26,6 +26,30 @@ router = APIRouter()
 security = HTTPBearer()
 
 
+@router.post("/admin-verify")
+async def admin_verify_direct(db: Session = Depends(get_db)):
+    """
+    直接验证管理员账户（仅用于初始化）
+    """
+    # 查找管理员用户
+    admin_user = db.query(User).filter(User.email == "admin@thinktree.com").first()
+    
+    if not admin_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="管理员账户不存在"
+        )
+    
+    if admin_user.is_verified:
+        return {"success": True, "message": "管理员账户已经是验证状态"}
+    
+    # 直接设置为已验证
+    admin_user.is_verified = True
+    db.commit()
+    
+    return {"success": True, "message": "管理员账户验证成功"}
+
+
 # Pydantic 模型用于请求验证
 class UserRegister(BaseModel):
     """用户注册请求模型"""
