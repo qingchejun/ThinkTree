@@ -47,7 +47,13 @@ function LoginForm() {
     setSuccess('')
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL
+      console.log('🔍 调试信息:')
+      console.log('API URL:', apiUrl)
+      console.log('完整请求URL:', `${apiUrl}/api/auth/login`)
+      console.log('请求数据:', formData)
+      
+      const response = await fetch(`${apiUrl}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -55,7 +61,11 @@ function LoginForm() {
         body: JSON.stringify(formData),
       })
 
+      console.log('响应状态:', response.status)
+      console.log('响应头:', Object.fromEntries(response.headers.entries()))
+
       const data = await response.json()
+      console.log('响应数据:', data)
 
       if (response.ok) {
         setSuccess('登录成功！正在跳转...')
@@ -95,9 +105,17 @@ function LoginForm() {
             <h2 className="text-3xl font-bold text-gray-900 mb-2">
               登录到 ThinkSo
             </h2>
-            <p className="text-gray-600 mb-8">
+            <p className="text-gray-600 mb-4">
               使用您的账户登录访问思维导图工具
             </p>
+            
+            {/* 调试信息 */}
+            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 mb-4 text-xs text-left">
+              <p><strong>调试信息:</strong></p>
+              <p>API URL: {process.env.NEXT_PUBLIC_API_URL || '未设置'}</p>
+              <p>环境: {process.env.NODE_ENV || '未设置'}</p>
+              <p>时间: {new Date().toLocaleString()}</p>
+            </div>
           </div>
 
           {/* 表单 */}
