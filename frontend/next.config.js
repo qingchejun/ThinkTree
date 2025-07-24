@@ -3,6 +3,11 @@ const nextConfig = {
   // 启用 React Strict Mode
   reactStrictMode: true,
   
+  // 实验性功能：启用绝对导入
+  experimental: {
+    externalDir: true,
+  },
+  
   // 启用 SWC 压缩
   swcMinify: true,
   

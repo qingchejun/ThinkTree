@@ -1,8 +1,8 @@
 'use client';
 import { useState, useContext, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import AuthContext from '../../context/AuthContext';
-import Header from '../../components/common/Header';
+import AuthContext from '@/context/AuthContext';
+import Header from '@/components/common/Header';
 
 const settingsNavItems = [
   {
