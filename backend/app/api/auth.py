@@ -34,7 +34,7 @@ limiter = Limiter(key_func=get_remote_address)
 @router.post("/admin-verify")
 async def admin_verify_direct(db: Session = Depends(get_db)):
     """
-    直接验证管理员账户（仅用于初始化）
+    直接验证管理员账户并设置管理员权限（仅用于初始化）
     """
     # 查找管理员用户
     admin_user = db.query(User).filter(User.email == "admin@thinktree.com").first()
@@ -45,14 +45,34 @@ async def admin_verify_direct(db: Session = Depends(get_db)):
             detail="管理员账户不存在"
         )
     
-    if admin_user.is_verified:
-        return {"success": True, "message": "管理员账户已经是验证状态"}
+    # 检查当前状态
+    was_verified = admin_user.is_verified
+    was_superuser = admin_user.is_superuser
     
-    # 直接设置为已验证
+    # 设置为管理员并验证
     admin_user.is_verified = True
+    admin_user.is_superuser = True
+    admin_user.is_active = True
     db.commit()
     
-    return {"success": True, "message": "管理员账户验证成功"}
+    status_messages = []
+    if not was_verified:
+        status_messages.append("账户已验证")
+    if not was_superuser:
+        status_messages.append("已设置为管理员")
+    
+    if status_messages:
+        message = f"管理员账户更新成功: {', '.join(status_messages)}"
+    else:
+        message = "管理员账户已经是完整的管理员状态"
+    
+    return {
+        "success": True, 
+        "message": message,
+        "is_superuser": admin_user.is_superuser,
+        "is_verified": admin_user.is_verified,
+        "is_active": admin_user.is_active
+    }
 
 
 # Pydantic 模型用于请求验证
