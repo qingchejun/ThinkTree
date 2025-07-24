@@ -556,27 +556,6 @@ async def reset_password(
         )
 
 
-@router.get("/debug/mail-config")
-async def debug_mail_config():
-    """
-    调试邮件配置状态 (仅用于开发调试)
-    """
-    from ..core.config import settings
-    
-    config_status = {
-        "mail_configured": bool(settings.mail_username and settings.mail_password),
-        "mail_server": settings.mail_server,
-        "mail_port": settings.mail_port,
-        "mail_from": settings.mail_from,
-        "mail_username_set": bool(settings.mail_username),
-        "mail_password_set": bool(settings.mail_password),
-        "mail_tls": settings.mail_tls,
-        "mail_ssl": settings.mail_ssl
-    }
-    
-    return config_status
-
-
 @router.post("/admin/verify-early-user")
 async def verify_early_user(
     request: dict,
@@ -617,51 +596,4 @@ async def verify_early_user(
         "success": True,
         "message": f"用户 {email} 已手动设置为验证状态",
         "was_already_verified": False
-    }
-
-
-@router.post("/admin/create-test-invitation")
-async def create_test_invitation(db: Session = Depends(get_db)):
-    """
-    管理员功能：创建测试邀请码
-    """
-    from ..models.invitation import InvitationCode
-    from datetime import datetime, timedelta
-    
-    # 创建一个7天有效的测试邀请码
-    test_code = "TEST2024"
-    
-    # 检查是否已存在
-    existing = db.query(InvitationCode).filter(InvitationCode.code == test_code).first()
-    if existing:
-        if existing.is_expired:
-            # 如果过期了，删除旧的
-            db.delete(existing)
-            db.commit()
-        else:
-            return {
-                "success": True,
-                "code": test_code,
-                "message": "测试邀请码已存在且有效",
-                "expires_at": existing.expires_at.isoformat() if existing.expires_at else None
-            }
-    
-    # 创建新的测试邀请码
-    new_invitation = InvitationCode(
-        code=test_code,
-        generated_by_user_id=1,  # 假设管理员ID为1
-        description="密码重置功能测试专用邀请码",
-        expires_at=datetime.utcnow() + timedelta(days=7),
-        is_used=False
-    )
-    
-    db.add(new_invitation)
-    db.commit()
-    db.refresh(new_invitation)
-    
-    return {
-        "success": True,
-        "code": test_code,
-        "message": "测试邀请码创建成功",
-        "expires_at": new_invitation.expires_at.isoformat()
     }
