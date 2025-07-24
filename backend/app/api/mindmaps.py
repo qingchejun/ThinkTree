@@ -1,5 +1,5 @@
 """
-思维导图API接口 - ThinkTree v2.2.0
+思维导图API接口 - ThinkSo v2.2.0
 处理用户思维导图的CRUD操作
 """
 

@@ -1,6 +1,6 @@
 /**
  * 密码强度指示器组件
- * ThinkTree v3.2.0 - 强密码验证功能
+ * ThinkSo v3.2.0 - 强密码验证功能
  */
 'use client'
 

@@ -1,4 +1,4 @@
-# ThinkTree Backend Dependencies - Python 3.13 Compatible
+# ThinkSo Backend Dependencies - Python 3.13 Compatible
 
 # FastAPI 框架
 fastapi>=0.104.1

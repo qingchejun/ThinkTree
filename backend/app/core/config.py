@@ -1,5 +1,5 @@
 """
-ThinkTree 应用配置
+ThinkSo 应用配置
 """
 
 import os
@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     """应用设置"""
     
     # 基础配置
-    app_name: str = "ThinkTree API"
+    app_name: str = "ThinkSo API"
     app_version: str = "2.0.0"
     debug: bool = False
     
@@ -54,7 +54,7 @@ class Settings(BaseSettings):
     mail_username: str = os.getenv("MAIL_USERNAME", "")
     mail_password: str = os.getenv("MAIL_PASSWORD", "")
     mail_from: str = os.getenv("MAIL_FROM", "noreply@thinktree.com")
-    mail_from_name: str = os.getenv("MAIL_FROM_NAME", "ThinkTree")
+    mail_from_name: str = os.getenv("MAIL_FROM_NAME", "ThinkSo")
     mail_port: int = int(os.getenv("MAIL_PORT", "587"))
     mail_server: str = os.getenv("MAIL_SERVER", "smtp.gmail.com")
     mail_tls: bool = os.getenv("MAIL_STARTTLS", os.getenv("MAIL_TLS", "true")).lower() == "true"

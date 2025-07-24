@@ -1,5 +1,5 @@
 """
-ThinkTree FastAPI 主应用入口
+ThinkSo FastAPI 主应用入口
 """
 
 import os
@@ -16,8 +16,8 @@ limiter = Limiter(key_func=get_remote_address)
 
 # 创建FastAPI应用实例
 app = FastAPI(
-    title="ThinkTree API",
-    description="ThinkTree 思维导图生成 API",
+    title="ThinkSo API",
+    description="ThinkSo 思维导图生成 API",
     version="3.0.0"
 )
 
@@ -67,7 +67,7 @@ app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to ThinkTree API v3.0.0"}
+    return {"message": "Welcome to ThinkSo API v3.0.0"}
 
 @app.get("/health")
 async def health_check():

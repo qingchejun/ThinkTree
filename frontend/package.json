@@ -1,7 +1,7 @@
 {
   "name": "thinktree-frontend",
   "version": "1.0.0",
-  "description": "ThinkTree Frontend - AI驱动的思维导图生成工具",
+  "description": "ThinkSo Frontend - AI驱动的思维导图生成工具",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -51,7 +51,7 @@
     "reactflow",
     "思维导图"
   ],
-  "author": "ThinkTree Team",
+  "author": "ThinkSo Team",
   "license": "MIT",
   "repository": {
     "type": "git",

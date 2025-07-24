@@ -8,7 +8,7 @@ const nextConfig = {
   
   // 环境变量配置
   env: {
-    NEXT_PUBLIC_APP_NAME: 'ThinkTree',
+    NEXT_PUBLIC_APP_NAME: 'ThinkSo',
     NEXT_PUBLIC_APP_VERSION: '1.0.0',
   },
   

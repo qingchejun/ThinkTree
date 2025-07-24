@@ -439,7 +439,7 @@ async def verify_email(request: VerifyEmailRequest, db: Session = Depends(get_db
         
         return VerifyEmailResponse(
             success=True,
-            message="邮箱验证成功！欢迎加入 ThinkTree！",
+            message="邮箱验证成功！欢迎加入 ThinkSo！",
             user=user_response
         )
         

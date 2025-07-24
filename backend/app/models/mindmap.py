@@ -1,5 +1,5 @@
 """
-思维导图数据模型 - ThinkTree v3.0.0 分享功能
+思维导图数据模型 - ThinkSo v3.0.0 分享功能
 """
 
 import uuid

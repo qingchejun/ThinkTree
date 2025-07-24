@@ -1,5 +1,5 @@
 /**
- * 登录页面 - ThinkTree v2.0.0
+ * 登录页面 - ThinkSo v2.0.0
  */
 'use client'
 
@@ -93,7 +93,7 @@ function LoginForm() {
           {/* 头部 */}
           <div className="text-center">
             <h2 className="text-3xl font-bold text-gray-900 mb-2">
-              登录到 ThinkTree
+              登录到 ThinkSo
             </h2>
             <p className="text-gray-600 mb-8">
               使用您的账户登录访问思维导图工具

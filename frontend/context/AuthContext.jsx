@@ -1,5 +1,5 @@
 /**
- * 认证上下文 (AuthContext) - ThinkTree v2.1.0
+ * 认证上下文 (AuthContext) - ThinkSo v2.1.0
  * 全局用户状态管理和认证逻辑
  */
 'use client'

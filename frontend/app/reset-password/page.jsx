@@ -179,7 +179,7 @@ function ResetPasswordForm() {
         <div className="bg-white rounded-xl shadow-lg p-8">
           <div className="text-center mb-8">
             <Link href="/" className="inline-block">
-              <h1 className="text-3xl font-bold text-indigo-600">🌳 ThinkTree</h1>
+              <h1 className="text-3xl font-bold text-indigo-600">🧠 ThinkSo</h1>
             </Link>
             <h2 className="mt-4 text-2xl font-bold text-gray-900">
               重置密码

@@ -1,5 +1,5 @@
 /**
- * 公开分享页面 - ThinkTree v3.0.0
+ * 公开分享页面 - ThinkSo v3.0.0
  * 无需登录即可查看分享的思维导图
  */
 'use client'
@@ -91,7 +91,7 @@ export default function SharePage() {
                 className="flex items-center space-x-2 text-indigo-600 hover:text-indigo-700"
               >
                 <span className="text-2xl">🌳</span>
-                <span className="text-xl font-bold">ThinkTree</span>
+                <span className="text-xl font-bold">ThinkSo</span>
               </button>
               <div className="text-sm text-gray-500">
                 公开分享的思维导图
@@ -232,7 +232,7 @@ export default function SharePage() {
                   喜欢这个思维导图？
                 </h3>
                 <p className="text-indigo-700 mb-4">
-                  加入 ThinkTree，使用 AI 创建你自己的专业思维导图
+                  加入 ThinkSo，使用 AI 创建你自己的专业思维导图
                 </p>
                 <div className="flex items-center justify-center space-x-4">
                   <button

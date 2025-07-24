@@ -1,4 +1,4 @@
-# ThinkTree Backend Dependencies - Development Version
+# ThinkSo Backend Dependencies - Development Version
 # 简化版依赖，用于开发环境
 
 # FastAPI 框架

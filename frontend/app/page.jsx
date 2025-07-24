@@ -1,5 +1,5 @@
 /**
- * ThinkTree 首页 - 简化版
+ * ThinkSo 首页 - 简化版
  */
 'use client'
 
@@ -69,7 +69,7 @@ export default function HomePage() {
             <div>
               <h3 className="text-lg font-medium text-green-800">正式版已发布</h3>
               <p className="text-green-700 mt-1">
-                ThinkTree v1.0 正式版现已可用！点击
+                ThinkSo v1.0 正式版现已可用！点击
                 <a href="/create" className="font-medium underline hover:no-underline mx-1">思维导图生成器</a>
                 开始使用 AI 驱动的思维导图生成功能。
               </p>
@@ -81,7 +81,7 @@ export default function HomePage() {
       {/* 页脚 */}
       <footer className="bg-gray-900 text-white py-8 mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p>&copy; 2024 ThinkTree. 让思维如树般清晰展现。</p>
+          <p>&copy; 2024 ThinkSo. 让思维灵动闪现。</p>
         </div>
       </footer>
     </div>

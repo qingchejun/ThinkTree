@@ -1,5 +1,5 @@
 /**
- * 邮箱验证页面 - ThinkTree v3.2.0
+ * 邮箱验证页面 - ThinkSo v3.2.0
  */
 'use client'
 
@@ -101,11 +101,11 @@ function VerifyEmailContent() {
             {/* 用户信息 */}
             <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
               <p className="text-green-800 font-medium mb-2">
-                欢迎加入 ThinkTree！
+                欢迎加入 ThinkSo！
               </p>
               <div className="text-sm text-green-700 space-y-1">
                 <p>邮箱：{userInfo.email}</p>
-                <p>显示名称：{userInfo.display_name || 'ThinkTree用户'}</p>
+                <p>显示名称：{userInfo.display_name || 'ThinkSo用户'}</p>
                 <p>注册时间：{new Date(userInfo.created_at).toLocaleDateString('zh-CN')}</p>
               </div>
             </div>

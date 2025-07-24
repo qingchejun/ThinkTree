@@ -56,7 +56,7 @@ const Header = ({ title, subtitle, showCreateButton = false }) => {
               onClick={() => router.push('/')}
               className="text-2xl font-bold text-indigo-600 hover:text-indigo-700 mr-6"
             >
-              🌳 ThinkTree
+              🧠 ThinkSo
             </button>
             {title && (
               <div className="border-l border-gray-300 pl-6">

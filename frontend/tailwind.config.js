@@ -9,7 +9,7 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // ThinkTree 品牌色彩
+        // ThinkSo 品牌色彩
         primary: {
           50: '#eff6ff',
           100: '#dbeafe',

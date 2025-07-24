@@ -72,15 +72,15 @@ class EmailService:
             # 生成6位纯数字验证码用于邮件标题
             verification_code = str(random.randint(100000, 999999))
             
-            # 邮件内容 - 统一称呼为"ThinkTree用户"
-            display_name = "ThinkTree用户"
+            # 邮件内容 - 统一称呼为"ThinkSo用户"
+            display_name = "ThinkSo用户"
             
             html_body = f"""
             <!DOCTYPE html>
             <html>
             <head>
                 <meta charset="utf-8">
-                <title>验证您的 ThinkTree 账户</title>
+                <title>验证您的 ThinkSo 账户</title>
                 <style>
                     body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; }}
                     .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
@@ -94,13 +94,13 @@ class EmailService:
             <body>
                 <div class="container">
                     <div class="header">
-                        <div class="logo">🌳 ThinkTree</div>
-                        <h2>欢迎加入 ThinkTree！</h2>
+                        <div class="logo">🧠 ThinkSo</div>
+                        <h2>欢迎加入 ThinkSo！</h2>
                     </div>
                     <div class="content">
                         <p>尊敬的 <strong>{display_name}</strong>，</p>
                         
-                        <p>感谢您注册 ThinkTree AI 驱动的思维导图生成工具！为了确保您的账户安全，请点击下面的按钮验证您的邮箱地址：</p>
+                        <p>感谢您注册 ThinkSo AI 驱动的思维导图生成工具！为了确保您的账户安全，请点击下面的按钮验证您的邮箱地址：</p>
                         
                         <div style="text-align: center;">
                             <a href="{verification_url}" class="button">🔐 验证邮箱地址</a>
@@ -115,7 +115,7 @@ class EmailService:
                         <ul>
                             <li>此验证链接有效期为 24 小时</li>
                             <li>验证成功后即可正常使用所有功能</li>
-                            <li>如果您没有注册 ThinkTree 账户，请忽略此邮件</li>
+                            <li>如果您没有注册 ThinkSo 账户，请忽略此邮件</li>
                         </ul>
                         
                         <p>验证完成后，您将能够：</p>
@@ -127,9 +127,9 @@ class EmailService:
                         </ul>
                     </div>
                     <div class="footer">
-                        <p>此邮件由 ThinkTree 系统自动发送，请勿回复。</p>
+                        <p>此邮件由 ThinkSo 系统自动发送，请勿回复。</p>
                         <p>如有问题，请联系客服支持。</p>
-                        <p>© 2024 ThinkTree Team. All rights reserved.</p>
+                        <p>© 2024 ThinkSo Team. All rights reserved.</p>
                     </div>
                 </div>
             </body>
@@ -138,25 +138,25 @@ class EmailService:
             
             # 纯文本版本
             text_body = f"""
-            欢迎加入 ThinkTree！
+            欢迎加入 ThinkSo！
             
             尊敬的 {display_name}，
             
-            感谢您注册 ThinkTree AI 驱动的思维导图生成工具！
+            感谢您注册 ThinkSo AI 驱动的思维导图生成工具！
             
             请点击以下链接验证您的邮箱地址：
             {verification_url}
             
             注意：此验证链接有效期为 24 小时。
             
-            如果您没有注册 ThinkTree 账户，请忽略此邮件。
+            如果您没有注册 ThinkSo 账户，请忽略此邮件。
             
-            ThinkTree Team
+            ThinkSo Team
             """
             
             # 创建邮件消息
             message = MessageSchema(
-                subject=f"ThinkTree注册验证码：{verification_code}",
+                subject=f"ThinkSo注册验证码：{verification_code}",
                 recipients=[email],
                 body=text_body,
                 html=html_body,
@@ -174,14 +174,14 @@ class EmailService:
     async def send_welcome_email(self, email: EmailStr, user_name: Optional[str] = None) -> bool:
         """发送欢迎邮件 (验证完成后)"""
         try:
-            display_name = "ThinkTree用户"
+            display_name = "ThinkSo用户"
             
             html_body = f"""
             <!DOCTYPE html>
             <html>
             <head>
                 <meta charset="utf-8">
-                <title>欢迎来到 ThinkTree</title>
+                <title>欢迎来到 ThinkSo</title>
                 <style>
                     body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; }}
                     .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
@@ -196,16 +196,16 @@ class EmailService:
             <body>
                 <div class="container">
                     <div class="header">
-                        <div class="logo">🌳 ThinkTree</div>
+                        <div class="logo">🧠 ThinkSo</div>
                         <h2>账户验证成功！</h2>
                     </div>
                     <div class="content">
                         <p>恭喜 <strong>{display_name}</strong>！</p>
                         
-                        <p>您的 ThinkTree 账户已成功验证，现在可以开始使用所有功能了！</p>
+                        <p>您的 ThinkSo 账户已成功验证，现在可以开始使用所有功能了！</p>
                         
                         <div style="text-align: center;">
-                            <a href="{settings.frontend_url}" class="button">🚀 开始使用 ThinkTree</a>
+                            <a href="{settings.frontend_url}" class="button">🚀 开始使用 ThinkSo</a>
                         </div>
                         
                         <h3>🎯 您现在可以使用的功能：</h3>
@@ -243,8 +243,8 @@ class EmailService:
                         </ul>
                     </div>
                     <div class="footer">
-                        <p>感谢您选择 ThinkTree，期待您的精彩创作！</p>
-                        <p>© 2024 ThinkTree Team. All rights reserved.</p>
+                        <p>感谢您选择 ThinkSo，期待您的精彩创作！</p>
+                        <p>© 2024 ThinkSo Team. All rights reserved.</p>
                     </div>
                 </div>
             </body>
@@ -254,7 +254,7 @@ class EmailService:
             text_body = f"""
             恭喜 {display_name}！
             
-            您的 ThinkTree 账户已成功验证，现在可以开始使用所有功能了！
+            您的 ThinkSo 账户已成功验证，现在可以开始使用所有功能了！
             
             访问 ThinkTree: {settings.frontend_url}
             
@@ -265,13 +265,13 @@ class EmailService:
             - 轻松分享
             - 多格式导出
             
-            感谢您选择 ThinkTree！
+            感谢您选择 ThinkSo！
             
-            ThinkTree Team
+            ThinkSo Team
             """
             
             message = MessageSchema(
-                subject="🎉 欢迎来到 ThinkTree - 开始您的思维导图之旅",
+                subject="🎉 欢迎来到 ThinkSo - 开始您的思维导图之旅",
                 recipients=[email],
                 body=text_body,
                 html=html_body,
@@ -296,7 +296,7 @@ class EmailService:
             <head>
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>重置您的 ThinkTree 密码</title>
+                <title>重置您的 ThinkSo 密码</title>
                 <style>
                     body {{
                         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -366,13 +366,13 @@ class EmailService:
             <body>
                 <div class="container">
                     <div class="header">
-                        <div class="logo">🌳 ThinkTree</div>
+                        <div class="logo">🧠 ThinkSo</div>
                         <h1>密码重置请求</h1>
                     </div>
                     <div class="content">
                         <p>您好 <strong>{display_name}</strong>，</p>
                         
-                        <p>我们收到了您重置 ThinkTree 账户密码的请求。如果这是您本人的操作，请点击下方按钮重置密码：</p>
+                        <p>我们收到了您重置 ThinkSo 账户密码的请求。如果这是您本人的操作，请点击下方按钮重置密码：</p>
                         
                         <div style="text-align: center;">
                             <a href="{reset_link}" class="button">🔑 重置密码</a>
@@ -402,7 +402,7 @@ class EmailService:
                     </div>
                     <div class="footer">
                         <p>此邮件由系统自动发送，请勿回复</p>
-                        <p>© 2024 ThinkTree Team. All rights reserved.</p>
+                        <p>© 2024 ThinkSo Team. All rights reserved.</p>
                     </div>
                 </div>
             </body>
@@ -412,7 +412,7 @@ class EmailService:
             text_body = f"""
             您好 {display_name}，
             
-            我们收到了您重置 ThinkTree 账户密码的请求。
+            我们收到了您重置 ThinkSo 账户密码的请求。
             
             请点击以下链接重置密码（15分钟内有效）：
             {reset_link}
@@ -424,11 +424,11 @@ class EmailService:
             
             如有疑问，请联系我们的客服团队。
             
-            ThinkTree Team
+            ThinkSo Team
             """
             
             message = MessageSchema(
-                subject="🔑 ThinkTree 密码重置 - 请在15分钟内完成",
+                subject="🔑 ThinkSo 密码重置 - 请在15分钟内完成",
                 recipients=[email],
                 body=text_body,
                 html=html_body,

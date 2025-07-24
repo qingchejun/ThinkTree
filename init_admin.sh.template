@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# ThinkTree 安全管理员初始化脚本模板
+# ThinkSo 安全管理员初始化脚本模板
 # 
 # 使用前请：
 # 1. 复制此文件为 init_admin.sh
@@ -112,7 +112,7 @@ create_admin_user() {
   "email": "$ADMIN_EMAIL",
   "password": "$ADMIN_PASSWORD",
   "invitation_code": "ADMIN_INIT",
-  "display_name": "ThinkTree Admin"
+  "display_name": "ThinkSo Admin"
 }
 EOF
 )
@@ -241,7 +241,7 @@ EOF
 
 # 主函数
 main() {
-    echo "=== ThinkTree 安全管理员初始化脚本 ==="
+    echo "=== ThinkSo 安全管理员初始化脚本 ==="
     echo
     
     # 检查依赖

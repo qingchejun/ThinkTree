@@ -1,1 +1,1 @@
-# ThinkTree Backend Application
+# ThinkSo Backend Application

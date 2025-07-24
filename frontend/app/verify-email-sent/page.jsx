@@ -1,5 +1,5 @@
 /**
- * 邮箱验证发送成功页面 - ThinkTree v3.2.0
+ * 邮箱验证发送成功页面 - ThinkSo v3.2.0
  */
 'use client'
 

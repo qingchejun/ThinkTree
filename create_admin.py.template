@@ -47,7 +47,7 @@ def create_admin_user(config):
         "email": config['admin_email'],
         "password": config['admin_password'],
         "invitation_code": "ADMIN_INIT",  # 特殊的管理员初始化码
-        "display_name": "ThinkTree Admin"
+        "display_name": "ThinkSo Admin"
     }
     
     try:
@@ -151,7 +151,7 @@ def create_invitation_codes(config, token):
     return codes
 
 def main():
-    print("=== ThinkTree 管理员初始化脚本 ===")
+    print("=== ThinkSo 管理员初始化脚本 ===")
     print("注意：请确保后端服务运行正常，且已配置邮件服务")
     print("")
     

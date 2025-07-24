@@ -1,5 +1,5 @@
 /**
- * ThinkTree 思维导图编辑器组件 - 基于 ReactFlow
+ * ThinkSo 思维导图编辑器组件 - 基于 ReactFlow
  */
 'use client'
 
