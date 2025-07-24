@@ -2,13 +2,14 @@
 
 将文档内容转换为专业思维导图，基于 Google Gemini AI 和 Markmap 可视化技术。
 
-**当前版本**: v3.1.0 🎉 分享导出功能 + 展开折叠交互完成
+**当前版本**: v3.2.0 🎉 完整认证体系 + 密码重置功能完成
 
 ## 🌐 在线体验
 
 - **🖥️ 前端应用**: https://thinktree-frontend.onrender.com
-- **👤 用户注册**: https://thinktree-frontend.onrender.com/register  
+- **👤 邀请制注册**: https://thinktree-frontend.onrender.com/register (需邀请码)
 - **🔐 用户登录**: https://thinktree-frontend.onrender.com/login
+- **🔑 忘记密码**: https://thinktree-frontend.onrender.com/forgot-password
 - **🔧 API 服务**: https://thinktree-backend.onrender.com
 - **📚 API 文档**: https://thinktree-backend.onrender.com/docs
 - **💚 健康检查**: https://thinktree-backend.onrender.com/health
@@ -24,7 +25,11 @@
 - ⚡ **实时生成**: 输入文本即时生成思维导图
 - 🎨 **现代 UI**: 基于 Tailwind CSS 的美观界面
 - ☁️ **云端部署**: Render 平台稳定运行，随时随地访问
-- 👤 **用户认证**: 完整的注册/登录系统，JWT 令牌认证 (v2.0.0 ✅)
+- 🎫 **邀请制注册**: 邀请码验证 + 邮箱激活双重保障，高质量用户 (v3.2.0 ✅)
+- 📧 **邮件验证系统**: Gmail SMTP + HTML模板，自动发送验证和重置邮件 (v3.2.0 ✅)
+- 🔑 **密码重置**: 15分钟安全令牌 + 邮件重置 + 防枚举攻击保护 (v3.2.0 ✅)
+- 👤 **完整认证体系**: 注册/登录/密码重置，JWT 令牌认证保护 (v3.2.0 ✅)
+- 🛡️ **权限保护**: 思维导图创建需登录，API认证中间件保护 (v3.2.0 ✅)
 - 💾 **数据持久化**: PostgreSQL 云端数据库，用户数据安全存储 (v2.0.0 ✅)
 - 🔒 **安全加密**: bcrypt 密码加密，JWT 安全令牌管理 (v2.0.0 ✅)
 - 🌐 **全局状态**: React Context 用户状态管理，跨页面状态同步 (v2.1.0 ✅)
@@ -46,13 +51,15 @@
 - D3.js
 - React Context (用户状态管理)
 - Canvas API (PNG 导出)
+- React Hot Toast (通知系统)
 
 **后端**
 
 - FastAPI (Python 3.11)
 - PostgreSQL (云端数据库)
-- SQLAlchemy ORM
+- SQLAlchemy ORM + Alembic (数据库迁移)
 - JWT + bcrypt (认证加密)
+- fastapi-mail + Gmail SMTP (邮件系统)
 - Google Gemini AI API
 - PyMuPDF + pdfplumber + python-docx
 - 异步文件处理
@@ -64,7 +71,35 @@
 - 前后端分离部署
 - 环境变量配置管理
 
-## 🎉 v3.1.0 重大更新
+## 🎉 v3.2.0 重大更新
+
+### 🔐 完整认证体系 (全新功能)
+
+ThinkTree v3.2.0 构建了完整的用户认证和安全管理体系：
+
+**✅ 邀请制注册系统**
+- **邀请码验证**: 🎫 高质量用户准入，防止垃圾注册
+- **邮箱验证激活**: 📧 双重验证保障，确保邮箱真实性
+- **自动化流程**: 注册 → 邮箱验证 → 账户激活 → 自动登录
+
+**✅ 密码重置系统**
+- **忘记密码**: 🔑 安全的邮件重置流程
+- **15分钟令牌**: ⏱️ 安全令牌有效期，防止滥用
+- **防枚举攻击**: 🛡️ 无论邮箱是否存在都返回统一提示
+- **一次性使用**: 🔒 令牌使用后立即失效
+
+**✅ 权限保护升级**
+- **登录保护**: 思维导图创建功能需要登录
+- **API认证**: 所有核心接口JWT令牌保护
+- **早期用户支持**: 兼容邮箱验证功能之前的用户
+
+**🏗️ 技术架构升级**
+- **Gmail SMTP集成**: 专业邮件服务，高送达率
+- **HTML邮件模板**: 美观的邮件界面和安全提醒
+- **数据库扩展**: User.is_verified + InvitationCode 数据模型
+- **管理员功能**: 早期用户验证和邀请码管理
+
+## 🎉 v3.1.0 历史更新
 
 ### 📖 展开折叠交互功能 (全新功能)
 
@@ -99,24 +134,25 @@ ThinkTree 实现了完整的数据持久化系统，用户可以保存和管理�
 - **数据安全**: 所有用户数据永久保存，不会因重新部署丢失
 
 **🚀 立即体验**
-1. 访问 [注册页面](https://thinktree-frontend.onrender.com/register) 创建账户
-2. 生成思维导图后点击"💾 保存"按钮
-3. 享受永久保存的个人化思维导图体验
+1. 获取邀请码后访问 [注册页面](https://thinktree-frontend.onrender.com/register) 创建账户
+2. 检查邮箱完成邮箱验证激活账户
+3. 登录后生成思维导图，点击"💾 保存"按钮
+4. 享受完整认证保护的个人化思维导图体验
 
 ## 🏗️ 项目架构
 
-### v3.1.0 云端架构
+### v3.2.0 云端架构
 
 ```
-用户注册/登录 → 全局状态管理 → 思维导图生成/保存
+邀请码获取 → 邀请制注册 → 邮箱验证 → 账户激活 → JWT认证登录
      ↓
-     → https://thinktree-frontend.onrender.com (前端 + React Context)
+     → https://thinktree-frontend.onrender.com (前端 + React Context + 密码重置)
      ↓
-     → https://thinktree-backend.onrender.com (后端 + JWT认证)
+     → https://thinktree-backend.onrender.com (后端 + JWT认证 + Gmail SMTP)
      ↓
-     → PostgreSQL 数据库 (用户 + 思维导图数据)
+     → PostgreSQL 数据库 (用户 + 思维导图 + 邀请码数据)
      ↓
-     → Google Gemini AI API (AI 处理)
+     → Google Gemini AI API (AI 处理) + Gmail SMTP (邮件服务)
      ↓
      → Markdown 数据 → markmap 渲染 + 展开折叠交互 → 分享导出 → 一键保存
 ```
@@ -336,46 +372,55 @@ curl -X POST http://localhost:8000/api/process-text \
 
 ## 📊 项目状态
 
-### 当前版本: v2.0.0 🔥 开发中
+### 当前版本: v3.2.0 🎉 完整认证体系已完成
 
-- **状态**: 🔥 用户认证系统开发中
-- **后端**: 完整的认证 API 和数据库架构
-- **前端**: 认证页面和状态管理待开发
-- **部署**: 后端 v2.0.0 准备部署测试
+- **状态**: 🎉 完整认证体系和密码重置功能已完成
+- **认证系统**: 邀请制注册 + 邮箱验证 + 密码重置全链路
+- **邮件系统**: Gmail SMTP + HTML模板 + 自动发送
+- **权限保护**: 思维导图创建需登录 + API认证保护
+- **部署**: 生产环境稳定运行，邮件服务正常
 
-### v2.0.0 功能覆盖
+### v3.2.0 功能覆盖
 
-- ✅ **用户认证**: JWT 令牌 + PostgreSQL 数据库
-- ✅ **数据持久化**: 云端数据库永久存储
-- ✅ **安全加密**: bcrypt 密码哈希 + 数据验证
-- ✅ **文档上传**: PDF、DOCX、TXT、MD、SRT
-- ✅ **AI 处理**: Google Gemini 智能解析
-- ✅ **思维导图**: Markmap 专业渲染
-- ✅ **云端服务**: Render 平台 + PostgreSQL
+- ✅ **邀请制注册**: 邀请码验证 + 高质量用户准入
+- ✅ **邮箱验证**: Gmail SMTP + HTML邮件模板
+- ✅ **密码重置**: 15分钟安全令牌 + 邮件重置
+- ✅ **权限保护**: JWT认证 + API保护 + 功能级权限
+- ✅ **数据持久化**: PostgreSQL + Alembic迁移
+- ✅ **思维导图**: AI处理 + Markmap渲染 + 展开折叠
+- ✅ **分享导出**: 公开链接 + SVG/PNG导出
+- ✅ **云端服务**: Render平台 + 自动化部署
 
-### v2.0.0 技术指标
+### v3.2.0 技术指标
 
-- **认证系统**: JWT 令牌 7 天有效期
-- **数据库**: PostgreSQL 企业级云端存储
-- **安全性**: bcrypt + SQLAlchemy ORM 防注入
-- **API 性能**: RESTful 接口 + 自动文档生成
-- **文件解析**: PDF 处理速度提升 3-5 倍
-- **AI 响应**: 平均 3-8 秒生成思维导图
+- **认证系统**: 邀请制 + 邮箱验证 + JWT令牌 7天有效期
+- **邮件服务**: Gmail SMTP + 专业HTML模板 + 15分钟重置令牌
+- **安全防护**: bcrypt加密 + 防枚举攻击 + 一次性令牌
+- **权限控制**: API认证中间件 + 功能级保护
+- **数据库**: PostgreSQL + User.is_verified + InvitationCode模型
+- **部署架构**: 前后端分离 + 自动迁移 + 邮件服务集成
 
 ## 🗺️ 发展规划
 
-### v2.0.0 完整版 (开发中)
+### v3.3.0 基础安全增强 (计划中)
 
-- **前端认证**: 登录/注册页面，用户状态管理
-- **路由保护**: 私有路由和认证中间件
-- **个人化**: 思维导图保存和历史记录
-- **用户界面**: 导航栏用户菜单和个人信息
+- **速率限制**: 防止API滥用和自动化攻击
+- **强密码验证**: 前后端密码复杂度检查
+- **Google reCAPTCHA**: 人机验证防护
+- **登录失败锁定**: 账户安全保护机制
 
-### v3.0.0 功能增强
+### v3.4.0 管理员后台 (计划中)
+
+- **管理员权限**: 超级用户权限模型
+- **用户管理**: 账户状态管理和邀请码生成
+- **管理员界面**: 专用后台管理控制台
+- **操作审计**: 管理员操作日志记录
+
+### v4.0.0 功能增强
 
 - **编辑功能**: 节点编辑、手动调整、样式定制
-- **导出功能**: PNG、PDF、SVG 多格式导出
-- **分享协作**: 分享链接、权限控制、实时协作
+- **导出增强**: PDF格式、高分辨率选项、批量导出
+- **分享协作**: 权限控制、访问统计、实时协作
 - **团队功能**: 工作区、协作编辑、权限管理
 
 ### 长期愿景
@@ -417,6 +462,7 @@ curl -X POST http://localhost:8000/api/process-text \
 ---
 
 **开发团队**: ThinkTree Team  
-**最后更新**: 2024-07-22  
-**项目状态**: 🔥 v2.0.0 用户认证系统开发中 - 后端完成，前端开发中  
-**在线地址**: https://thinktree-frontend.onrender.com
+**最后更新**: 2024-07-24  
+**项目状态**: 🎉 v3.2.0-stable 完整认证体系 + 密码重置功能完成  
+**在线地址**: https://thinktree-frontend.onrender.com  
+**技术架构**: 邀请制注册 + 邮箱验证 + 密码重置 + 思维导图生成 + 分享导出
