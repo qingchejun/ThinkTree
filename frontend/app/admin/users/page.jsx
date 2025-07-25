@@ -24,6 +24,8 @@ const AdminUsers = () => {
   
   // 操作状态
   const [updatingUser, setUpdatingUser] = useState(null);
+  const [resetPasswordModal, setResetPasswordModal] = useState({ show: false, user: null });
+  const [newPassword, setNewPassword] = useState('');
 
   // 获取用户列表
   const fetchUsers = async (page = 1, search = '', status = '') => {
@@ -160,6 +162,47 @@ const AdminUsers = () => {
   const handlePageChange = (page) => {
     setCurrentPage(page);
     fetchUsers(page, searchTerm, statusFilter);
+  };
+
+  // 重置密码
+  const resetUserPassword = async () => {
+    if (!newPassword.trim()) {
+      alert('请输入新密码');
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      alert('密码长度至少8位');
+      return;
+    }
+
+    try {
+      setUpdatingUser(resetPasswordModal.user.id);
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/users/${resetPasswordModal.user.id}/reset-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ new_password: newPassword })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        alert(`用户 ${resetPasswordModal.user.email} 的密码重置成功！\n新密码: ${newPassword}`);
+        setResetPasswordModal({ show: false, user: null });
+        setNewPassword('');
+      } else {
+        alert(data.detail || '重置密码失败');
+      }
+    } catch (error) {
+      console.error('重置密码失败:', error);
+      alert('重置密码失败，请稍后重试');
+    } finally {
+      setUpdatingUser(null);
+    }
   };
 
   // 初始加载
@@ -391,6 +434,17 @@ const AdminUsers = () => {
                                   </button>
                                 )}
 
+                                {/* 重置密码按钮 */}
+                                <button
+                                  onClick={() => setResetPasswordModal({ show: true, user })}
+                                  disabled={updatingUser === user.id}
+                                  className={`px-3 py-1 rounded text-xs font-medium bg-yellow-100 text-yellow-700 hover:bg-yellow-200 ${
+                                    updatingUser === user.id ? 'opacity-50 cursor-not-allowed' : ''
+                                  }`}
+                                >
+                                  重置密码
+                                </button>
+
                                 {/* 删除按钮 */}
                                 <button
                                   onClick={() => deleteUser(user.id, user.email)}
@@ -462,6 +516,50 @@ const AdminUsers = () => {
           )}
         </div>
       </div>
+
+      {/* 重置密码模态框 */}
+      {resetPasswordModal.show && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              重置用户密码
+            </h3>
+            <div className="mb-4">
+              <p className="text-sm text-gray-600 mb-2">
+                即将为用户 <span className="font-semibold">{resetPasswordModal.user?.email}</span> 重置密码
+              </p>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                新密码 (至少8位)
+              </label>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="请输入新密码"
+              />
+            </div>
+            <div className="flex space-x-3">
+              <button
+                onClick={resetUserPassword}
+                disabled={updatingUser === resetPasswordModal.user?.id}
+                className="flex-1 bg-yellow-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {updatingUser === resetPasswordModal.user?.id ? '重置中...' : '确认重置'}
+              </button>
+              <button
+                onClick={() => {
+                  setResetPasswordModal({ show: false, user: null });
+                  setNewPassword('');
+                }}
+                className="flex-1 bg-gray-200 text-gray-800 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-300"
+              >
+                取消
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AdminRoute>
   );
 };

@@ -16,6 +16,7 @@ from app.models.mindmap import Mindmap
 from app.models.invitation import InvitationCode
 from app.utils.admin_auth import get_current_admin, log_admin_action
 from app.utils.invitation_utils import create_invitation_code
+from app.utils.security import get_password_hash, validate_password
 from pydantic import BaseModel
 
 # 配置日志
@@ -67,6 +68,10 @@ class InvitationCreateRequest(BaseModel):
     """管理员邀请码创建请求模型"""
     count: int = 1
     description: Optional[str] = None
+
+class UserPasswordResetRequest(BaseModel):
+    """管理员重置用户密码请求模型"""
+    new_password: str
 
 @router.get("/stats", response_model=AdminStatsResponse)
 async def get_admin_stats(
@@ -566,4 +571,73 @@ async def get_admin_invitations(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="获取邀请码列表失败"
+        )
+
+
+@router.post("/users/{user_id}/reset-password")
+async def admin_reset_user_password(
+    user_id: int,
+    request: UserPasswordResetRequest,
+    admin_user: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    管理员重置用户密码
+    
+    管理员可以为任何用户重置密码，无需原密码验证
+    """
+    try:
+        # 查找目标用户
+        target_user = db.query(User).filter(User.id == user_id).first()
+        if not target_user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="用户不存在"
+            )
+        
+        # 防止管理员重置自己的密码（应该通过正常流程）
+        if target_user.id == admin_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="请使用账户设置页面修改自己的密码"
+            )
+        
+        # 密码强度验证
+        is_valid, error_message = validate_password(request.new_password)
+        if not is_valid:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"密码不符合要求: {error_message}"
+            )
+        
+        # 更新密码
+        old_password_hint = target_user.password_hash[:10] + "..." if target_user.password_hash else "无"
+        target_user.password_hash = get_password_hash(request.new_password)
+        
+        db.commit()
+        db.refresh(target_user)
+        
+        # 记录管理员操作
+        log_admin_action(
+            admin_user,
+            "reset_user_password",
+            f"user_id={user_id}",
+            f"为用户 {target_user.email} 重置密码"
+        )
+        
+        return {
+            "success": True,
+            "message": f"用户 {target_user.email} 的密码已重置成功",
+            "user_email": target_user.email,
+            "reset_time": datetime.now().isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"重置用户密码失败: {str(e)}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="重置密码失败"
         )
