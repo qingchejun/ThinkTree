@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ThinkSo 邮件服务调试工具</title>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #333; border-bottom: 2px solid #667eea; padding-bottom: 10px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; }
+        input, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+        button { background: #667eea; color: white; padding: 12px 24px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #5a67d8; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .result { margin-top: 20px; padding: 15px; border-radius: 5px; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .loading { background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 5px; overflow-x: auto; }
+        .test-section { margin: 20px 0; padding: 20px; border: 2px dashed #ddd; border-radius: 5px; }
+        .debug-info { margin-top: 20px; font-size: 12px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 ThinkSo 邮件服务调试工具</h1>
+        
+        <div class="test-section">
+            <h2>📧 直接邮件发送测试</h2>
+            <div class="form-group">
+                <label for="testEmail">收件人邮箱:</label>
+                <input type="email" id="testEmail" value="gingcheun@gmail.com" placeholder="输入测试邮箱地址">
+            </div>
+            <div class="form-group">
+                <label for="testName">用户名:</label>
+                <input type="text" id="testName" value="测试用户" placeholder="输入测试用户名">
+            </div>
+            <button onclick="testDirectEmail()">🚀 直接测试邮件发送</button>
+        </div>
+        
+        <div class="test-section">
+            <h2>🔄 完整忘记密码流程测试</h2>
+            <div class="form-group">
+                <label for="resetEmail">用户邮箱:</label>
+                <input type="email" id="resetEmail" value="gingcheun@gmail.com" placeholder="输入已注册的邮箱地址">
+            </div>
+            <button onclick="testPasswordReset()">🔑 测试忘记密码流程</button>
+        </div>
+        
+        <div id="result"></div>
+        
+        <div class="debug-info">
+            <p><strong>调试说明:</strong></p>
+            <ul>
+                <li>直接邮件测试 - 调用调试端点直接测试邮件发送功能</li>
+                <li>完整流程测试 - 测试真实的忘记密码API流程</li>
+                <li>查看浏览器开发者工具的Console和Network选项卡获取详细信息</li>
+                <li>后端日志将显示详细的调试信息，包括邮件配置和发送过程</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://thinktree-backend.onrender.com/api/auth';
+        // const API_BASE = 'http://localhost:8000/api/auth';  // 本地测试取消注释
+        
+        function showResult(message, type = 'loading') {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = `result ${type}`;
+            resultDiv.innerHTML = message;
+        }
+        
+        async function testDirectEmail() {
+            const email = document.getElementById('testEmail').value;
+            const name = document.getElementById('testName').value;
+            
+            if (!email) {
+                showResult('请输入邮箱地址', 'error');
+                return;
+            }
+            
+            showResult('🔄 正在直接测试邮件发送...', 'loading');
+            console.log('🔍 DEBUG: 开始直接邮件测试', { email, name });
+            
+            try {
+                const response = await fetch(`${API_BASE}/debug-email-test`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        name: name,
+                        link: 'https://example.com/reset?token=debug123'
+                    })
+                });
+                
+                const data = await response.json();
+                console.log('🔍 DEBUG: 直接邮件测试响应', data);
+                
+                if (data.success) {
+                    showResult(`
+                        <h3>✅ 邮件发送成功!</h3>
+                        <p><strong>测试邮箱:</strong> ${data.test_email}</p>
+                        <p><strong>邮件服务类型:</strong> ${data.email_service_type}</p>
+                        <p><strong>消息:</strong> ${data.message}</p>
+                        <p>请检查邮箱（包括垃圾邮件文件夹）查看测试邮件。</p>
+                    `, 'success');
+                } else {
+                    showResult(`
+                        <h3>❌ 邮件发送失败</h3>
+                        <p><strong>错误:</strong> ${data.error || '未知错误'}</p>
+                        <p><strong>详细信息:</strong></p>
+                        <pre>${data.traceback || '无详细信息'}</pre>
+                    `, 'error');
+                }
+            } catch (error) {
+                console.error('🔍 DEBUG: 直接邮件测试异常', error);
+                showResult(`
+                    <h3>❌ 网络请求失败</h3>
+                    <p><strong>错误:</strong> ${error.message}</p>
+                    <p>请检查网络连接和API服务状态。</p>
+                `, 'error');
+            }
+        }
+        
+        async function testPasswordReset() {
+            const email = document.getElementById('resetEmail').value;
+            
+            if (!email) {
+                showResult('请输入邮箱地址', 'error');
+                return;
+            }
+            
+            showResult('🔄 正在测试完整忘记密码流程...', 'loading');
+            console.log('🔍 DEBUG: 开始忘记密码流程测试', { email });
+            
+            try {
+                const response = await fetch(`${API_BASE}/request-password-reset`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: email
+                    })
+                });
+                
+                console.log('🔍 DEBUG: 忘记密码响应状态', response.status);
+                const data = await response.json();
+                console.log('🔍 DEBUG: 忘记密码响应数据', data);
+                
+                if (response.ok && data.success) {
+                    showResult(`
+                        <h3>✅ 忘记密码流程成功!</h3>
+                        <p><strong>状态码:</strong> ${response.status}</p>
+                        <p><strong>消息:</strong> ${data.message}</p>
+                        <p>请检查邮箱 <strong>${email}</strong>（包括垃圾邮件文件夹）查看重置邮件。</p>
+                    `, 'success');
+                } else {
+                    showResult(`
+                        <h3>❌ 忘记密码流程失败</h3>
+                        <p><strong>状态码:</strong> ${response.status}</p>
+                        <p><strong>错误:</strong> ${data.detail || data.message || '未知错误'}</p>
+                        <p><strong>完整响应:</strong></p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `, 'error');
+                }
+            } catch (error) {
+                console.error('🔍 DEBUG: 忘记密码流程异常', error);
+                showResult(`
+                    <h3>❌ 网络请求失败</h3>
+                    <p><strong>错误:</strong> ${error.message}</p>
+                    <p>请检查网络连接和API服务状态。</p>
+                `, 'error');
+            }
+        }
+        
+        // 页面加载完成后的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔍 DEBUG: 邮件调试工具已加载');
+            console.log('🔍 DEBUG: API基础URL', API_BASE);
+        });
+    </script>
+</body>
+</html>

@@ -286,9 +286,28 @@ class EmailService:
             return False
     
     async def send_password_reset_email(self, email: EmailStr, user_name: str, reset_link: str) -> bool:
-        """发送密码重置邮件"""
+        """发送密码重置邮件 (WITH DEBUG LOGGING)"""
+        import logging
+        import traceback
+        
+        logger = logging.getLogger(__name__)
+        logger.setLevel(logging.DEBUG)
+        
         try:
+            logger.info(f"🔍 EMAIL DEBUG: 开始发送密码重置邮件到: {email}")
+            logger.info(f"🔍 EMAIL DEBUG: 用户名: {user_name}")
+            logger.info(f"🔍 EMAIL DEBUG: 重置链接长度: {len(reset_link)}")
+            
             display_name = user_name if user_name else email.split('@')[0]
+            logger.info(f"🔍 EMAIL DEBUG: 显示名称: {display_name}")
+            
+            logger.info(f"🔍 EMAIL DEBUG: 邮件配置检查...")
+            logger.info(f"🔍 EMAIL DEBUG: MAIL_SERVER: {self.conf.MAIL_SERVER}")
+            logger.info(f"🔍 EMAIL DEBUG: MAIL_PORT: {self.conf.MAIL_PORT}")
+            logger.info(f"🔍 EMAIL DEBUG: MAIL_FROM: {self.conf.MAIL_FROM}")
+            logger.info(f"🔍 EMAIL DEBUG: MAIL_USERNAME: {self.conf.MAIL_USERNAME}")
+            logger.info(f"🔍 EMAIL DEBUG: MAIL_STARTTLS: {self.conf.MAIL_STARTTLS}")
+            logger.info(f"🔍 EMAIL DEBUG: MAIL_SSL_TLS: {self.conf.MAIL_SSL_TLS}")
             
             html_body = f"""
             <!DOCTYPE html>
@@ -427,6 +446,7 @@ class EmailService:
             ThinkSo Team
             """
             
+            logger.info(f"🔍 EMAIL DEBUG: 开始构建邮件消息...")
             message = MessageSchema(
                 subject="🔑 ThinkSo 密码重置 - 请在15分钟内完成",
                 recipients=[email],
@@ -434,12 +454,18 @@ class EmailService:
                 html=html_body,
                 subtype=MessageType.html
             )
+            logger.info(f"🔍 EMAIL DEBUG: 邮件消息构建完成")
+            logger.info(f"🔍 EMAIL DEBUG: 收件人: {message.recipients}")
+            logger.info(f"🔍 EMAIL DEBUG: 主题: {message.subject}")
             
+            logger.info(f"🔍 EMAIL DEBUG: 开始发送邮件...")
             await self.fm.send_message(message)
+            logger.info(f"✅ EMAIL DEBUG: 邮件发送成功!")
             return True
             
         except Exception as e:
-            print(f"发送密码重置邮件失败: {str(e)}")
+            logger.error(f"❌ EMAIL DEBUG: 发送密码重置邮件失败: {str(e)}")
+            logger.error(f"❌ EMAIL DEBUG: 邮件发送异常详情: {traceback.format_exc()}")
             return False
 
 

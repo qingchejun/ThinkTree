@@ -546,21 +546,35 @@ async def request_password_reset(
     db: Session = Depends(get_db)
 ):
     """
-    请求密码重置 - 发送重置链接到用户邮箱
+    请求密码重置 - 发送重置链接到用户邮箱 (WITH DEBUG LOGGING)
     """
+    import traceback
+    import logging
+    
+    # 配置详细日志
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
+    
     try:
+        logger.info(f"🔍 DEBUG: 开始处理密码重置请求 - 邮箱: {reset_request.email}")
+        
         # 查找用户
+        logger.info(f"🔍 DEBUG: 正在查询数据库中的用户...")
         user = db.query(User).filter(User.email == reset_request.email).first()
         
         # 防止邮箱枚举攻击：无论邮箱是否存在都返回成功
         if not user:
+            logger.info(f"🔍 DEBUG: 用户不存在，返回通用成功消息 (防枚举)")
             return PasswordResetResponse(
                 success=True,
                 message="如果该邮箱已注册，您将收到密码重置链接。请检查您的邮箱（包括垃圾邮件文件夹）。"
             )
         
+        logger.info(f"🔍 DEBUG: 找到用户 - ID: {user.id}, 验证状态: {user.is_verified}, 激活状态: {user.is_active}")
+        
         # 检查用户是否已验证邮箱
         if not user.is_verified:
+            logger.info(f"🔍 DEBUG: 用户未验证邮箱，返回通用成功消息")
             return PasswordResetResponse(
                 success=True,
                 message="如果该邮箱已注册，您将收到密码重置链接。请检查您的邮箱（包括垃圾邮件文件夹）。"
@@ -568,59 +582,128 @@ async def request_password_reset(
         
         # 检查用户是否激活
         if not user.is_active:
+            logger.info(f"🔍 DEBUG: 用户未激活，返回通用成功消息")
             return PasswordResetResponse(
                 success=True,
                 message="如果该邮箱已注册，您将收到密码重置链接。请检查您的邮箱（包括垃圾邮件文件夹）。"
             )
         
         # 生成密码重置令牌（15分钟有效期）
+        logger.info(f"🔍 DEBUG: 正在生成密码重置令牌...")
         from datetime import timedelta
-        reset_token = create_access_token(
-            data={"sub": str(user.id), "type": "password_reset"},
-            expires_delta=timedelta(minutes=15)
-        )
+        try:
+            reset_token = create_access_token(
+                data={"sub": str(user.id), "type": "password_reset"},
+                expires_delta=timedelta(minutes=15)
+            )
+            logger.info(f"🔍 DEBUG: JWT令牌生成成功，长度: {len(reset_token)}")
+        except Exception as token_error:
+            logger.error(f"❌ DEBUG: JWT令牌生成失败: {str(token_error)}")
+            logger.error(f"❌ DEBUG: JWT令牌生成异常详情: {traceback.format_exc()}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"令牌生成失败: {str(token_error)}"
+            )
         
         # 构建重置链接
         reset_link = f"https://thinktree-frontend.onrender.com/reset-password?token={reset_token}"
+        logger.info(f"🔍 DEBUG: 重置链接构建完成: {reset_link[:50]}...")
         
         # 发送密码重置邮件
+        logger.info(f"🔍 DEBUG: 开始发送密码重置邮件...")
+        logger.info(f"🔍 DEBUG: 邮件服务实例类型: {type(email_service)}")
+        
         try:
+            logger.info(f"🔍 DEBUG: 调用邮件服务 send_password_reset_email...")
             email_sent = await email_service.send_password_reset_email(
                 email=user.email,
                 user_name=user.display_name or user.email.split('@')[0],
                 reset_link=reset_link
             )
+            logger.info(f"🔍 DEBUG: 邮件服务返回结果: {email_sent}")
             
             if email_sent:
-                print(f"密码重置邮件已发送到: {user.email}")
+                logger.info(f"✅ DEBUG: 密码重置邮件发送成功到: {user.email}")
             else:
-                print(f"密码重置邮件发送失败 - 邮件服务返回False")
+                logger.error(f"❌ DEBUG: 密码重置邮件发送失败 - 邮件服务返回False")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail="邮件发送失败，请稍后重试"
                 )
                 
-        except HTTPException:
+        except HTTPException as http_exc:
+            logger.error(f"❌ DEBUG: HTTP异常: {http_exc.detail}")
             raise
-        except Exception as e:
-            print(f"发送密码重置邮件异常: {str(e)}")
+        except Exception as email_error:
+            logger.error(f"❌ DEBUG: 邮件发送异常: {str(email_error)}")
+            logger.error(f"❌ DEBUG: 邮件发送异常详情: {traceback.format_exc()}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="邮件发送失败，请稍后重试"
+                detail=f"邮件发送失败: {str(email_error)}"
             )
         
+        logger.info(f"✅ DEBUG: 密码重置请求处理完成")
         return PasswordResetResponse(
             success=True,
             message="如果该邮箱已注册，您将收到密码重置链接。请检查您的邮箱（包括垃圾邮件文件夹）。"
         )
         
-    except HTTPException:
+    except HTTPException as http_exc:
+        logger.error(f"❌ DEBUG: HTTP异常被重新抛出: {http_exc.detail}")
         raise
     except Exception as e:
+        logger.error(f"❌ DEBUG: 顶层异常捕获: {str(e)}")
+        logger.error(f"❌ DEBUG: 顶层异常详情: {traceback.format_exc()}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"请求处理失败: {str(e)}"
         )
+
+
+@router.post("/debug-email-test")
+async def debug_email_test(request: dict):
+    """
+    调试端点 - 测试邮件发送功能
+    """
+    import logging
+    import traceback
+    
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
+    
+    try:
+        test_email = request.get("email", "test@example.com")
+        test_name = request.get("name", "测试用户")
+        test_link = request.get("link", "https://example.com/reset?token=test123")
+        
+        logger.info(f"🔍 DEBUG ENDPOINT: 开始测试邮件发送...")
+        logger.info(f"🔍 DEBUG ENDPOINT: 测试邮箱: {test_email}")
+        logger.info(f"🔍 DEBUG ENDPOINT: 测试姓名: {test_name}")
+        
+        # 测试邮件服务
+        email_sent = await email_service.send_password_reset_email(
+            email=test_email,
+            user_name=test_name,
+            reset_link=test_link
+        )
+        
+        logger.info(f"🔍 DEBUG ENDPOINT: 邮件发送结果: {email_sent}")
+        
+        return {
+            "success": email_sent,
+            "message": f"邮件发送{'成功' if email_sent else '失败'}",
+            "test_email": test_email,
+            "email_service_type": str(type(email_service))
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ DEBUG ENDPOINT: 异常: {str(e)}")
+        logger.error(f"❌ DEBUG ENDPOINT: 异常详情: {traceback.format_exc()}")
+        return {
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }
 
 
 @router.post("/reset-password", response_model=PasswordResetResponse)
