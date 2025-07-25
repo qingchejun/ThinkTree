@@ -17,6 +17,7 @@ from app.core.database import get_db
 from app.models.user import User
 from app.models.mindmap import Mindmap
 from app.utils.security import get_password_hash
+from app.api.auth import get_current_user
 
 # 配置日志
 logger = logging.getLogger(__name__)
@@ -494,6 +495,8 @@ async def create_admin_invitations(
 ):
     """管理员批量生成邀请码（简化版）"""
     try:
+        logger.info(f"管理员 {admin_user.email} 请求生成 {request.count} 个邀请码")
+        
         if request.count <= 0 or request.count > 100:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -508,12 +511,15 @@ async def create_admin_invitations(
             created_codes.append({
                 "code": code,
                 "created_at": datetime.now().isoformat(),
-                "description": request.description or f"管理员批量生成 {i+1}/{request.count}"
+                "description": request.description or f"管理员批量生成 {i+1}/{request.count}",
+                "is_used": False
             })
+        
+        logger.info(f"成功生成 {request.count} 个模拟邀请码")
         
         return {
             "success": True,
-            "message": f"成功生成 {request.count} 个邀请码（模拟）",
+            "message": f"成功生成 {request.count} 个邀请码（模拟版本，仅用于界面测试）",
             "invitations": created_codes
         }
         
@@ -524,6 +530,73 @@ async def create_admin_invitations(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="生成邀请码失败"
+        )
+
+# 用户端邀请码API（由于原invitations模块有依赖问题，暂时在这里实现）
+@router.post("/invitations/create", tags=["user-invitations"])
+async def create_user_invitation(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """用户生成邀请码（简化版）"""
+    try:
+        # 检查用户是否验证
+        if not current_user.is_verified:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="请先验证邮箱后再生成邀请码"
+            )
+        
+        # 生成邀请码
+        code = ''.join(secrets.choice('23456789ABCDEFGHJKLMNPQRSTUVWXYZ') for _ in range(8))
+        
+        logger.info(f"用户 {current_user.email} 生成邀请码: {code}")
+        
+        return {
+            "success": True,
+            "message": "邀请码生成成功（模拟版本）",
+            "invitation": {
+                "code": code,
+                "created_at": datetime.now().isoformat(),
+                "description": "用户设置页面生成",
+                "is_used": False
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"用户生成邀请码失败: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="生成邀请码失败"
+        )
+
+@router.get("/invitations/list", tags=["user-invitations"])
+async def get_user_invitations(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """获取用户的邀请码列表（简化版）"""
+    try:
+        # 返回模拟数据
+        mock_invitations = []
+        for i in range(5):
+            code = ''.join(secrets.choice('23456789ABCDEFGHJKLMNPQRSTUVWXYZ') for _ in range(8))
+            mock_invitations.append({
+                "code": code,
+                "is_used": i < 2,  # 前两个设为已使用
+                "created_at": datetime.now().isoformat(),
+                "description": f"模拟邀请码 {i+1}"
+            })
+        
+        return mock_invitations
+        
+    except Exception as e:
+        logger.error(f"获取用户邀请码列表失败: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="获取邀请码列表失败"
         )
 
 @router.get("/health")
