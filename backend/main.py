@@ -8,7 +8,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
-from app.api import upload, mindmaps, auth, share, invitations, admin
+# Temporarily comment out admin to test if it's causing the issue
+from app.api import upload, mindmaps, auth, share, invitations
+# from app.api import admin
 from app.core.config import settings
 
 # 创建rate limiter实例
@@ -65,7 +67,7 @@ app.include_router(mindmaps.router, prefix="/api/mindmaps", tags=["mindmaps"])
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(share.router, prefix="/api", tags=["share"])
 app.include_router(invitations.router, prefix="/api/invitations", tags=["invitations"])
-app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
+# app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 
 @app.get("/")
 async def root():
@@ -90,8 +92,9 @@ if __name__ == "__main__":
         
         # 检查关键模块导入
         logger.info("Checking module imports...")
-        from app.api import admin
-        logger.info("Admin module imported successfully")
+        # from app.api import admin
+        # logger.info("Admin module imported successfully")
+        logger.info("Basic modules imported successfully")
         
         uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
     except Exception as e:
