@@ -76,6 +76,27 @@ export default function HomePage() {
             </div>
           </div>
         </div>
+
+        {/* 调试工具入口 - 临时 */}
+        <div className="mt-8 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <span className="text-yellow-600 text-lg mr-3">🔧</span>
+              <div>
+                <h3 className="text-lg font-medium text-yellow-800">邮件服务调试工具</h3>
+                <p className="text-yellow-700 mt-1 text-sm">
+                  诊断和测试邮件发送功能 - 开发调试专用
+                </p>
+              </div>
+            </div>
+            <a
+              href="/debug-email"
+              className="bg-yellow-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-yellow-700 transition-colors"
+            >
+              🔍 打开调试工具
+            </a>
+          </div>
+        </div>
       </main>
 
       {/* 页脚 */}
