@@ -217,58 +217,7 @@ const AdminUsers = () => {
     }
   };
 
-  // 处理发送重置邮件
-  const sendResetEmail = async (user) => {
-    const confirmed = window.confirm(
-      `确认为用户 "${user.email}" 发送密码重置邮件吗？\n\n用户将收到包含重置链接的邮件，可以自行重置密码。`
-    );
-    
-    if (!confirmed) return;
-    
-    try {
-      setUpdatingUser(user.id);
-      setShowDropdown(null);
-      
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/users/${user.id}/send-reset-email`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ 
-          reset_type: "admin",
-          custom_message: "管理员为您发送的密码重置邮件" 
-        })
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        // 显示邮件发送成功信息
-        const resultMessage = `✅ 密码重置邮件发送成功！
-
-👤 目标用户: ${data.user_email}
-📧 邮件状态: 已发送
-⏰ 发送时间: ${new Date(data.sent_time).toLocaleString()}
-⚡ 链接有效期: 15分钟
-👨‍💼 ${data.admin_info || ''}
-
-📝 说明: ${data.note}
-
-用户将收到包含安全重置链接的邮件，请提醒用户检查收件箱（包括垃圾邮件文件夹）。`;
-        
-        alert(resultMessage);
-        ToastManager.success('密码重置邮件已发送');
-      } else {
-        ToastManager.error(data.detail || '发送重置邮件失败');
-      }
-    } catch (error) {
-      console.error('发送重置邮件失败:', error);
-      ToastManager.error('发送重置邮件失败，请稍后重试');
-    } finally {
-      setUpdatingUser(null);
-    }
-  };
+  // 注意：管理员发送重置邮件功能已移除，用户可使用忘记密码功能
 
   // 处理生成临时密码
   const generateTempPassword = async (user) => {
@@ -571,14 +520,7 @@ const AdminUsers = () => {
                                   {showDropdown === user.id && (
                                     <div className="absolute top-full left-0 mt-1 w-40 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5" style={{zIndex: 9999}}>
                                       <div className="py-1">
-                                        <button
-                                          onClick={() => sendResetEmail(user)}
-                                          className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center"
-                                        >
-                                          <span className="mr-2">📧</span>
-                                          发送重置邮件 
-                                          <span className="ml-1 text-green-600">(推荐)</span>
-                                        </button>
+                                        {/* 发送重置邮件功能已移除，用户可使用忘记密码功能 */}
                                         <button
                                           onClick={() => generateTempPassword(user)}
                                           className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center"

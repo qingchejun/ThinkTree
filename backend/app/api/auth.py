@@ -668,85 +668,10 @@ async def request_password_reset(
         )
 
 
-@router.post("/debug-email-test")
-async def debug_email_test(request: dict):
-    """
-    调试端点 - 测试邮件发送功能
-    """
-    import logging
-    import traceback
-    
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.DEBUG)
-    
-    try:
-        test_email = request.get("email", "test@example.com")
-        test_name = request.get("name", "测试用户")
-        test_link = request.get("link", "https://example.com/reset?token=test123")
-        
-        logger.info(f"🔍 DEBUG ENDPOINT: 开始测试邮件发送...")
-        logger.info(f"🔍 DEBUG ENDPOINT: 测试邮箱: {test_email}")
-        logger.info(f"🔍 DEBUG ENDPOINT: 测试姓名: {test_name}")
-        
-        # 检查环境变量
-        from ..core.config import settings
-        logger.info(f"🔍 DEBUG ENDPOINT: 邮件配置检查...")
-        logger.info(f"🔍 DEBUG ENDPOINT: MAIL_SERVER: {settings.mail_server}")
-        logger.info(f"🔍 DEBUG ENDPOINT: MAIL_PORT: {settings.mail_port}")
-        logger.info(f"🔍 DEBUG ENDPOINT: MAIL_FROM: {settings.mail_from}")
-        logger.info(f"🔍 DEBUG ENDPOINT: MAIL_USERNAME: {settings.mail_username}")
-        logger.info(f"🔍 DEBUG ENDPOINT: MAIL_PASSWORD: {'***设置***' if settings.mail_password else 'NOT SET'}")
-        
-        # 测试邮件服务
-        email_sent = await email_service.send_password_reset_email(
-            email=test_email,
-            user_name=test_name,
-            reset_link=test_link
-        )
-        
-        logger.info(f"🔍 DEBUG ENDPOINT: 邮件发送结果: {email_sent}")
-        
-        return {
-            "success": email_sent,
-            "message": f"邮件发送{'成功' if email_sent else '失败'}",
-            "test_email": test_email,
-            "email_service_type": str(type(email_service)),
-            "mail_config": {
-                "server": settings.mail_server,
-                "port": settings.mail_port,
-                "from": settings.mail_from,
-                "username": settings.mail_username,
-                "password_set": bool(settings.mail_password),
-                "tls": settings.mail_tls,
-                "ssl": settings.mail_ssl
-            }
-        }
-        
-    except Exception as e:
-        logger.error(f"❌ DEBUG ENDPOINT: 异常: {str(e)}")
-        logger.error(f"❌ DEBUG ENDPOINT: 异常详情: {traceback.format_exc()}")
-        return {
-            "success": False,
-            "error": str(e),
-            "traceback": traceback.format_exc()
-        }
+# 调试端点已移除 - 邮件服务已正常工作
 
 
-@router.get("/debug-user-status/{email}")
-async def debug_user_status(email: str, db: Session = Depends(get_db)):
-    """调试端点 - 查看用户状态"""
-    user = db.query(User).filter(User.email == email).first()
-    if not user:
-        return {"exists": False, "email": email}
-    
-    return {
-        "exists": True,
-        "email": user.email,
-        "is_verified": user.is_verified,
-        "is_active": user.is_active,
-        "id": user.id,
-        "created_at": user.created_at.isoformat() if user.created_at else None
-    }
+# 用户状态调试端点已移除 - 可通过管理员后台查看
 
 
 @router.post("/reset-password", response_model=PasswordResetResponse)
