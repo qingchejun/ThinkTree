@@ -680,6 +680,15 @@ async def debug_email_test(request: dict):
         logger.info(f"🔍 DEBUG ENDPOINT: 测试邮箱: {test_email}")
         logger.info(f"🔍 DEBUG ENDPOINT: 测试姓名: {test_name}")
         
+        # 检查环境变量
+        from ..core.config import settings
+        logger.info(f"🔍 DEBUG ENDPOINT: 邮件配置检查...")
+        logger.info(f"🔍 DEBUG ENDPOINT: MAIL_SERVER: {settings.mail_server}")
+        logger.info(f"🔍 DEBUG ENDPOINT: MAIL_PORT: {settings.mail_port}")
+        logger.info(f"🔍 DEBUG ENDPOINT: MAIL_FROM: {settings.mail_from}")
+        logger.info(f"🔍 DEBUG ENDPOINT: MAIL_USERNAME: {settings.mail_username}")
+        logger.info(f"🔍 DEBUG ENDPOINT: MAIL_PASSWORD: {'***设置***' if settings.mail_password else 'NOT SET'}")
+        
         # 测试邮件服务
         email_sent = await email_service.send_password_reset_email(
             email=test_email,
@@ -693,7 +702,16 @@ async def debug_email_test(request: dict):
             "success": email_sent,
             "message": f"邮件发送{'成功' if email_sent else '失败'}",
             "test_email": test_email,
-            "email_service_type": str(type(email_service))
+            "email_service_type": str(type(email_service)),
+            "mail_config": {
+                "server": settings.mail_server,
+                "port": settings.mail_port,
+                "from": settings.mail_from,
+                "username": settings.mail_username,
+                "password_set": bool(settings.mail_password),
+                "tls": settings.mail_tls,
+                "ssl": settings.mail_ssl
+            }
         }
         
     except Exception as e:
