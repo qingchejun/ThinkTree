@@ -244,20 +244,21 @@ const AdminUsers = () => {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        // 显示详细结果
-        const resultMessage = `重置邮件发送成功！\n\n收件人: ${data.user_email}\n发送时间: ${new Date(data.sent_time).toLocaleString()}\n\n${data.note}\n\n${data.development_notice || ''}`;
+        // 显示邮件发送成功信息
+        const resultMessage = `✅ 密码重置邮件发送成功！
+
+👤 目标用户: ${data.user_email}
+📧 邮件状态: 已发送
+⏰ 发送时间: ${new Date(data.sent_time).toLocaleString()}
+⚡ 链接有效期: 15分钟
+👨‍💼 ${data.admin_info || ''}
+
+📝 说明: ${data.note}
+
+用户将收到包含安全重置链接的邮件，请提醒用户检查收件箱（包括垃圾邮件文件夹）。`;
         
-        if (data.reset_link) {
-          // 开发环境显示重置链接
-          const showLink = window.confirm(`${resultMessage}\n\n是否查看重置链接？（仅开发环境）`);
-          if (showLink) {
-            alert(`重置链接:\n${data.reset_link}`);
-          }
-        } else {
-          alert(resultMessage);
-        }
-        
-        ToastManager.success('重置邮件发送成功');
+        alert(resultMessage);
+        ToastManager.success('密码重置邮件已发送');
       } else {
         ToastManager.error(data.detail || '发送重置邮件失败');
       }

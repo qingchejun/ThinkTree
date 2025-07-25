@@ -16,8 +16,9 @@ from pydantic import BaseModel
 from app.core.database import get_db
 from app.models.user import User
 from app.models.mindmap import Mindmap
-from app.utils.security import get_password_hash
+from app.utils.security import get_password_hash, create_access_token
 from app.api.auth import get_current_user
+from app.utils.email_service import get_email_service
 
 # 配置日志
 logger = logging.getLogger(__name__)
@@ -420,7 +421,7 @@ async def send_password_reset_email(
     admin_user: User = Depends(get_current_admin_simple),
     db: Session = Depends(get_db)
 ):
-    """管理员发送密码重置邮件（模拟）"""
+    """管理员发送密码重置邮件（真实邮件服务）"""
     try:
         # 查找目标用户
         target_user = db.query(User).filter(User.id == user_id).first()
@@ -437,19 +438,41 @@ async def send_password_reset_email(
                 detail="请使用账户设置页面修改自己的密码"
             )
         
-        # 生成重置令牌（模拟）
-        reset_token = secrets.token_urlsafe(32)
+        # 生成真正的重置令牌（15分钟有效）
+        reset_token = create_access_token(
+            data={"sub": str(target_user.id), "type": "password_reset"},
+            expires_delta=timedelta(minutes=15)
+        )
+        
+        # 构建重置链接
         reset_link = f"https://thinktree-frontend.onrender.com/reset-password?token={reset_token}"
         
-        return {
-            "success": True,
-            "message": f"密码重置邮件已发送到 {target_user.email}",
-            "user_email": target_user.email,
-            "reset_link": reset_link,  # 仅开发阶段显示
-            "sent_time": datetime.now().isoformat(),
-            "note": "用户将收到包含重置链接的邮件，链接有效期为24小时",
-            "development_notice": "当前为开发模式，实际生产环境需要配置邮件服务"
-        }
+        # 发送真实邮件
+        email_service = get_email_service()
+        try:
+            await email_service.send_password_reset_email(
+                email=target_user.email,
+                user_name=target_user.display_name or target_user.email.split('@')[0],
+                reset_link=reset_link
+            )
+            
+            logger.info(f"管理员 {admin_user.email} 为用户 {target_user.email} 发送密码重置邮件成功")
+            
+            return {
+                "success": True,
+                "message": f"密码重置邮件已成功发送到 {target_user.email}",
+                "user_email": target_user.email,
+                "sent_time": datetime.now().isoformat(),
+                "note": "用户将收到包含重置链接的邮件，链接有效期为15分钟",
+                "admin_info": f"操作管理员: {admin_user.email}"
+            }
+            
+        except Exception as email_error:
+            logger.error(f"发送密码重置邮件失败: {str(email_error)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"邮件发送失败: {str(email_error)}"
+            )
         
     except HTTPException:
         raise
