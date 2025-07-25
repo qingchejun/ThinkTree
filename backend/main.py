@@ -77,6 +77,25 @@ async def health_check():
 
 if __name__ == "__main__":
     import uvicorn
-    # 支持 Render 的 PORT 环境变量
-    port = int(os.getenv("PORT", 8000))
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
+    import logging
+    
+    # 配置日志
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
+    
+    try:
+        # 支持 Render 的 PORT 环境变量
+        port = int(os.getenv("PORT", 8000))
+        logger.info(f"Starting ThinkSo API on port {port}")
+        
+        # 检查关键模块导入
+        logger.info("Checking module imports...")
+        from app.api import admin
+        logger.info("Admin module imported successfully")
+        
+        uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
+    except Exception as e:
+        logger.error(f"Failed to start application: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        raise
