@@ -479,38 +479,6 @@ class EmailService:
                 logger.error(f"❌ EMAIL DEBUG: 消息构建异常详情: {traceback.format_exc()}")
                 return False
             
-            logger.info(f"🔍 EMAIL DEBUG: 开始连接SMTP服务器...")
-            
-            try:
-                # 测试SMTP连接
-                import aiosmtplib
-                logger.info(f"🔍 EMAIL DEBUG: aiosmtplib版本: {aiosmtplib.__version__}")
-                
-                # 创建临时SMTP连接进行测试
-                logger.info(f"🔍 EMAIL DEBUG: 测试SMTP连接到 {self.conf.MAIL_SERVER}:{self.conf.MAIL_PORT}")
-                smtp = aiosmtplib.SMTP(hostname=self.conf.MAIL_SERVER, port=self.conf.MAIL_PORT)
-                
-                logger.info(f"🔍 EMAIL DEBUG: 尝试连接...")
-                await smtp.connect()
-                logger.info(f"✅ EMAIL DEBUG: SMTP连接成功")
-                
-                if self.conf.MAIL_STARTTLS:
-                    logger.info(f"🔍 EMAIL DEBUG: 启动TLS...")
-                    await smtp.starttls()
-                    logger.info(f"✅ EMAIL DEBUG: TLS启动成功")
-                
-                logger.info(f"🔍 EMAIL DEBUG: 尝试登录...")
-                await smtp.login(self.conf.MAIL_USERNAME, self.conf.MAIL_PASSWORD)
-                logger.info(f"✅ EMAIL DEBUG: SMTP登录成功")
-                
-                await smtp.quit()
-                logger.info(f"✅ EMAIL DEBUG: SMTP连接测试完成")
-                
-            except Exception as smtp_error:
-                logger.error(f"❌ EMAIL DEBUG: SMTP连接测试失败: {str(smtp_error)}")
-                logger.error(f"❌ EMAIL DEBUG: SMTP连接异常详情: {traceback.format_exc()}")
-                # 继续尝试使用FastMail发送
-            
             logger.info(f"🔍 EMAIL DEBUG: 使用FastMail发送邮件...")
             await self.fm.send_message(message)
             logger.info(f"✅ EMAIL DEBUG: FastMail邮件发送成功!")
