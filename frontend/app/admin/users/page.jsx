@@ -568,7 +568,7 @@ const AdminUsers = () => {
                                   
                                   {/* 下拉菜单 */}
                                   {showDropdown === user.id && (
-                                    <div className="absolute top-full left-0 mt-1 w-40 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-10">
+                                    <div className="absolute top-full left-0 mt-1 w-40 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-50">
                                       <div className="py-1">
                                         <button
                                           onClick={() => sendResetEmail(user)}

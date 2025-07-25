@@ -3,6 +3,8 @@
 """
 
 import logging
+import secrets
+import string
 from datetime import datetime, timedelta
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
@@ -14,6 +16,7 @@ from pydantic import BaseModel
 from app.core.database import get_db
 from app.models.user import User
 from app.models.mindmap import Mindmap
+from app.utils.security import get_password_hash
 
 # 配置日志
 logger = logging.getLogger(__name__)
@@ -53,6 +56,16 @@ class UserListResponse(BaseModel):
     page: int
     per_page: int
     total_pages: int
+
+class UserUpdateRequest(BaseModel):
+    """用户更新请求模型"""
+    is_active: Optional[bool] = None
+    is_verified: Optional[bool] = None
+    display_name: Optional[str] = None
+
+class UserPasswordResetRequest(BaseModel):
+    """管理员重置用户密码请求模型"""
+    new_password: str
 
 # 简化的管理员权限验证
 async def get_current_admin_simple(db: Session = Depends(get_db)):
@@ -178,6 +191,267 @@ async def get_users_list(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="获取用户列表失败"
+        )
+
+# 用户管理操作
+@router.put("/users/{user_id}")
+async def update_user(
+    user_id: int,
+    update_data: UserUpdateRequest,
+    admin_user: User = Depends(get_current_admin_simple),
+    db: Session = Depends(get_db)
+):
+    """更新用户信息"""
+    try:
+        # 查找目标用户
+        target_user = db.query(User).filter(User.id == user_id).first()
+        if not target_user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="用户不存在"
+            )
+        
+        # 防止管理员修改自己的状态
+        if target_user.id == admin_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="不能修改自己的账户状态"
+            )
+        
+        # 应用更新
+        changes = []
+        if update_data.is_active is not None:
+            target_user.is_active = update_data.is_active
+            changes.append(f"is_active: {update_data.is_active}")
+        
+        if update_data.is_verified is not None:
+            target_user.is_verified = update_data.is_verified
+            changes.append(f"is_verified: {update_data.is_verified}")
+        
+        if update_data.display_name is not None:
+            target_user.display_name = update_data.display_name
+            changes.append(f"display_name: {update_data.display_name}")
+        
+        if not changes:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="没有提供任何更新数据"
+            )
+        
+        # 保存更改
+        db.commit()
+        db.refresh(target_user)
+        
+        return {
+            "success": True,
+            "message": f"用户 {target_user.email} 更新成功",
+            "changes": changes
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"更新用户失败: {str(e)}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="更新用户失败"
+        )
+
+@router.delete("/users/{user_id}")
+async def delete_user(
+    user_id: int,
+    admin_user: User = Depends(get_current_admin_simple),
+    db: Session = Depends(get_db)
+):
+    """删除用户（软删除）"""
+    try:
+        # 查找目标用户
+        target_user = db.query(User).filter(User.id == user_id).first()
+        if not target_user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="用户不存在"
+            )
+        
+        # 防止管理员删除自己
+        if target_user.id == admin_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="不能删除自己的账户"
+            )
+        
+        # 软删除：将用户设为非活跃状态
+        target_user.is_active = False
+        
+        db.commit()
+        
+        return {
+            "success": True,
+            "message": f"用户 {target_user.email} 已被删除（软删除）"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"删除用户失败: {str(e)}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="删除用户失败"
+        )
+
+# 密码重置功能
+@router.post("/users/{user_id}/reset-password")
+async def admin_reset_user_password(
+    user_id: int,
+    request: UserPasswordResetRequest,
+    admin_user: User = Depends(get_current_admin_simple),
+    db: Session = Depends(get_db)
+):
+    """管理员重置用户密码（直接设置）"""
+    try:
+        # 查找目标用户
+        target_user = db.query(User).filter(User.id == user_id).first()
+        if not target_user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="用户不存在"
+            )
+        
+        # 防止管理员重置自己的密码
+        if target_user.id == admin_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="请使用账户设置页面修改自己的密码"
+            )
+        
+        # 简单的密码验证
+        if len(request.new_password) < 8:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="密码长度至少8位"
+            )
+        
+        # 更新密码
+        target_user.password_hash = get_password_hash(request.new_password)
+        
+        db.commit()
+        db.refresh(target_user)
+        
+        return {
+            "success": True,
+            "message": f"用户 {target_user.email} 的密码已重置成功",
+            "user_email": target_user.email,
+            "reset_time": datetime.now().isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"重置用户密码失败: {str(e)}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="重置密码失败"
+        )
+
+@router.post("/users/{user_id}/generate-temp-password")
+async def generate_temp_password_for_user(
+    user_id: int,
+    admin_user: User = Depends(get_current_admin_simple),
+    db: Session = Depends(get_db)
+):
+    """管理员为用户生成临时密码"""
+    try:
+        # 查找目标用户
+        target_user = db.query(User).filter(User.id == user_id).first()
+        if not target_user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="用户不存在"
+            )
+        
+        # 防止管理员为自己生成临时密码
+        if target_user.id == admin_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="请使用账户设置页面修改自己的密码"
+            )
+        
+        # 生成临时密码：8位字母数字组合
+        temp_password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(8))
+        
+        # 更新用户密码
+        target_user.password_hash = get_password_hash(temp_password)
+        
+        db.commit()
+        db.refresh(target_user)
+        
+        return {
+            "success": True,
+            "message": f"已为用户 {target_user.email} 生成临时密码",
+            "temp_password": temp_password,
+            "user_email": target_user.email,
+            "valid_hours": 24,
+            "generated_time": datetime.now().isoformat(),
+            "warning": "请立即通过安全渠道将此临时密码告知用户，并提醒用户登录后立即修改密码"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"生成临时密码失败: {str(e)}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="生成临时密码失败"
+        )
+
+@router.post("/users/{user_id}/send-reset-email")
+async def send_password_reset_email(
+    user_id: int,
+    admin_user: User = Depends(get_current_admin_simple),
+    db: Session = Depends(get_db)
+):
+    """管理员发送密码重置邮件（模拟）"""
+    try:
+        # 查找目标用户
+        target_user = db.query(User).filter(User.id == user_id).first()
+        if not target_user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="用户不存在"
+            )
+        
+        # 防止管理员为自己发送重置邮件
+        if target_user.id == admin_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="请使用账户设置页面修改自己的密码"
+            )
+        
+        # 生成重置令牌（模拟）
+        reset_token = secrets.token_urlsafe(32)
+        reset_link = f"https://thinktree-frontend.onrender.com/reset-password?token={reset_token}"
+        
+        return {
+            "success": True,
+            "message": f"密码重置邮件已发送到 {target_user.email}",
+            "user_email": target_user.email,
+            "reset_link": reset_link,  # 仅开发阶段显示
+            "sent_time": datetime.now().isoformat(),
+            "note": "用户将收到包含重置链接的邮件，链接有效期为24小时",
+            "development_notice": "当前为开发模式，实际生产环境需要配置邮件服务"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"发送密码重置邮件失败: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="发送重置邮件失败"
         )
 
 @router.get("/health")
