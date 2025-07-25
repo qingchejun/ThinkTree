@@ -6,10 +6,10 @@
 
 ## 🌐 在线体验
 
-- **🖥️ 前端应用**: https://thinktree-frontend.onrender.com
-- **👤 邀请制注册**: https://thinktree-frontend.onrender.com/register (需邀请码)
-- **🔐 用户登录**: https://thinktree-frontend.onrender.com/login
-- **🔑 忘记密码**: https://thinktree-frontend.onrender.com/forgot-password
+- **🖥️ 前端应用**: https://thinkso.io
+- **👤 邀请制注册**: https://thinkso.io/register (需邀请码)
+- **🔐 用户登录**: https://thinkso.io/login
+- **🔑 忘记密码**: https://thinkso.io/forgot-password
 - **🔧 API 服务**: https://thinktree-backend.onrender.com
 - **📚 API 文档**: https://thinktree-backend.onrender.com/docs
 - **💚 健康检查**: https://thinktree-backend.onrender.com/health
@@ -134,7 +134,7 @@ ThinkSo 实现了完整的数据持久化系统，用户可以保存和管理自
 - **数据安全**: 所有用户数据永久保存，不会因重新部署丢失
 
 **🚀 立即体验**
-1. 获取邀请码后访问 [注册页面](https://thinktree-frontend.onrender.com/register) 创建账户
+1. 获取邀请码后访问 [注册页面](https://thinkso.io/register) 创建账户
 2. 检查邮箱完成邮箱验证激活账户
 3. 登录后生成思维导图，点击"💾 保存"按钮
 4. 享受完整认证保护的个人化思维导图体验
@@ -146,9 +146,9 @@ ThinkSo 实现了完整的数据持久化系统，用户可以保存和管理自
 ```
 邀请码获取 → 邀请制注册 → 邮箱验证 → 账户激活 → JWT认证登录
      ↓
-     → https://thinktree-frontend.onrender.com (前端 + React Context + 密码重置)
+     → https://thinkso.io (前端 + React Context + 密码重置)
      ↓
-     → https://thinktree-backend.onrender.com (后端 + JWT认证 + Gmail SMTP)
+     → https://api.thinkso.io (后端 + JWT认证 + Gmail SMTP)
      ↓
      → PostgreSQL 数据库 (用户 + 思维导图 + 邀请码数据)
      ↓
@@ -192,7 +192,7 @@ ThinkTree/
 
 ### 在线使用 (推荐)
 
-1. **访问应用**: https://thinktree-frontend.onrender.com
+1. **访问应用**: https://thinkso.io
 2. **选择模式**: 文件上传 或 直接输入文本
 3. **上传文档**: 支持 PDF、DOCX、TXT、MD、SRT 格式
 4. **生成思维导图**: AI 自动解析并生成专业思维导图
@@ -464,5 +464,5 @@ curl -X POST http://localhost:8000/api/process-text \
 **开发团队**: ThinkSo Team  
 **最后更新**: 2024-07-24  
 **项目状态**: 🎉 v3.2.0-stable 完整认证体系 + 密码重置功能完成  
-**在线地址**: https://thinktree-frontend.onrender.com  
+**在线地址**: https://thinkso.io  
 **技术架构**: 邀请制注册 + 邮箱验证 + 密码重置 + 思维导图生成 + 分享导出

@@ -47,7 +47,7 @@ class Settings(BaseSettings):
     # CORS 配置
     allowed_origins: list = [
         "http://localhost:3000",
-        "https://thinktree-frontend.onrender.com"
+        "https://thinkso.io"
     ]
     
     # 邮件配置
@@ -61,7 +61,7 @@ class Settings(BaseSettings):
     mail_ssl: bool = os.getenv("MAIL_SSL_TLS", os.getenv("MAIL_SSL", "false")).lower() == "true"
     
     # 前端URL配置 (用于邮箱验证链接)
-    frontend_url: str = os.getenv("FRONTEND_URL", "https://thinktree-frontend.onrender.com")
+    frontend_url: str = os.getenv("FRONTEND_URL", "https://thinkso.io")
     
     # Google reCAPTCHA 配置
     recaptcha_secret_key: str = os.getenv("RECAPTCHA_SECRET_KEY", "")

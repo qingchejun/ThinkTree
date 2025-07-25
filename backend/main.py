@@ -42,8 +42,7 @@ async def startup_event():
 # 配置CORS - 支持环境变量配置允许的域名
 allowed_origins = [
     "http://localhost:3000",  # 本地开发
-    "https://thinktree-frontend.onrender.com",  # Render前端域名
-    "https://thinkso.io",  # 新的生产域名
+    "https://thinkso.io",  # 生产域名
     "https://www.thinkso.io",  # 支持www子域名
 ]
 

@@ -33,7 +33,7 @@ services:
     startCommand: cd frontend && npm start
     envVars:
       - key: NEXT_PUBLIC_API_URL
-        value: https://thinktree-backend.onrender.com # 替换为实际的后端服务 URL
+        value: https://thinktree-backend.onrender.com # 后端服务 URL
 
 # PostgreSQL 数据库
 databases:

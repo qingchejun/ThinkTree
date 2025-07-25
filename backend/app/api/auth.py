@@ -606,7 +606,7 @@ async def request_password_reset(
             )
         
         # 构建重置链接
-        reset_link = f"https://thinktree-frontend.onrender.com/reset-password?token={reset_token}"
+        reset_link = f"https://thinkso.io/reset-password?token={reset_token}"
         logger.info(f"🔍 DEBUG: 重置链接构建完成: {reset_link[:50]}...")
         
         # 发送密码重置邮件
