@@ -308,6 +308,17 @@ class EmailService:
             logger.info(f"🔍 EMAIL DEBUG: MAIL_USERNAME: {self.conf.MAIL_USERNAME}")
             logger.info(f"🔍 EMAIL DEBUG: MAIL_STARTTLS: {self.conf.MAIL_STARTTLS}")
             logger.info(f"🔍 EMAIL DEBUG: MAIL_SSL_TLS: {self.conf.MAIL_SSL_TLS}")
+            logger.info(f"🔍 EMAIL DEBUG: USE_CREDENTIALS: {self.conf.USE_CREDENTIALS}")
+            logger.info(f"🔍 EMAIL DEBUG: VALIDATE_CERTS: {self.conf.VALIDATE_CERTS}")
+            
+            # 检查密码是否设置
+            password_status = "SET" if self.conf.MAIL_PASSWORD else "NOT_SET"
+            password_length = len(self.conf.MAIL_PASSWORD) if self.conf.MAIL_PASSWORD else 0
+            logger.info(f"🔍 EMAIL DEBUG: MAIL_PASSWORD: {password_status} (长度: {password_length})")
+            
+            # 测试FastMail实例
+            logger.info(f"🔍 EMAIL DEBUG: FastMail实例: {type(self.fm)}")
+            logger.info(f"🔍 EMAIL DEBUG: FastMail配置: {self.fm.config}")
             
             html_body = f"""
             <!DOCTYPE html>
@@ -447,20 +458,62 @@ class EmailService:
             """
             
             logger.info(f"🔍 EMAIL DEBUG: 开始构建邮件消息...")
-            message = MessageSchema(
-                subject="🔑 ThinkSo 密码重置 - 请在15分钟内完成",
-                recipients=[email],
-                body=text_body,
-                html=html_body,
-                subtype=MessageType.html
-            )
-            logger.info(f"🔍 EMAIL DEBUG: 邮件消息构建完成")
-            logger.info(f"🔍 EMAIL DEBUG: 收件人: {message.recipients}")
-            logger.info(f"🔍 EMAIL DEBUG: 主题: {message.subject}")
             
-            logger.info(f"🔍 EMAIL DEBUG: 开始发送邮件...")
+            try:
+                message = MessageSchema(
+                    subject="🔑 ThinkSo 密码重置 - 请在15分钟内完成",
+                    recipients=[email],
+                    body=text_body,
+                    html=html_body,
+                    subtype=MessageType.html
+                )
+                logger.info(f"✅ EMAIL DEBUG: 邮件消息构建成功")
+                logger.info(f"🔍 EMAIL DEBUG: 收件人: {message.recipients}")
+                logger.info(f"🔍 EMAIL DEBUG: 主题: {message.subject}")
+                logger.info(f"🔍 EMAIL DEBUG: 子类型: {message.subtype}")
+                logger.info(f"🔍 EMAIL DEBUG: 文本内容长度: {len(text_body)}")
+                logger.info(f"🔍 EMAIL DEBUG: HTML内容长度: {len(html_body)}")
+                
+            except Exception as msg_error:
+                logger.error(f"❌ EMAIL DEBUG: 邮件消息构建失败: {str(msg_error)}")
+                logger.error(f"❌ EMAIL DEBUG: 消息构建异常详情: {traceback.format_exc()}")
+                return False
+            
+            logger.info(f"🔍 EMAIL DEBUG: 开始连接SMTP服务器...")
+            
+            try:
+                # 测试SMTP连接
+                import aiosmtplib
+                logger.info(f"🔍 EMAIL DEBUG: aiosmtplib版本: {aiosmtplib.__version__}")
+                
+                # 创建临时SMTP连接进行测试
+                logger.info(f"🔍 EMAIL DEBUG: 测试SMTP连接到 {self.conf.MAIL_SERVER}:{self.conf.MAIL_PORT}")
+                smtp = aiosmtplib.SMTP(hostname=self.conf.MAIL_SERVER, port=self.conf.MAIL_PORT)
+                
+                logger.info(f"🔍 EMAIL DEBUG: 尝试连接...")
+                await smtp.connect()
+                logger.info(f"✅ EMAIL DEBUG: SMTP连接成功")
+                
+                if self.conf.MAIL_STARTTLS:
+                    logger.info(f"🔍 EMAIL DEBUG: 启动TLS...")
+                    await smtp.starttls()
+                    logger.info(f"✅ EMAIL DEBUG: TLS启动成功")
+                
+                logger.info(f"🔍 EMAIL DEBUG: 尝试登录...")
+                await smtp.login(self.conf.MAIL_USERNAME, self.conf.MAIL_PASSWORD)
+                logger.info(f"✅ EMAIL DEBUG: SMTP登录成功")
+                
+                await smtp.quit()
+                logger.info(f"✅ EMAIL DEBUG: SMTP连接测试完成")
+                
+            except Exception as smtp_error:
+                logger.error(f"❌ EMAIL DEBUG: SMTP连接测试失败: {str(smtp_error)}")
+                logger.error(f"❌ EMAIL DEBUG: SMTP连接异常详情: {traceback.format_exc()}")
+                # 继续尝试使用FastMail发送
+            
+            logger.info(f"🔍 EMAIL DEBUG: 使用FastMail发送邮件...")
             await self.fm.send_message(message)
-            logger.info(f"✅ EMAIL DEBUG: 邮件发送成功!")
+            logger.info(f"✅ EMAIL DEBUG: FastMail邮件发送成功!")
             return True
             
         except Exception as e:
