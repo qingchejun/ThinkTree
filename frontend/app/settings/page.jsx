@@ -3,7 +3,7 @@ import { useState, useContext, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AuthContext from '@/context/AuthContext';
 import Header from '@/components/common/Header';
-import { getProfile, updateProfile, generateInvitationCode, getUserInvitations } from '@/lib/api';
+import { getProfile, updateProfile, generateInvitationCode, getUserInvitations, updatePassword } from '@/lib/api';
 import Toast from '@/components/common/Toast';
 
 const settingsNavItems = [
@@ -44,6 +44,11 @@ const SettingsContent = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [toast, setToast] = useState(null);
   const [displayName, setDisplayName] = useState('');
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
   
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
@@ -191,7 +196,10 @@ const SettingsContent = () => {
                     </label>
                     <input
                       type="password"
+                      value={passwordForm.currentPassword}
+                      onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="请输入当前密码"
                     />
                   </div>
                   <div>
@@ -200,7 +208,10 @@ const SettingsContent = () => {
                     </label>
                     <input
                       type="password"
+                      value={passwordForm.newPassword}
+                      onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="请输入新密码（至少8位）"
                     />
                   </div>
                   <div>
@@ -209,11 +220,18 @@ const SettingsContent = () => {
                     </label>
                     <input
                       type="password"
+                      value={passwordForm.confirmPassword}
+                      onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="请再次输入新密码"
                     />
                   </div>
-                  <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                    更新密码
+                  <button 
+                    onClick={handlePasswordUpdate}
+                    disabled={isLoading}
+                    className={`px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed ${isLoading ? 'opacity-50' : ''}`}
+                  >
+                    {isLoading ? '更新中...' : '更新密码'}
                   </button>
                 </div>
               </div>
@@ -268,7 +286,63 @@ const SettingsContent = () => {
             }
           } catch (error) {
             console.error('生成邀请码失败:', error);
-            showToast(error.message || '生成邀请码失败，请稍后重试', 'error');
+            let errorMessage = '生成邀请码失败，请稍后重试';
+            
+            // 检查是否是邮箱验证问题
+            if (error.message && error.message.includes('验证邮箱')) {
+              errorMessage = '请先验证您的邮箱，然后再生成邀请码';
+            } else if (error.message) {
+              errorMessage = error.message;
+            }
+            
+            showToast(errorMessage, 'error');
+          } finally {
+            setIsLoading(false);
+          }
+        };
+
+        const handlePasswordUpdate = async (e) => {
+          e.preventDefault();
+          
+          // 基本验证
+          if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+            showToast('请填写所有密码字段', 'error');
+            return;
+          }
+          
+          if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+            showToast('新密码和确认密码不一致', 'error');
+            return;
+          }
+          
+          if (passwordForm.newPassword.length < 8) {
+            showToast('新密码长度不能少于8位', 'error');
+            return;
+          }
+          
+          try {
+            setIsLoading(true);
+            const response = await updatePassword(
+              token, 
+              passwordForm.currentPassword, 
+              passwordForm.newPassword, 
+              passwordForm.confirmPassword
+            );
+            
+            if (response.success) {
+              showToast('密码更新成功');
+              // 清空表单
+              setPasswordForm({
+                currentPassword: '',
+                newPassword: '',
+                confirmPassword: ''
+              });
+            } else {
+              showToast(response.message || '密码更新失败', 'error');
+            }
+          } catch (error) {
+            console.error('密码更新失败:', error);
+            showToast(error.message || '密码更新失败，请稍后重试', 'error');
           } finally {
             setIsLoading(false);
           }

@@ -7,6 +7,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '../../context/AuthContext'
+import ServiceStatus from '../../components/common/ServiceStatus'
 
 function LoginForm() {
   const router = useRouter()
@@ -20,6 +21,7 @@ function LoginForm() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [verificationSuccess, setVerificationSuccess] = useState(false)
+  const [serviceStatus, setServiceStatus] = useState('checking')
 
   // 检查是否从邮箱验证页面跳转过来
   useEffect(() => {
@@ -47,37 +49,66 @@ function LoginForm() {
     setSuccess('')
 
     try {
+      // 设置请求超时
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10秒超时
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(formData),
+        signal: controller.signal
       })
+
+      clearTimeout(timeoutId)
+
+      if (!response.ok) {
+        // 尝试解析错误响应
+        let errorMessage = '登录失败，请检查您的邮箱和密码'
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.detail || errorMessage
+        } catch (parseError) {
+          // 如果无法解析JSON，使用默认错误信息
+          if (response.status === 401) {
+            errorMessage = '邮箱或密码错误'
+          } else if (response.status >= 500) {
+            errorMessage = '服务器暂时不可用，请稍后重试'
+          }
+        }
+        setError(errorMessage)
+        return
+      }
 
       const data = await response.json()
 
-      if (response.ok) {
-        setSuccess('登录成功！正在跳转...')
-        
-        // 使用全局AuthContext的login函数
-        const loginResult = await login(data.access_token)
-        
-        if (loginResult.success) {
-          // 登录成功，检查是否有重定向参数
-          const redirectUrl = searchParams.get('redirect') || '/'
-          setTimeout(() => {
-            router.push(redirectUrl)
-          }, 1500)
-        } else {
-          setError(loginResult.error || '登录处理失败')
-        }
+      setSuccess('登录成功！正在跳转...')
+      
+      // 使用全局AuthContext的login函数
+      const loginResult = await login(data.access_token)
+      
+      if (loginResult.success) {
+        // 登录成功，检查是否有重定向参数
+        const redirectUrl = searchParams.get('redirect') || '/'
+        setTimeout(() => {
+          router.push(redirectUrl)
+        }, 1500)
       } else {
-        setError(data.detail || '登录失败，请检查您的邮箱和密码')
+        setError(loginResult.error || '登录处理失败')
       }
     } catch (err) {
-      setError('网络错误，请稍后重试')
       console.error('登录错误:', err)
+      
+      // 具体的错误处理
+      if (err.name === 'AbortError') {
+        setError('请求超时，请检查网络连接后重试')
+      } else if (err instanceof TypeError && err.message.includes('fetch')) {
+        setError('无法连接到服务器，请检查网络连接')
+      } else {
+        setError('网络错误，请稍后重试')
+      }
     } finally {
       setLoading(false)
     }
@@ -166,11 +197,21 @@ function LoginForm() {
               </div>
             )}
 
+            {/* 服务状态显示 */}
+            <div className="flex justify-between items-center">
+              <ServiceStatus onStatusChange={setServiceStatus} />
+              {serviceStatus === 'offline' && (
+                <div className="text-xs text-red-600">
+                  后端服务暂时不可用
+                </div>
+              )}
+            </div>
+
             {/* 登录按钮 */}
             <div>
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || serviceStatus === 'offline'}
                 className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200"
               >
                 {loading ? (
@@ -178,6 +219,8 @@ function LoginForm() {
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                     登录中...
                   </div>
+                ) : serviceStatus === 'offline' ? (
+                  '服务不可用'
                 ) : (
                   '登录'
                 )}

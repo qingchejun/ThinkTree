@@ -27,11 +27,18 @@ export function AuthProvider({ children }) {
   // 获取用户信息
   const fetchUserProfile = async (authToken) => {
     try {
+      // 设置请求超时
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 8000) // 8秒超时
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/profile`, {
         headers: {
           'Authorization': `Bearer ${authToken}`
-        }
+        },
+        signal: controller.signal
       })
+
+      clearTimeout(timeoutId)
 
       if (response.ok) {
         const userData = await response.json()
@@ -40,11 +47,21 @@ export function AuthProvider({ children }) {
       } else {
         console.error('获取用户信息失败:', response.status, response.statusText)
         // 令牌无效，清除存储的数据
-        localStorage.removeItem('access_token')
+        if (response.status === 401) {
+          localStorage.removeItem('access_token')
+        }
         return null
       }
     } catch (error) {
       console.error('获取用户信息失败:', error)
+      
+      // 超时或网络错误时，不清除token，让用户可以重试
+      if (error.name === 'AbortError') {
+        console.error('用户信息获取超时')
+      } else if (error instanceof TypeError && error.message.includes('fetch')) {
+        console.error('无法连接到服务器')
+      }
+      
       return null
     }
   }

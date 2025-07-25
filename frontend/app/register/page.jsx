@@ -27,7 +27,15 @@ function RegisterForm() {
   const [invitationInfo, setInvitationInfo] = useState(null)
   const [validatingInvitation, setValidatingInvitation] = useState(false)
   const [passwordStrength, setPasswordStrength] = useState(null)
-  const { executeRecaptcha } = useGoogleReCaptcha()
+  // 安全地使用reCAPTCHA钩子
+  let executeRecaptcha = null
+  try {
+    const recaptchaHook = useGoogleReCaptcha()
+    executeRecaptcha = recaptchaHook?.executeRecaptcha
+  } catch (error) {
+    // 如果没有Provider，executeRecaptcha保持为null
+    console.log('reCAPTCHA未配置，跳过人机验证')
+  }
 
   // 从URL参数获取邀请码
   useEffect(() => {
@@ -123,7 +131,9 @@ function RegisterForm() {
     try {
       // 获取reCAPTCHA令牌
       let recaptchaToken = null
-      if (executeRecaptcha) {
+      const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY
+      
+      if (siteKey && executeRecaptcha) {
         try {
           recaptchaToken = await executeRecaptcha('register')
         } catch (recaptchaError) {

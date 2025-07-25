@@ -145,6 +145,22 @@ export async function updateProfile(profileData, token) {
   })
 }
 
+// 密码更新 API
+export async function updatePassword(token, currentPassword, newPassword, confirmPassword) {
+  return await apiCall('/api/auth/password', {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      current_password: currentPassword,
+      new_password: newPassword,
+      confirm_password: confirmPassword
+    })
+  })
+}
+
 // 邀请码相关 API
 export async function generateInvitationCode(token, description = '') {
   return await apiCall('/api/invitations/create', {
