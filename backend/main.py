@@ -8,9 +8,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
-# Test with minimal admin module first
-from app.api import upload, mindmaps, auth, share
-# from app.api import invitations  # 暂时禁用原始invitations模块
+# Restore full functionality with all modules
+from app.api import upload, mindmaps, auth, share, invitations
 from app.api import admin_minimal as admin
 from app.core.config import settings
 
@@ -67,10 +66,8 @@ app.include_router(upload.router, prefix="/api", tags=["upload"])
 app.include_router(mindmaps.router, prefix="/api/mindmaps", tags=["mindmaps"])
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(share.router, prefix="/api", tags=["share"])
-# app.include_router(invitations.router, prefix="/api/invitations", tags=["invitations"])  # 暂时禁用
+app.include_router(invitations.router, prefix="/api/invitations", tags=["invitations"])
 app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
-# 用户端邀请码API使用admin模块的路由，但不添加admin前缀
-app.include_router(admin.router, prefix="/api", tags=["user-invitations"], include_in_schema=False)
 
 @app.get("/")
 async def root():

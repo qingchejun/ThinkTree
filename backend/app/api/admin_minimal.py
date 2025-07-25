@@ -555,72 +555,7 @@ async def create_admin_invitations(
             detail="生成邀请码失败"
         )
 
-# 用户端邀请码API（由于原invitations模块有依赖问题，暂时在这里实现）
-@router.post("/invitations/create", tags=["user-invitations"])
-async def create_user_invitation(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """用户生成邀请码（简化版）"""
-    try:
-        # 检查用户是否验证
-        if not current_user.is_verified:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="请先验证邮箱后再生成邀请码"
-            )
-        
-        # 生成邀请码
-        code = ''.join(secrets.choice('23456789ABCDEFGHJKLMNPQRSTUVWXYZ') for _ in range(8))
-        
-        logger.info(f"用户 {current_user.email} 生成邀请码: {code}")
-        
-        return {
-            "success": True,
-            "message": "邀请码生成成功（模拟版本）",
-            "invitation": {
-                "code": code,
-                "created_at": datetime.now().isoformat(),
-                "description": "用户设置页面生成",
-                "is_used": False
-            }
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"用户生成邀请码失败: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="生成邀请码失败"
-        )
-
-@router.get("/invitations/list", tags=["user-invitations"])
-async def get_user_invitations(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """获取用户的邀请码列表（简化版）"""
-    try:
-        # 返回模拟数据
-        mock_invitations = []
-        for i in range(5):
-            code = ''.join(secrets.choice('23456789ABCDEFGHJKLMNPQRSTUVWXYZ') for _ in range(8))
-            mock_invitations.append({
-                "code": code,
-                "is_used": i < 2,  # 前两个设为已使用
-                "created_at": datetime.now().isoformat(),
-                "description": f"模拟邀请码 {i+1}"
-            })
-        
-        return mock_invitations
-        
-    except Exception as e:
-        logger.error(f"获取用户邀请码列表失败: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="获取邀请码列表失败"
-        )
+# 移除模拟邀请码功能 - 现在使用完整的invitations模块
 
 @router.get("/health")
 async def admin_health():
