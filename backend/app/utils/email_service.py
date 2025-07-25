@@ -439,10 +439,8 @@ class EmailService:
             return True
             
         except Exception as e:
-            error_msg = f"发送密码重置邮件失败: {str(e)}"
-            print(error_msg)
-            # 抛出异常而不是返回False，提供更好的错误信息
-            raise Exception(error_msg)
+            print(f"发送密码重置邮件失败: {str(e)}")
+            return False
 
 
 # 全局邮件服务实例

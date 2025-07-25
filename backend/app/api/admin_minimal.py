@@ -450,25 +450,34 @@ async def send_password_reset_email(
         # 发送真实邮件
         email_service = get_email_service()
         try:
-            await email_service.send_password_reset_email(
+            email_sent = await email_service.send_password_reset_email(
                 email=target_user.email,
                 user_name=target_user.display_name or target_user.email.split('@')[0],
                 reset_link=reset_link
             )
             
-            logger.info(f"管理员 {admin_user.email} 为用户 {target_user.email} 发送密码重置邮件成功")
+            if email_sent:
+                logger.info(f"管理员 {admin_user.email} 为用户 {target_user.email} 发送密码重置邮件成功")
+                
+                return {
+                    "success": True,
+                    "message": f"密码重置邮件已成功发送到 {target_user.email}",
+                    "user_email": target_user.email,
+                    "sent_time": datetime.now().isoformat(),
+                    "note": "用户将收到包含重置链接的邮件，链接有效期为15分钟",
+                    "admin_info": f"操作管理员: {admin_user.email}"
+                }
+            else:
+                logger.error(f"发送密码重置邮件失败: 邮件服务返回失败")
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="邮件发送失败，请稍后重试"
+                )
             
-            return {
-                "success": True,
-                "message": f"密码重置邮件已成功发送到 {target_user.email}",
-                "user_email": target_user.email,
-                "sent_time": datetime.now().isoformat(),
-                "note": "用户将收到包含重置链接的邮件，链接有效期为15分钟",
-                "admin_info": f"操作管理员: {admin_user.email}"
-            }
-            
+        except HTTPException:
+            raise
         except Exception as email_error:
-            logger.error(f"发送密码重置邮件失败: {str(email_error)}")
+            logger.error(f"发送密码重置邮件异常: {str(email_error)}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"邮件发送失败: {str(email_error)}"

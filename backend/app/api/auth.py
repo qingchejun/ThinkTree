@@ -591,16 +591,19 @@ async def request_password_reset(
                 reset_link=reset_link
             )
             
-            if not email_sent:
+            if email_sent:
+                print(f"密码重置邮件已发送到: {user.email}")
+            else:
                 print(f"密码重置邮件发送失败 - 邮件服务返回False")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail="邮件发送失败，请稍后重试"
                 )
+                
         except HTTPException:
             raise
         except Exception as e:
-            print(f"发送密码重置邮件失败: {str(e)}")
+            print(f"发送密码重置邮件异常: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="邮件发送失败，请稍后重试"
