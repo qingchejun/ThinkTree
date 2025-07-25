@@ -732,6 +732,23 @@ async def debug_email_test(request: dict):
         }
 
 
+@router.get("/debug-user-status/{email}")
+async def debug_user_status(email: str, db: Session = Depends(get_db)):
+    """调试端点 - 查看用户状态"""
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        return {"exists": False, "email": email}
+    
+    return {
+        "exists": True,
+        "email": user.email,
+        "is_verified": user.is_verified,
+        "is_active": user.is_active,
+        "id": user.id,
+        "created_at": user.created_at.isoformat() if user.created_at else None
+    }
+
+
 @router.post("/reset-password", response_model=PasswordResetResponse)
 async def reset_password(
     request: PasswordResetExecute,
