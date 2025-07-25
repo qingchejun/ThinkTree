@@ -150,9 +150,13 @@ export async function generateInvitationCode(token, description = '') {
   return await apiCall('/api/invitations/create', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${token}`
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ description })
+    body: JSON.stringify({ 
+      description: description || null,
+      expires_hours: null 
+    })
   })
 }
 
