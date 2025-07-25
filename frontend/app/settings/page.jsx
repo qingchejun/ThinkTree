@@ -1,5 +1,5 @@
 'use client';
-import { useState, useContext, useEffect } from 'react';
+import { useState, useContext, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AuthContext from '@/context/AuthContext';
 import Header from '@/components/common/Header';
@@ -33,7 +33,8 @@ const settingsNavItems = [
   }
 ];
 
-const SettingsPage = () => {
+// 分离出使用 useSearchParams 的组件
+const SettingsContent = () => {
   const { user, token, loading } = useContext(AuthContext);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -395,6 +396,19 @@ const SettingsPage = () => {
         />
       )}
     </div>
+  );
+};
+
+// 主页面组件，使用 Suspense 包装
+const SettingsPage = () => {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    }>
+      <SettingsContent />
+    </Suspense>
   );
 };
 
