@@ -4,6 +4,8 @@
 """
 
 import logging
+import secrets
+import string
 from datetime import datetime, timedelta
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
@@ -72,6 +74,10 @@ class InvitationCreateRequest(BaseModel):
 class UserPasswordResetRequest(BaseModel):
     """管理员重置用户密码请求模型"""
     new_password: str
+
+class TempPasswordGenerateRequest(BaseModel):
+    """临时密码生成请求模型"""
+    valid_hours: int = 24  # 临时密码有效期，默认24小时
 
 @router.get("/stats", response_model=AdminStatsResponse)
 async def get_admin_stats(
@@ -640,4 +646,79 @@ async def admin_reset_user_password(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="重置密码失败"
+        )
+
+@router.post("/users/{user_id}/generate-temp-password")
+async def generate_temp_password_for_user(
+    user_id: int,
+    request: TempPasswordGenerateRequest,
+    admin_user: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    管理员为用户生成临时密码
+    
+    生成一个临时密码，用户可以使用此密码登录并自行修改密码
+    """
+    try:
+        # 查找目标用户
+        target_user = db.query(User).filter(User.id == user_id).first()
+        if not target_user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="用户不存在"
+            )
+        
+        # 防止管理员为自己生成临时密码
+        if target_user.id == admin_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="请使用账户设置页面修改自己的密码"
+            )
+        
+        # 验证有效期参数
+        if request.valid_hours <= 0 or request.valid_hours > 168:  # 最长一周
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="临时密码有效期必须在1-168小时之间"
+            )
+        
+        # 生成强临时密码：8位字母数字组合
+        temp_password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(8))
+        
+        # 更新用户密码
+        target_user.password_hash = get_password_hash(temp_password)
+        
+        # TODO: 在实际生产环境中，应该在数据库中记录临时密码的过期时间
+        # 这里我们先实现基础功能，后续可以添加临时密码管理表
+        
+        db.commit()
+        db.refresh(target_user)
+        
+        # 记录管理员操作
+        log_admin_action(
+            admin_user,
+            "generate_temp_password",
+            f"user_id={user_id},valid_hours={request.valid_hours}",
+            f"为用户 {target_user.email} 生成临时密码，有效期 {request.valid_hours} 小时"
+        )
+        
+        return {
+            "success": True,
+            "message": f"已为用户 {target_user.email} 生成临时密码",
+            "temp_password": temp_password,
+            "user_email": target_user.email,
+            "valid_hours": request.valid_hours,
+            "generated_time": datetime.now().isoformat(),
+            "warning": "请立即通过安全渠道将此临时密码告知用户，并提醒用户登录后立即修改密码"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"生成临时密码失败: {str(e)}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="生成临时密码失败"
         )

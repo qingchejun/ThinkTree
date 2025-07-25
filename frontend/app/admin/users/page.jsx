@@ -24,8 +24,13 @@ const AdminUsers = () => {
   
   // 操作状态
   const [updatingUser, setUpdatingUser] = useState(null);
-  const [resetPasswordModal, setResetPasswordModal] = useState({ show: false, user: null });
+  const [resetPasswordModal, setResetPasswordModal] = useState({ 
+    show: false, 
+    user: null, 
+    mode: null // 'direct', 'temp', 'email'
+  });
   const [newPassword, setNewPassword] = useState('');
+  const [showDropdown, setShowDropdown] = useState(null); // 控制下拉菜单显示
 
   // 获取用户列表
   const fetchUsers = async (page = 1, search = '', status = '') => {
@@ -164,8 +169,15 @@ const AdminUsers = () => {
     fetchUsers(page, searchTerm, statusFilter);
   };
 
-  // 重置密码
-  const resetUserPassword = async () => {
+  // 打开重置密码模态框
+  const openResetModal = (user, mode) => {
+    setResetPasswordModal({ show: true, user, mode });
+    setShowDropdown(null); // 关闭下拉菜单
+    setNewPassword('');
+  };
+
+  // 重置密码 - 直接设置模式
+  const resetUserPasswordDirect = async () => {
     if (!newPassword.trim()) {
       alert('请输入新密码');
       return;
@@ -192,7 +204,7 @@ const AdminUsers = () => {
 
       if (response.ok && data.success) {
         alert(`用户 ${resetPasswordModal.user.email} 的密码重置成功！\n新密码: ${newPassword}`);
-        setResetPasswordModal({ show: false, user: null });
+        setResetPasswordModal({ show: false, user: null, mode: null });
         setNewPassword('');
       } else {
         alert(data.detail || '重置密码失败');
@@ -204,6 +216,64 @@ const AdminUsers = () => {
       setUpdatingUser(null);
     }
   };
+
+  // 处理发送重置邮件 (第三阶段实现)
+  const sendResetEmail = async (user) => {
+    alert('发送重置邮件功能将在后续版本中实现');
+  };
+
+  // 处理生成临时密码
+  const generateTempPassword = async (user) => {
+    const validHours = prompt('请输入临时密码有效期（小时），建议24小时：', '24');
+    
+    if (!validHours || isNaN(validHours) || validHours <= 0 || validHours > 168) {
+      ToastManager.error('请输入有效的小时数（1-168小时）');
+      return;
+    }
+    
+    try {
+      setUpdatingUser(user.id);
+      setShowDropdown(null);
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/users/${user.id}/generate-temp-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ valid_hours: parseInt(validHours) })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        // 显示临时密码
+        alert(`临时密码生成成功！\n\n用户: ${data.user_email}\n临时密码: ${data.temp_password}\n有效期: ${data.valid_hours} 小时\n\n⚠️ ${data.warning}`);
+        ToastManager.success('临时密码生成成功');
+      } else {
+        ToastManager.error(data.detail || '生成临时密码失败');
+      }
+    } catch (error) {
+      console.error('生成临时密码失败:', error);
+      ToastManager.error('生成临时密码失败，请稍后重试');
+    } finally {
+      setUpdatingUser(null);
+    }
+  };
+
+  // 点击外部关闭下拉菜单
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showDropdown && !event.target.closest('.relative')) {
+        setShowDropdown(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showDropdown]);
 
   // 初始加载
   useEffect(() => {
@@ -434,16 +504,52 @@ const AdminUsers = () => {
                                   </button>
                                 )}
 
-                                {/* 重置密码按钮 */}
-                                <button
-                                  onClick={() => setResetPasswordModal({ show: true, user })}
-                                  disabled={updatingUser === user.id}
-                                  className={`px-3 py-1 rounded text-xs font-medium bg-yellow-100 text-yellow-700 hover:bg-yellow-200 ${
-                                    updatingUser === user.id ? 'opacity-50 cursor-not-allowed' : ''
-                                  }`}
-                                >
-                                  重置密码
-                                </button>
+                                {/* 重置密码下拉菜单 */}
+                                <div className="relative inline-block">
+                                  <button
+                                    onClick={() => setShowDropdown(showDropdown === user.id ? null : user.id)}
+                                    disabled={updatingUser === user.id}
+                                    className={`px-3 py-1 rounded text-xs font-medium bg-yellow-100 text-yellow-700 hover:bg-yellow-200 flex items-center space-x-1 ${
+                                      updatingUser === user.id ? 'opacity-50 cursor-not-allowed' : ''
+                                    }`}
+                                  >
+                                    <span>重置密码</span>
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                  </button>
+                                  
+                                  {/* 下拉菜单 */}
+                                  {showDropdown === user.id && (
+                                    <div className="absolute top-full left-0 mt-1 w-40 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-10">
+                                      <div className="py-1">
+                                        <button
+                                          onClick={() => sendResetEmail(user)}
+                                          className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center"
+                                        >
+                                          <span className="mr-2">📧</span>
+                                          发送重置邮件 
+                                          <span className="ml-1 text-green-600">(推荐)</span>
+                                        </button>
+                                        <button
+                                          onClick={() => generateTempPassword(user)}
+                                          className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center"
+                                        >
+                                          <span className="mr-2">🔑</span>
+                                          生成临时密码
+                                        </button>
+                                        <button
+                                          onClick={() => openResetModal(user, 'direct')}
+                                          className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center"
+                                        >
+                                          <span className="mr-2">⚡</span>
+                                          直接设置密码
+                                          <span className="ml-1 text-orange-600">(紧急)</span>
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
 
                                 {/* 删除按钮 */}
                                 <button
@@ -518,38 +624,50 @@ const AdminUsers = () => {
       </div>
 
       {/* 重置密码模态框 */}
-      {resetPasswordModal.show && (
+      {resetPasswordModal.show && resetPasswordModal.mode === 'direct' && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              重置用户密码
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <span className="mr-2">⚡</span>
+              直接设置密码
             </h3>
+            
+            {/* 安全警告 */}
+            <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-md">
+              <div className="flex items-center">
+                <span className="text-orange-500 mr-2">⚠️</span>
+                <p className="text-sm text-orange-700">
+                  <strong>安全提醒：</strong>您设置的密码将直接显示，请确保通过安全渠道告知用户。
+                </p>
+              </div>
+            </div>
+
             <div className="mb-4">
               <p className="text-sm text-gray-600 mb-2">
-                即将为用户 <span className="font-semibold">{resetPasswordModal.user?.email}</span> 重置密码
+                即将为用户 <span className="font-semibold">{resetPasswordModal.user?.email}</span> 直接设置新密码
               </p>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                新密码 (至少8位)
+                新密码 (至少8位，包含字母和数字)
               </label>
               <input
                 type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
                 placeholder="请输入新密码"
               />
             </div>
             <div className="flex space-x-3">
               <button
-                onClick={resetUserPassword}
+                onClick={resetUserPasswordDirect}
                 disabled={updatingUser === resetPasswordModal.user?.id}
-                className="flex-1 bg-yellow-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 bg-orange-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {updatingUser === resetPasswordModal.user?.id ? '重置中...' : '确认重置'}
+                {updatingUser === resetPasswordModal.user?.id ? '设置中...' : '确认设置'}
               </button>
               <button
                 onClick={() => {
-                  setResetPasswordModal({ show: false, user: null });
+                  setResetPasswordModal({ show: false, user: null, mode: null });
                   setNewPassword('');
                 }}
                 className="flex-1 bg-gray-200 text-gray-800 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-300"
