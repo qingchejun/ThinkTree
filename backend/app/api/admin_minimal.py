@@ -67,6 +67,11 @@ class UserPasswordResetRequest(BaseModel):
     """管理员重置用户密码请求模型"""
     new_password: str
 
+class InvitationCreateRequest(BaseModel):
+    """管理员邀请码创建请求模型"""
+    count: int = 1
+    description: Optional[str] = None
+
 # 简化的管理员权限验证
 async def get_current_admin_simple(db: Session = Depends(get_db)):
     """简化的管理员权限验证"""
@@ -452,6 +457,73 @@ async def send_password_reset_email(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="发送重置邮件失败"
+        )
+
+# 邀请码管理功能（简化版）
+@router.get("/invitations")
+async def get_admin_invitations(
+    admin_user: User = Depends(get_current_admin_simple),
+    db: Session = Depends(get_db),
+    page: int = Query(1, ge=1, description="页码"),
+    per_page: int = Query(20, ge=1, le=100, description="每页数量"),
+    status_filter: Optional[str] = Query(None, description="状态筛选")
+):
+    """获取邀请码列表（简化版，返回空数据）"""
+    try:
+        # 由于简化版admin模块没有邀请码表，暂时返回空数据
+        return {
+            "invitations": [],
+            "total": 0,
+            "page": page,
+            "per_page": per_page,
+            "total_pages": 0
+        }
+        
+    except Exception as e:
+        logger.error(f"获取邀请码列表失败: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="获取邀请码列表失败"
+        )
+
+@router.post("/invitations")
+async def create_admin_invitations(
+    request: InvitationCreateRequest,
+    admin_user: User = Depends(get_current_admin_simple),
+    db: Session = Depends(get_db)
+):
+    """管理员批量生成邀请码（简化版）"""
+    try:
+        if request.count <= 0 or request.count > 100:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="邀请码数量必须在1-100之间"
+            )
+        
+        # 简化版：生成模拟邀请码数据
+        created_codes = []
+        for i in range(request.count):
+            # 生成模拟邀请码
+            code = ''.join(secrets.choice('23456789ABCDEFGHJKLMNPQRSTUVWXYZ') for _ in range(8))
+            created_codes.append({
+                "code": code,
+                "created_at": datetime.now().isoformat(),
+                "description": request.description or f"管理员批量生成 {i+1}/{request.count}"
+            })
+        
+        return {
+            "success": True,
+            "message": f"成功生成 {request.count} 个邀请码（模拟）",
+            "invitations": created_codes
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"管理员生成邀请码失败: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="生成邀请码失败"
         )
 
 @router.get("/health")

@@ -469,7 +469,7 @@ const AdminUsers = () => {
             <>
               {/* 用户表格 */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto overflow-y-visible">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
@@ -552,7 +552,7 @@ const AdminUsers = () => {
                                 )}
 
                                 {/* 重置密码下拉菜单 */}
-                                <div className="relative inline-block">
+                                <div className="relative inline-block" style={{zIndex: 1}}>
                                   <button
                                     onClick={() => setShowDropdown(showDropdown === user.id ? null : user.id)}
                                     disabled={updatingUser === user.id}
@@ -568,7 +568,7 @@ const AdminUsers = () => {
                                   
                                   {/* 下拉菜单 */}
                                   {showDropdown === user.id && (
-                                    <div className="absolute top-full left-0 mt-1 w-40 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-50">
+                                    <div className="absolute top-full left-0 mt-1 w-40 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5" style={{zIndex: 9999}}>
                                       <div className="py-1">
                                         <button
                                           onClick={() => sendResetEmail(user)}
