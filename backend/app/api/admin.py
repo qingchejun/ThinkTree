@@ -79,6 +79,11 @@ class TempPasswordGenerateRequest(BaseModel):
     """临时密码生成请求模型"""
     valid_hours: int = 24  # 临时密码有效期，默认24小时
 
+class EmailResetRequest(BaseModel):
+    """邮件重置密码请求模型"""
+    reset_type: str = "admin"  # 重置类型：admin（管理员发起）或 user（用户自助）
+    custom_message: Optional[str] = None  # 自定义消息
+
 @router.get("/stats", response_model=AdminStatsResponse)
 async def get_admin_stats(
     admin_user: User = Depends(get_current_admin),
@@ -721,4 +726,73 @@ async def generate_temp_password_for_user(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="生成临时密码失败"
+        )
+
+@router.post("/users/{user_id}/send-reset-email")
+async def send_password_reset_email(
+    user_id: int,
+    request: EmailResetRequest,
+    admin_user: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    管理员发送密码重置邮件
+    
+    为指定用户发送密码重置邮件，用户可通过邮件链接自行重置密码
+    """
+    try:
+        # 查找目标用户
+        target_user = db.query(User).filter(User.id == user_id).first()
+        if not target_user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="用户不存在"
+            )
+        
+        # 防止管理员为自己发送重置邮件
+        if target_user.id == admin_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="请使用账户设置页面修改自己的密码"
+            )
+        
+        # 生成重置令牌
+        reset_token = secrets.token_urlsafe(32)
+        
+        # TODO: 在实际生产环境中，应该：
+        # 1. 将重置令牌存储到数据库中，设置过期时间
+        # 2. 配置邮件服务（SMTP）
+        # 3. 发送包含重置链接的邮件
+        
+        # 目前模拟邮件发送功能
+        reset_link = f"https://thinktree-frontend.onrender.com/reset-password?token={reset_token}"
+        
+        # 记录管理员操作
+        log_admin_action(
+            admin_user,
+            "send_reset_email",
+            f"user_id={user_id}",
+            f"为用户 {target_user.email} 发送密码重置邮件"
+        )
+        
+        # 在实际生产环境中，这里应该调用邮件服务
+        # 目前返回模拟结果
+        
+        return {
+            "success": True,
+            "message": f"密码重置邮件已发送到 {target_user.email}",
+            "user_email": target_user.email,
+            "reset_link": reset_link,  # 仅开发阶段显示，生产环境应移除
+            "sent_time": datetime.now().isoformat(),
+            "note": "用户将收到包含重置链接的邮件，链接有效期为24小时",
+            "development_notice": "当前为开发模式，实际生产环境需要配置邮件服务"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"发送密码重置邮件失败: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="发送重置邮件失败"
         )

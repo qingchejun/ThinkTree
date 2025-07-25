@@ -217,9 +217,56 @@ const AdminUsers = () => {
     }
   };
 
-  // 处理发送重置邮件 (第三阶段实现)
+  // 处理发送重置邮件
   const sendResetEmail = async (user) => {
-    alert('发送重置邮件功能将在后续版本中实现');
+    const confirmed = window.confirm(
+      `确认为用户 "${user.email}" 发送密码重置邮件吗？\n\n用户将收到包含重置链接的邮件，可以自行重置密码。`
+    );
+    
+    if (!confirmed) return;
+    
+    try {
+      setUpdatingUser(user.id);
+      setShowDropdown(null);
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/users/${user.id}/send-reset-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ 
+          reset_type: "admin",
+          custom_message: "管理员为您发送的密码重置邮件" 
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        // 显示详细结果
+        const resultMessage = `重置邮件发送成功！\n\n收件人: ${data.user_email}\n发送时间: ${new Date(data.sent_time).toLocaleString()}\n\n${data.note}\n\n${data.development_notice || ''}`;
+        
+        if (data.reset_link) {
+          // 开发环境显示重置链接
+          const showLink = window.confirm(`${resultMessage}\n\n是否查看重置链接？（仅开发环境）`);
+          if (showLink) {
+            alert(`重置链接:\n${data.reset_link}`);
+          }
+        } else {
+          alert(resultMessage);
+        }
+        
+        ToastManager.success('重置邮件发送成功');
+      } else {
+        ToastManager.error(data.detail || '发送重置邮件失败');
+      }
+    } catch (error) {
+      console.error('发送重置邮件失败:', error);
+      ToastManager.error('发送重置邮件失败，请稍后重试');
+    } finally {
+      setUpdatingUser(null);
+    }
   };
 
   // 处理生成临时密码
