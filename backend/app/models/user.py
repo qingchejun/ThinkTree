@@ -47,6 +47,10 @@ class User(Base):
     display_name = Column(String(100), nullable=True)
     avatar_url = Column(String(500), nullable=True)
     
+    # 用户积分和邀请配额
+    credits = Column(Integer, default=100, nullable=False)  # 用户积分，默认100
+    invitation_quota = Column(Integer, default=10, nullable=False)  # 邀请码配额，默认10个
+    
     # 关系定义 - 与思维导图表的关联
     mindmaps = relationship(
         "Mindmap", 
@@ -70,6 +74,8 @@ class User(Base):
             "is_superuser": self.is_superuser,
             "display_name": self.display_name,
             "avatar_url": self.avatar_url,
+            "credits": self.credits,
+            "invitation_quota": self.invitation_quota,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None
         } 

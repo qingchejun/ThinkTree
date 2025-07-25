@@ -126,6 +126,40 @@ export async function login(email, password) {
   })
 }
 
-export async function getProfile() {
-  return await apiCall('/api/auth/profile')
+export async function getProfile(token) {
+  return await apiCall('/api/auth/profile', {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  })
+}
+
+// 用户设置相关 API
+export async function updateProfile(profileData, token) {
+  return await apiCall('/api/auth/profile', {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(profileData)
+  })
+}
+
+// 邀请码相关 API
+export async function generateInvitationCode(token, description = '') {
+  return await apiCall('/api/invitations/create', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({ description })
+  })
+}
+
+export async function getUserInvitations(token) {
+  return await apiCall('/api/invitations/list', {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  })
 }

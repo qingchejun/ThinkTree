@@ -143,6 +143,8 @@ class UserResponse(BaseModel):
     is_verified: bool
     is_superuser: bool
     created_at: str
+    credits: int = 100
+    invitation_quota: int = 10
 
 
 class TokenResponse(BaseModel):
@@ -378,7 +380,9 @@ async def login(request: Request, credentials: UserLogin, db: Session = Depends(
         is_active=user.is_active,
         is_verified=user.is_verified,
         is_superuser=user.is_superuser,  # 添加缺失的字段
-        created_at=user.created_at.isoformat()
+        created_at=user.created_at.isoformat(),
+        credits=user.credits,
+        invitation_quota=user.invitation_quota
     )
     
     return TokenResponse(
@@ -388,19 +392,51 @@ async def login(request: Request, credentials: UserLogin, db: Session = Depends(
     )
 
 
-@router.get("/profile", response_model=UserResponse)
-async def get_profile(current_user: User = Depends(get_current_user)):
+class UserProfileResponse(BaseModel):
+    """用户详细资料响应模型 - 包含邀请码使用统计"""
+    id: int
+    email: str
+    display_name: Optional[str] = None
+    is_active: bool
+    is_verified: bool
+    is_superuser: bool
+    created_at: str
+    credits: int = 100
+    invitation_quota: int = 10
+    invitation_used: int = 0  # 已使用的邀请码数量
+    invitation_remaining: int = 10  # 剩余邀请码配额
+
+
+@router.get("/profile", response_model=UserProfileResponse)
+async def get_profile(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """
-    获取当前用户信息
+    获取当前用户信息 - 包含积分余额和邀请码配额信息
     """
-    return UserResponse(
+    # 计算已使用的邀请码数量
+    invitation_used = 0
+    try:
+        invitation_used = db.query(InvitationCode).filter(
+            InvitationCode.generated_by_user_id == current_user.id
+        ).count()
+    except Exception as e:
+        # 如果查询失败（表不存在等），使用默认值0
+        invitation_used = 0
+    
+    # 计算剩余邀请配额
+    invitation_remaining = max(0, current_user.invitation_quota - invitation_used)
+    
+    return UserProfileResponse(
         id=current_user.id,
         email=current_user.email,
         display_name=current_user.display_name,
         is_active=current_user.is_active,
         is_verified=current_user.is_verified,
         is_superuser=current_user.is_superuser,
-        created_at=current_user.created_at.isoformat()
+        created_at=current_user.created_at.isoformat(),
+        credits=current_user.credits,
+        invitation_quota=current_user.invitation_quota,
+        invitation_used=invitation_used,
+        invitation_remaining=invitation_remaining
     )
 
 
@@ -447,7 +483,10 @@ async def verify_email(request: VerifyEmailRequest, db: Session = Depends(get_db
                 display_name=user.display_name,
                 is_active=user.is_active,
                 is_verified=user.is_verified,
-                created_at=user.created_at.isoformat()
+                is_superuser=user.is_superuser,
+                created_at=user.created_at.isoformat(),
+                credits=user.credits,
+                invitation_quota=user.invitation_quota
             )
             
             return VerifyEmailResponse(
@@ -478,7 +517,10 @@ async def verify_email(request: VerifyEmailRequest, db: Session = Depends(get_db
             display_name=user.display_name,
             is_active=user.is_active,
             is_verified=user.is_verified,
-            created_at=user.created_at.isoformat()
+            is_superuser=user.is_superuser,
+            created_at=user.created_at.isoformat(),
+            credits=user.credits,
+            invitation_quota=user.invitation_quota
         )
         
         return VerifyEmailResponse(

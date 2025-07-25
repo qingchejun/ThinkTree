@@ -80,6 +80,29 @@ const Header = ({ title, subtitle, showCreateButton = false }) => {
               </button>
             )}
 
+            {/* 积分显示 - 仅登录用户可见 */}
+            {user && (
+              <div className="hidden sm:flex items-center space-x-3">
+                {/* 积分余额 */}
+                <div className="flex items-center bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-full px-4 py-2">
+                  <span className="text-yellow-600 mr-2">💰</span>
+                  <span className="text-sm font-semibold text-gray-700">
+                    {user.credits ? user.credits.toLocaleString() : '0'} 积分
+                  </span>
+                </div>
+                
+                {/* 邀请码剩余 */}
+                {user.invitation_remaining !== undefined && (
+                  <div className="flex items-center bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-full px-3 py-2">
+                    <span className="text-green-600 mr-2">👥</span>
+                    <span className="text-xs font-semibold text-gray-700">
+                      {user.invitation_remaining} 邀请码
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* 用户下拉菜单 */}
             {user ? (
               <div className="relative" ref={dropdownRef}>
@@ -114,6 +137,24 @@ const Header = ({ title, subtitle, showCreateButton = false }) => {
                       <div className="px-4 py-3 border-b border-gray-100">
                         <p className="text-sm font-medium text-gray-900">{getUserDisplayName()}</p>
                         <p className="text-sm text-gray-500 truncate">{user.email}</p>
+                        {/* 积分和邀请码信息 */}
+                        <div className="flex items-center justify-between mt-2 space-x-2">
+                          <div className="flex items-center bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-full px-3 py-1">
+                            <span className="text-yellow-600 mr-2 text-xs">💰</span>
+                            <span className="text-xs font-semibold text-gray-700">
+                              {user.credits ? user.credits.toLocaleString() : '0'} 积分
+                            </span>
+                          </div>
+                          
+                          {user.invitation_remaining !== undefined && (
+                            <div className="flex items-center bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-full px-3 py-1">
+                              <span className="text-green-600 mr-2 text-xs">👥</span>
+                              <span className="text-xs font-semibold text-gray-700">
+                                {user.invitation_remaining} 邀请码
+                              </span>
+                            </div>
+                          )}
+                        </div>
                       </div>
 
                       {/* 菜单项 */}
@@ -126,19 +167,38 @@ const Header = ({ title, subtitle, showCreateButton = false }) => {
                       </button>
 
                       <button
-                        onClick={() => navigateTo('/settings')}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
-                      >
-                        <span className="mr-3">⚙️</span>
-                        账户设置
-                      </button>
-
-                      <button
                         onClick={() => navigateTo('/create')}
                         className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
                       >
                         <span className="mr-3">➕</span>
                         创建思维导图
+                      </button>
+
+                      {/* 分隔线 */}
+                      <div className="border-t border-gray-100 my-1"></div>
+
+                      <button
+                        onClick={() => navigateTo('/settings?tab=billing')}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                      >
+                        <span className="mr-3">💳</span>
+                        用量与计费
+                      </button>
+
+                      <button
+                        onClick={() => navigateTo('/settings?tab=invitations')}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                      >
+                        <span className="mr-3">👥</span>
+                        邀请好友
+                      </button>
+
+                      <button
+                        onClick={() => navigateTo('/settings')}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                      >
+                        <span className="mr-3">⚙️</span>
+                        账户设置
                       </button>
 
                       {/* 管理员入口 */}
