@@ -212,6 +212,18 @@ class PasswordUpdateResponse(BaseModel):
     message: str
 
 
+class UserProfileUpdateRequest(BaseModel):
+    """用户资料更新请求模型"""
+    display_name: Optional[str] = None
+
+
+class UserProfileUpdateResponse(BaseModel):
+    """用户资料更新响应模型"""
+    success: bool
+    message: str
+    user: UserProfileResponse
+
+
 # 依赖注入：获取当前用户
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
@@ -450,6 +462,91 @@ async def get_profile(current_user: User = Depends(get_current_user), db: Sessio
         invitation_used=invitation_used,
         invitation_remaining=invitation_remaining
     )
+
+
+@router.put("/profile", response_model=UserProfileUpdateResponse)
+async def update_profile(
+    request: UserProfileUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    更新用户资料信息
+    """
+    try:
+        # 记录修改前的值
+        old_display_name = current_user.display_name
+        changes = []
+        
+        # 更新显示名称
+        if request.display_name is not None:
+            # 验证显示名称长度
+            if len(request.display_name.strip()) == 0:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="显示名称不能为空"
+                )
+            
+            if len(request.display_name) > 50:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="显示名称不能超过50个字符"
+                )
+            
+            current_user.display_name = request.display_name.strip()
+            changes.append(f"显示名称: {old_display_name} -> {current_user.display_name}")
+        
+        # 如果没有任何更改
+        if not changes:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="没有提供任何更新数据"
+            )
+        
+        # 保存更改
+        db.commit()
+        db.refresh(current_user)
+        
+        # 重新计算邀请码统计
+        invitation_used = 0
+        try:
+            invitation_used = db.query(InvitationCode).filter(
+                InvitationCode.generated_by_user_id == current_user.id
+            ).count()
+        except Exception:
+            invitation_used = 0
+        
+        invitation_remaining = max(0, current_user.invitation_quota - invitation_used)
+        
+        # 构造更新后的用户信息
+        updated_user = UserProfileResponse(
+            id=current_user.id,
+            email=current_user.email,
+            display_name=current_user.display_name,
+            is_active=current_user.is_active,
+            is_verified=current_user.is_verified,
+            is_superuser=current_user.is_superuser,
+            created_at=current_user.created_at.isoformat(),
+            credits=current_user.credits,
+            invitation_quota=current_user.invitation_quota,
+            invitation_used=invitation_used,
+            invitation_remaining=invitation_remaining
+        )
+        
+        return UserProfileUpdateResponse(
+            success=True,
+            message=f"用户资料更新成功: {', '.join(changes)}",
+            user=updated_user
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"更新用户资料失败: {str(e)}"
+        )
 
 
 @router.get("/verify-token")

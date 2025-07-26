@@ -31,12 +31,10 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
   const toggleMarkmapFold = (shouldCollapse) => {
     // 防止重复操作
     if (isToggleOperationRef.current) {
-      console.log('折叠展开操作正在进行中，跳过')
       return
     }
     
     if (!mmRef.current) {
-      console.log('跳过DOM操作，使用数据方法：markmap实例不存在')
       return
     }
     
@@ -44,12 +42,9 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
     isToggleOperationRef.current = true
     
     try {
-      console.log('使用数据方法进行折叠展开')
-      
       // 获取当前的数据树
       const currentData = mmRef.current.state?.data
       if (!currentData) {
-        console.log('跳过DOM操作，使用数据方法：数据不存在')
         return
       }
       
@@ -59,7 +54,6 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
       const processNode = (node, depth = 0) => {
         if (!node) return
         
-        console.log(`处理节点深度${depth}:`, node.content || node.v || '无内容')
         processedNodeCount++
         
         if (shouldCollapse && depth >= 1 && node.children && node.children.length > 0) {
@@ -69,7 +63,6 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
           node.folded = true
           if (!node.payload) node.payload = {}
           node.payload.fold = 1
-          console.log(`节点已折叠: 深度${depth}`)
         } else if (!shouldCollapse) {
           // 展开节点 - 清除所有fold属性
           delete node.fold
@@ -78,7 +71,6 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
             delete node.payload.fold
             delete node.payload.folded
           }
-          console.log(`节点已展开: 深度${depth}`)
         }
         
         // 递归处理子节点
@@ -88,7 +80,6 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
       }
       
       processNode(currentData)
-      console.log(`总共处理了 ${processedNodeCount} 个节点`)
       
       // 检查容器尺寸，避免 NaN 问题
       if (containerRef.current) {
@@ -96,7 +87,6 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
         const hasValidDimensions = containerRect.width > 0 && containerRect.height > 0
         
         if (!hasValidDimensions) {
-          console.warn('容器尺寸无效，跳过 fit 操作')
           // 重新渲染但不执行 fit
           mmRef.current.setData(currentData)
           return
@@ -120,18 +110,11 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
                 const svg = svgRef.current
                 if (svg && svg.children.length > 0) {
                   mmRef.current.fit()
-                  console.log('折叠/展开操作完成并适应视图')
-                } else {
-                  console.warn('SVG未完全渲染，跳过 fit 操作')
                 }
-              } else {
-                console.warn('Markmap状态无效，跳过 fit 操作')
               }
-            } else {
-              console.warn('延迟检查发现容器尺寸仍然无效，跳过 fit')
             }
           } catch (fitError) {
-            console.error('fit 操作失败:', fitError)
+            // fit 操作失败，静默处理
           } finally {
             // 释放操作锁
             isToggleOperationRef.current = false
@@ -143,10 +126,8 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
       }, 500) // 增加延迟时间确保渲染完成
       
     } catch (error) {
-      console.error('折叠展开失败: Error:', error.message)
       // 异常情况下也要释放锁
       isToggleOperationRef.current = false
-      throw error
     }
   }
 
@@ -165,7 +146,7 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
       setIsExpanded(newExpandedState)
       
     } catch (error) {
-      console.error('展开/折叠操作失败:', error)
+      // 展开/折叠操作失败，静默处理
     }
   }
 
@@ -173,7 +154,6 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
   const handleResize = () => {
     // 如果正在处理（如导出），跳过resize操作
     if (isProcessingRef.current || isToggleOperationRef.current) {
-      console.log('正在处理中，跳过 resize 操作')
       return
     }
     
@@ -189,7 +169,6 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
       
       // 检查尺寸是否有效
       if (!isFinite(width) || !isFinite(height) || width <= 0 || height <= 0) {
-        console.warn('容器尺寸无效，跳过 resize 操作:', { width, height })
         return
       }
       
@@ -214,18 +193,11 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
                 const svg = svgRef.current
                 if (svg && svg.children.length > 0) {
                   mmRef.current.fit()
-                  console.log('resize 操作完成')
-                } else {
-                  console.warn('resize中SVG未完全渲染，跳过 fit 操作')
                 }
-              } else {
-                console.warn('resize中Markmap状态无效，跳过 fit 操作')
               }
-            } else {
-              console.warn('延迟检查中容器尺寸无效，跳过 fit')
             }
           } catch (fitError) {
-            console.error('resize 中的 fit 操作失败:', fitError)
+            // resize 中的 fit 操作失败，静默处理
           }
         }
         fitTimeoutRef.current = null // 清除引用
@@ -309,8 +281,7 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
         }, 300)
 
       } catch (error) {
-        console.error('思维导图渲染失败:', error)
-        // 显示错误信息
+        // 思维导图渲染失败，显示错误信息
         if (svgRef.current) {
           svgRef.current.innerHTML = `
             <g>
@@ -425,18 +396,11 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
                     const svg = svgRef.current
                     if (svg && svg.children.length > 0) {
                       mmRef.current.fit()
-                      console.log('手动适应操作完成')
-                    } else {
-                      console.warn('手动适应：SVG未完全渲染')
                     }
-                  } else {
-                    console.warn('手动适应：Markmap状态无效')
                   }
-                } else {
-                  console.warn('手动适应：容器尺寸无效')
                 }
               } catch (error) {
-                console.error('手动适应操作失败:', error)
+                // 手动适应操作失败，静默处理
               }
             }
           }}
