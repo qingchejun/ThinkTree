@@ -29,18 +29,23 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
   const setNodeDepth = (node, maxDepth, currentDepth = 0) => {
     if (!node) return
     
+    console.log(`🔧 DEBUG: 处理节点，深度${currentDepth}，最大深度${maxDepth}，节点内容:`, node.content || node.value || '未知')
+    
     // 设置节点的展开状态 - 使用正确的markmap API
     if (currentDepth >= maxDepth) {
       if (!node.data) node.data = {}
       node.data.fold = true
+      console.log(`🔧 DEBUG: 折叠节点(深度${currentDepth})，设置fold=true`)
     } else {
       if (node.data) {
         delete node.data.fold
+        console.log(`🔧 DEBUG: 展开节点(深度${currentDepth})，删除fold属性`)
       }
     }
     
     // 递归处理子节点
     if (node.children) {
+      console.log(`🔧 DEBUG: 节点有${node.children.length}个子节点，递归处理`)
       node.children.forEach(child => {
         setNodeDepth(child, maxDepth, currentDepth + 1)
       })
@@ -49,16 +54,28 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
 
   // 展开折叠控制函数
   const toggleMarkmapFold = (shouldCollapse) => {
-    if (!mmRef.current || !rootDataRef.current) return
+    console.log('🔧 DEBUG: toggleMarkmapFold被调用，shouldCollapse:', shouldCollapse)
+    
+    if (!mmRef.current || !rootDataRef.current) {
+      console.error('🔧 DEBUG: 缺少必要的引用')
+      console.log('🔧 DEBUG: mmRef.current:', !!mmRef.current)
+      console.log('🔧 DEBUG: rootDataRef.current:', !!rootDataRef.current)
+      return
+    }
     
     try {
+      console.log('🔧 DEBUG: 原始数据结构:', rootDataRef.current)
+      
       // 创建数据副本避免修改原始数据
       const dataCopy = JSON.parse(JSON.stringify(rootDataRef.current))
+      console.log('🔧 DEBUG: 数据副本创建成功')
       
       if (shouldCollapse) {
+        console.log('🔧 DEBUG: 开始折叠操作，深度限制为2')
         // 折叠到二级目录 - 深度为2
         setNodeDepth(dataCopy, 2)
       } else {
+        console.log('🔧 DEBUG: 开始展开操作，移除所有fold属性')
         // 展开所有节点 - 移除所有fold属性
         const removeFold = (node) => {
           if (node.data) {
@@ -71,35 +88,55 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
         removeFold(dataCopy)
       }
       
+      console.log('🔧 DEBUG: 处理后的数据结构:', dataCopy)
+      console.log('🔧 DEBUG: 调用markmap的setData方法')
+      
       // 重新渲染并适应视图
       mmRef.current.setData(dataCopy)
+      
+      console.log('🔧 DEBUG: setData调用成功，等待fit')
+      
       setTimeout(() => {
         if (mmRef.current) {
+          console.log('🔧 DEBUG: 执行fit操作')
           mmRef.current.fit()
         }
       }, 300)
       
     } catch (error) {
-      console.error('展开/折叠操作失败:', error)
+      console.error('🔧 DEBUG: 展开/折叠操作失败:', error)
+      console.error('🔧 DEBUG: 错误详情:', error.stack)
     }
   }
 
   // 展开/折叠切换函数
   const handleToggleExpandCollapse = () => {
-    if (!mmRef.current) return
+    console.log('🔧 DEBUG: 折叠展开按钮被点击')
+    console.log('🔧 DEBUG: mmRef.current存在:', !!mmRef.current)
+    console.log('🔧 DEBUG: rootDataRef.current存在:', !!rootDataRef.current)
+    console.log('🔧 DEBUG: 当前展开状态:', isExpanded)
+    
+    if (!mmRef.current) {
+      console.error('🔧 DEBUG: mmRef.current不存在，无法执行折叠操作')
+      return
+    }
 
     try {
       const newExpandedState = !isExpanded
       const shouldCollapse = !newExpandedState
+      
+      console.log('🔧 DEBUG: 新的展开状态:', newExpandedState)
+      console.log('🔧 DEBUG: 应该折叠:', shouldCollapse)
       
       // 执行展开/折叠操作
       toggleMarkmapFold(shouldCollapse)
       
       // 更新UI状态
       setIsExpanded(newExpandedState)
+      console.log('🔧 DEBUG: UI状态已更新为:', newExpandedState)
       
     } catch (error) {
-      console.error('展开/折叠操作失败:', error)
+      console.error('🔧 DEBUG: 展开/折叠操作失败:', error)
     }
   }
 
@@ -196,8 +233,13 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
           throw new Error('思维导图实例创建失败')
         }
         
+        console.log('🔧 DEBUG: markmap实例创建成功')
+        console.log('🔧 DEBUG: markmap实例方法:', Object.getOwnPropertyNames(mmRef.current))
+        console.log('🔧 DEBUG: markmap实例原型方法:', Object.getOwnPropertyNames(Object.getPrototypeOf(mmRef.current)))
+        
         // 设置数据
         mmRef.current.setData(root)
+        console.log('🔧 DEBUG: 初始数据设置成功')
         
         // 延迟执行fit以确保渲染完成
         setTimeout(() => {
