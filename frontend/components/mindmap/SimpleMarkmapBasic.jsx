@@ -11,6 +11,8 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
   const mmRef = useRef(null)
   const isProcessingRef = useRef(false) // 使用useRef避免重新渲染
   const rootDataRef = useRef(null) // 保存原始转换后的数据
+  const isToggleOperationRef = useRef(false) // 防止重复的折叠展开操作
+  const fitTimeoutRef = useRef(null) // fit操作防抖
   
   // 展开/折叠状态管理
   const [isExpanded, setIsExpanded] = useState(true) // 默认全展开
@@ -27,10 +29,19 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
 
   // 展开折叠控制函数
   const toggleMarkmapFold = (shouldCollapse) => {
+    // 防止重复操作
+    if (isToggleOperationRef.current) {
+      console.log('折叠展开操作正在进行中，跳过')
+      return
+    }
+    
     if (!mmRef.current) {
       console.log('跳过DOM操作，使用数据方法：markmap实例不存在')
       return
     }
+    
+    // 设置操作锁
+    isToggleOperationRef.current = true
     
     try {
       console.log('使用数据方法进行折叠展开')
@@ -51,8 +62,8 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
         console.log(`处理节点深度${depth}:`, node.content || node.v || '无内容')
         processedNodeCount++
         
-        if (shouldCollapse && depth >= 1 && node.children && node.children.length > 0) {
-          // 折叠深度>=1的节点，只保留根节点可见
+        if (shouldCollapse && depth >= 2 && node.children && node.children.length > 0) {
+          // 折叠深度>=2的节点，保留根节点和一级子节点可见
           node.fold = 1
           node.folded = true
           if (!node.payload) node.payload = {}
@@ -101,19 +112,39 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
             // 再次检查容器尺寸
             const containerRect = containerRef.current.getBoundingClientRect()
             if (containerRect.width > 0 && containerRect.height > 0) {
-              mmRef.current.fit()
-              console.log('折叠/展开操作完成并适应视图')
+              // 验证markmap状态
+              const markmapState = mmRef.current.state
+              if (markmapState && markmapState.data) {
+                // 检查SVG元素状态
+                const svg = svgRef.current
+                if (svg && svg.children.length > 0) {
+                  mmRef.current.fit()
+                  console.log('折叠/展开操作完成并适应视图')
+                } else {
+                  console.warn('SVG未完全渲染，跳过 fit 操作')
+                }
+              } else {
+                console.warn('Markmap状态无效，跳过 fit 操作')
+              }
             } else {
               console.warn('延迟检查发现容器尺寸仍然无效，跳过 fit')
             }
           } catch (fitError) {
             console.error('fit 操作失败:', fitError)
+          } finally {
+            // 释放操作锁
+            isToggleOperationRef.current = false
           }
+        } else {
+          // 如果条件不满足也要释放锁
+          isToggleOperationRef.current = false
         }
-      }, 300) // 增加延迟时间确保渲染完成
+      }, 500) // 增加延迟时间确保渲染完成
       
     } catch (error) {
       console.error('折叠展开失败: Error:', error.message)
+      // 异常情况下也要释放锁
+      isToggleOperationRef.current = false
       throw error
     }
   }
@@ -140,9 +171,14 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
   // 自适应窗口大小的函数
   const handleResize = () => {
     // 如果正在处理（如导出），跳过resize操作
-    if (isProcessingRef.current) {
+    if (isProcessingRef.current || isToggleOperationRef.current) {
       console.log('正在处理中，跳过 resize 操作')
       return
+    }
+    
+    // 清除之前的timeout，实现防抖
+    if (fitTimeoutRef.current) {
+      clearTimeout(fitTimeoutRef.current)
     }
 
     if (mmRef.current && containerRef.current) {
@@ -162,16 +198,28 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
         svgRef.current.setAttribute('height', height)
       }
       
-      // 延迟执行以确保容器大小已更新
-      setTimeout(() => {
+      // 延迟执行以确保容器大小已更新，使用防抖
+      fitTimeoutRef.current = setTimeout(() => {
         // 再次检查是否仍在处理中
-        if (mmRef.current && !isProcessingRef.current && containerRef.current) {
+        if (mmRef.current && !isProcessingRef.current && !isToggleOperationRef.current && containerRef.current) {
           try {
             // 最后一次检查容器尺寸
             const finalRect = containerRef.current.getBoundingClientRect()
             if (finalRect.width > 0 && finalRect.height > 0) {
-              mmRef.current.fit()
-              console.log('resize 操作完成')
+              // 验证markmap状态
+              const markmapState = mmRef.current.state
+              if (markmapState && markmapState.data) {
+                // 检查SVG元素状态
+                const svg = svgRef.current
+                if (svg && svg.children.length > 0) {
+                  mmRef.current.fit()
+                  console.log('resize 操作完成')
+                } else {
+                  console.warn('resize中SVG未完全渲染，跳过 fit 操作')
+                }
+              } else {
+                console.warn('resize中Markmap状态无效，跳过 fit 操作')
+              }
             } else {
               console.warn('延迟检查中容器尺寸无效，跳过 fit')
             }
@@ -179,7 +227,8 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
             console.error('resize 中的 fit 操作失败:', fitError)
           }
         }
-      }, 150) // 适度的延迟时间
+        fitTimeoutRef.current = null // 清除引用
+      }, 250) // 增加防抖延迟时间
     }
   }
 
@@ -300,6 +349,10 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
     // 清理函数
     return () => {
       clearTimeout(timer)
+      if (fitTimeoutRef.current) {
+        clearTimeout(fitTimeoutRef.current)
+        fitTimeoutRef.current = null
+      }
       window.removeEventListener('resize', handleResize)
       if (resizeObserver) {
         resizeObserver.disconnect()
@@ -308,6 +361,9 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
         mmRef.current.destroy?.()
         mmRef.current = null
       }
+      // 重置状态锁
+      isToggleOperationRef.current = false
+      isProcessingRef.current = false
     }
   }, [mindmapData])
 
@@ -355,7 +411,34 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
         
         {/* 适应大小按钮 */}
         <button
-          onClick={() => mmRef.current?.fit()}
+          onClick={() => {
+            if (mmRef.current && containerRef.current) {
+              try {
+                // 验证容器尺寸
+                const containerRect = containerRef.current.getBoundingClientRect()
+                if (containerRect.width > 0 && containerRect.height > 0) {
+                  // 验证markmap状态
+                  const markmapState = mmRef.current.state
+                  if (markmapState && markmapState.data) {
+                    // 检查SVG元素状态
+                    const svg = svgRef.current
+                    if (svg && svg.children.length > 0) {
+                      mmRef.current.fit()
+                      console.log('手动适应操作完成')
+                    } else {
+                      console.warn('手动适应：SVG未完全渲染')
+                    }
+                  } else {
+                    console.warn('手动适应：Markmap状态无效')
+                  }
+                } else {
+                  console.warn('手动适应：容器尺寸无效')
+                }
+              } catch (error) {
+                console.error('手动适应操作失败:', error)
+              }
+            }
+          }}
           className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm shadow-md transition-colors flex items-center space-x-1"
           title="重新适应窗口大小"
         >
