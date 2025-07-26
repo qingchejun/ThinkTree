@@ -7,7 +7,6 @@ import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '../../context/AuthContext'
-import ServiceStatus from '../../components/common/ServiceStatus'
 
 function LoginForm() {
   const router = useRouter()
@@ -21,7 +20,6 @@ function LoginForm() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [verificationSuccess, setVerificationSuccess] = useState(false)
-  const [serviceStatus, setServiceStatus] = useState('checking')
 
   // 检查是否从邮箱验证页面跳转过来
   useEffect(() => {
@@ -197,21 +195,12 @@ function LoginForm() {
               </div>
             )}
 
-            {/* 服务状态显示 */}
-            <div className="flex justify-between items-center">
-              <ServiceStatus onStatusChange={setServiceStatus} />
-              {serviceStatus === 'offline' && (
-                <div className="text-xs text-red-600">
-                  后端服务暂时不可用
-                </div>
-              )}
-            </div>
 
             {/* 登录按钮 */}
             <div>
               <button
                 type="submit"
-                disabled={loading || serviceStatus === 'offline'}
+                disabled={loading}
                 className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200"
               >
                 {loading ? (
@@ -219,8 +208,6 @@ function LoginForm() {
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                     登录中...
                   </div>
-                ) : serviceStatus === 'offline' ? (
-                  '服务不可用'
                 ) : (
                   '登录'
                 )}
