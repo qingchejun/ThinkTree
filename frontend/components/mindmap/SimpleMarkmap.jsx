@@ -38,43 +38,95 @@ export default function SimpleMarkmap({ mindmapData }) {
     }
   }
 
-  // 展开/折叠切换函数 - 简化版本
+  // 展开/折叠切换函数 - 使用markmap原生API
   const toggleExpandCollapse = () => {
-    if (!mmRef.current || !rootDataRef.current) {
-      return
-    }
+    if (!mmRef.current) return
     
     const newExpandedState = !isExpanded
     setIsExpanded(newExpandedState)
     
-    // 创建数据副本避免修改原始数据
-    const dataCopy = JSON.parse(JSON.stringify(rootDataRef.current))
-    
-    if (newExpandedState) {
-      // 展开所有节点 - 移除所有fold属性
-      const removeFold = (node) => {
-        if (node.data) {
-          delete node.data.fold
-        }
-        if (node.children) {
-          node.children.forEach(removeFold)
-        }
+    try {
+      // 获取SVG中的所有节点
+      const svg = svgRef.current
+      if (!svg) return
+      
+      // 尝试多种选择器查找markmap节点
+      let allNodes = svg.querySelectorAll('g[data-depth]')
+      
+      // 如果没有data-depth属性，尝试其他选择器
+      if (allNodes.length === 0) {
+        allNodes = svg.querySelectorAll('.markmap-node, g.mm-node, g[transform]')
       }
-      removeFold(dataCopy)
-    } else {
-      // 折叠到二级目录 - 深度为2
-      setNodeDepth(dataCopy, 2)
+      
+      console.log('找到节点数量:', allNodes.length)
+      
+      if (allNodes.length === 0) {
+        console.log('未找到可操作的节点，回退到数据方法')
+        throw new Error('无法找到DOM节点')
+      }
+      
+      if (newExpandedState) {
+        // 展开模式：显示所有节点
+        console.log('展开所有节点')
+        allNodes.forEach((node, index) => {
+          node.style.display = ''
+          node.style.opacity = '1'
+          console.log('展开节点', index, node.textContent?.substring(0, 20))
+        })
+      } else {
+        // 折叠模式：隐藏部分节点
+        console.log('折叠到关键节点')
+        allNodes.forEach((node, index) => {
+          // 获取节点深度信息
+          const depth = parseInt(node.getAttribute('data-depth') || '0')
+          const transform = node.getAttribute('transform') || ''
+          
+          // 如果有data-depth属性，使用它
+          if (node.hasAttribute('data-depth')) {
+            if (depth >= 2) {
+              node.style.display = 'none'
+              console.log('隐藏节点(深度' + depth + ')', node.textContent?.substring(0, 20))
+            }
+          } else {
+            // 否则，隐藏索引大于某个值的节点（简单的层级估算）
+            if (index > 5) {  // 前6个节点通常是主要分支
+              node.style.display = 'none'
+              console.log('隐藏节点(索引' + index + ')', node.textContent?.substring(0, 20))
+            }
+          }
+        })
+      }
+      
+      // 重新适应视图
+      setTimeout(() => {
+        if (mmRef.current) {
+          mmRef.current.fit()
+        }
+      }, 100)
+      
+    } catch (error) {
+      console.error('折叠展开失败:', error)
+      
+      // 回退到数据操作方式
+      if (rootDataRef.current) {
+        const dataCopy = JSON.parse(JSON.stringify(rootDataRef.current))
+        
+        if (newExpandedState) {
+          // 展开所有节点
+          const removeFold = (node) => {
+            if (node.data) delete node.data.fold
+            if (node.children) node.children.forEach(removeFold)
+          }
+          removeFold(dataCopy)
+        } else {
+          // 折叠节点
+          setNodeDepth(dataCopy, 2)
+        }
+        
+        mmRef.current.setData(dataCopy)
+        setTimeout(() => mmRef.current?.fit(), 300)
+      }
     }
-    
-    // 更新markmap数据
-    mmRef.current.setData(dataCopy)
-    
-    // 延迟执行fit以确保渲染完成
-    setTimeout(() => {
-      if (mmRef.current) {
-        mmRef.current.fit()
-      }
-    }, 300)
   }
 
   // 自适应窗口大小的函数
