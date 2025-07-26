@@ -85,7 +85,7 @@ async def create_mindmap(
             content=mindmap_data.content,
             description=mindmap_data.description,
             tags=mindmap_data.tags,
-            is_public='1' if mindmap_data.is_public else '0',
+            is_public=mindmap_data.is_public,
             user_id=current_user.id
         )
         
@@ -100,7 +100,7 @@ async def create_mindmap(
             content=new_mindmap.content,
             description=new_mindmap.description,
             tags=new_mindmap.tags.split(',') if new_mindmap.tags else [],
-            is_public=new_mindmap.is_public == '1',
+            is_public=new_mindmap.is_public,
             created_at=new_mindmap.created_at.isoformat(),
             updated_at=new_mindmap.updated_at.isoformat(),
             user_id=new_mindmap.user_id
@@ -146,7 +146,7 @@ async def get_user_mindmaps(
                 title=mindmap.title,
                 description=mindmap.description,
                 tags=mindmap.tags.split(',') if mindmap.tags else [],
-                is_public=mindmap.is_public == '1',
+                is_public=mindmap.is_public,
                 created_at=mindmap.created_at.isoformat(),
                 updated_at=mindmap.updated_at.isoformat(),
                 content_preview=mindmap.content[:100] + "..." if len(mindmap.content) > 100 else mindmap.content
@@ -195,7 +195,7 @@ async def get_mindmap(
             content=mindmap.content,
             description=mindmap.description,
             tags=mindmap.tags.split(',') if mindmap.tags else [],
-            is_public=mindmap.is_public == '1',
+            is_public=mindmap.is_public,
             created_at=mindmap.created_at.isoformat(),
             updated_at=mindmap.updated_at.isoformat(),
             user_id=mindmap.user_id
@@ -244,7 +244,7 @@ async def update_mindmap(
         mindmap.content = mindmap_data.content
         mindmap.description = mindmap_data.description
         mindmap.tags = mindmap_data.tags
-        mindmap.is_public = '1' if mindmap_data.is_public else '0'
+        mindmap.is_public = mindmap_data.is_public
         
         db.commit()
         db.refresh(mindmap)
@@ -255,7 +255,7 @@ async def update_mindmap(
             content=mindmap.content,
             description=mindmap.description,
             tags=mindmap.tags.split(',') if mindmap.tags else [],
-            is_public=mindmap.is_public == '1',
+            is_public=mindmap.is_public,
             created_at=mindmap.created_at.isoformat(),
             updated_at=mindmap.updated_at.isoformat(),
             user_id=mindmap.user_id
