@@ -115,7 +115,6 @@ export default function CreatePage() {
         throw new Error(errorData.detail || '保存失败')
       }
     } catch (error) {
-      console.error('保存思维导图失败:', error)
       ToastManager.error(`保存失败: ${error.message}`)
     } finally {
       setSaveLoading(false)
