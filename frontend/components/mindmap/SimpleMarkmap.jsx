@@ -44,7 +44,7 @@ export default function SimpleMarkmap({ mindmapData }) {
     }
   }
 
-  // 展开/折叠切换函数
+  // 展开/折叠切换函数 - 使用新的方法
   const toggleExpandCollapse = () => {
     console.log('🔧 展开/折叠按钮被点击，当前状态:', isExpanded)
     
@@ -56,38 +56,86 @@ export default function SimpleMarkmap({ mindmapData }) {
     const newExpandedState = !isExpanded
     setIsExpanded(newExpandedState)
     
-    // 创建数据副本避免修改原始数据
-    const dataCopy = JSON.parse(JSON.stringify(rootDataRef.current))
-    
-    if (newExpandedState) {
-      // 展开所有节点 - 移除所有fold属性
-      console.log('🔧 展开所有节点')
-      const removeFold = (node) => {
-        if (node.data) {
-          delete node.data.fold
-        }
-        if (node.children) {
-          node.children.forEach(removeFold)
-        }
+    try {
+      // 方法1: 尝试使用markmap的rescale方法
+      if (mmRef.current.rescale) {
+        console.log('🔧 尝试方法1: 使用rescale')
+        mmRef.current.rescale(newExpandedState ? 1 : 0.5)
+        return
       }
-      removeFold(dataCopy)
-    } else {
-      // 折叠到二级目录 - 深度为2
-      console.log('🔧 折叠到二级目录')
-      setNodeDepth(dataCopy, 2)
+      
+      // 方法2: 尝试直接操作DOM节点
+      const svg = svgRef.current
+      if (svg) {
+        console.log('🔧 尝试方法2: 直接操作DOM')
+        const nodes = svg.querySelectorAll('g[data-depth]')
+        nodes.forEach(node => {
+          const depth = parseInt(node.getAttribute('data-depth') || '0')
+          if (!newExpandedState && depth >= 2) {
+            node.style.display = 'none'
+          } else {
+            node.style.display = ''
+          }
+        })
+        return
+      }
+      
+      // 方法3: 尝试使用d3选择器操作
+      console.log('🔧 尝试方法3: 使用d3操作')
+      const d3 = window.d3 || mmRef.current.d3
+      if (d3) {
+        const svgElement = d3.select(svgRef.current)
+        const allNodes = svgElement.selectAll('g.markmap-node')
+        console.log('🔧 找到节点数量:', allNodes.size())
+        
+        allNodes.each(function(d, i) {
+          const node = d3.select(this)
+          const depth = d.depth || 0
+          console.log('🔧 处理节点深度:', depth)
+          if (!newExpandedState && depth >= 2) {
+            node.style('opacity', '0.3')
+            node.selectAll('g').style('opacity', '0.1')
+          } else {
+            node.style('opacity', '1')
+            node.selectAll('g').style('opacity', '1')
+          }
+        })
+        return
+      }
+      
+      // 方法4: 传统的fold方法
+      console.log('🔧 回退到方法4: 传统fold方法')
+      const dataCopy = JSON.parse(JSON.stringify(rootDataRef.current))
+      
+      if (newExpandedState) {
+        console.log('🔧 展开所有节点')
+        const removeFold = (node) => {
+          if (node.data) {
+            delete node.data.fold
+          }
+          if (node.children) {
+            node.children.forEach(removeFold)
+          }
+        }
+        removeFold(dataCopy)
+      } else {
+        console.log('🔧 折叠到二级目录')
+        setNodeDepth(dataCopy, 2)
+      }
+      
+      console.log('🔧 更新markmap数据')
+      mmRef.current.setData(dataCopy)
+      
+      setTimeout(() => {
+        if (mmRef.current) {
+          console.log('🔧 执行fit操作')
+          mmRef.current.fit()
+        }
+      }, 300)
+      
+    } catch (error) {
+      console.error('🔧 所有方法都失败了:', error)
     }
-    
-    // 更新markmap数据
-    console.log('🔧 更新markmap数据')
-    mmRef.current.setData(dataCopy)
-    
-    // 延迟执行fit以确保渲染完成
-    setTimeout(() => {
-      if (mmRef.current) {
-        console.log('🔧 执行fit操作')
-        mmRef.current.fit()
-      }
-    }, 300)
   }
 
   // 自适应窗口大小的函数
@@ -196,6 +244,11 @@ export default function SimpleMarkmap({ mindmapData }) {
         if (!mmRef.current) {
           throw new Error('思维导图实例创建失败')
         }
+        
+        console.log('🔧 markmap实例创建成功')
+        console.log('🔧 markmap实例方法:', Object.getOwnPropertyNames(mmRef.current))
+        console.log('🔧 markmap实例原型方法:', Object.getOwnPropertyNames(Object.getPrototypeOf(mmRef.current)))
+        console.log('🔧 markmap完整实例:', mmRef.current)
         
         // 设置初始数据（默认全展开）
         mmRef.current.setData(root)
