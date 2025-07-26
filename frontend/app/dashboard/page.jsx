@@ -10,6 +10,8 @@ import { useAuth } from '../../context/AuthContext'
 import { ToastManager } from '../../components/common/Toast'
 import ShareModal from '../../components/share/ShareModal'
 import Header from '../../components/common/Header'
+import { Button } from '../../components/ui/Button'
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../../components/ui/Card'
 
 export default function DashboardPage() {
   const { user, token, isLoading } = useAuth()
@@ -129,14 +131,25 @@ export default function DashboardPage() {
     })
   }
 
+  // 截断文本显示
+  const truncateText = (text, maxLength = 100) => {
+    if (!text) return ''
+    if (text.length <= maxLength) return text
+    return text.substring(0, maxLength) + '...'
+  }
+
   // 加载状态
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-gray-600">加载中...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-background-secondary">
+        <Card className="w-full max-w-md mx-4">
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <div className="animate-spin w-12 h-12 border-4 border-brand-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+              <p className="text-text-secondary">加载中...</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     )
   }
@@ -147,7 +160,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background-secondary">
       {/* 头部导航 */}
       <Header 
         title="📊 我的思维导图"
@@ -157,124 +170,164 @@ export default function DashboardPage() {
 
       {/* 主内容区 */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* 页面头部 */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h2 className="text-2xl font-bold text-text-primary">我的工作空间</h2>
+            <p className="text-text-secondary mt-1">
+              {mindmaps.length > 0 ? `共 ${mindmaps.length} 个思维导图` : '开始创建您的第一个思维导图'}
+            </p>
+          </div>
+          <Button 
+            onClick={() => router.push('/create')}
+            className="flex items-center gap-2"
+          >
+            ➕ 创建思维导图
+          </Button>
+        </div>
+
         {/* 加载状态 */}
         {loading && (
-          <div className="text-center py-12">
-            <div className="animate-spin w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p className="text-gray-600">正在加载您的思维导图...</p>
+          <div className="flex justify-center py-12">
+            <Card className="w-full max-w-md">
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <div className="animate-spin w-8 h-8 border-4 border-brand-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+                  <p className="text-text-secondary">正在加载您的思维导图...</p>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         )}
 
         {/* 错误状态 */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-            <div className="text-red-500 text-4xl mb-4">❌</div>
-            <h3 className="text-lg font-semibold text-red-900 mb-2">加载失败</h3>
-            <p className="text-red-700 mb-4">{error}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700"
-            >
-              重新加载
-            </button>
-          </div>
+          <Card className="border-red-200 bg-red-50">
+            <CardContent className="pt-6">
+              <div className="text-center">
+                <div className="text-red-500 text-4xl mb-4">❌</div>
+                <h3 className="text-lg font-semibold text-red-900 mb-2">加载失败</h3>
+                <p className="text-red-700 mb-4">{error}</p>
+                <Button
+                  variant="secondary"
+                  onClick={() => window.location.reload()}
+                >
+                  重新加载
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* 思维导图列表 */}
         {!loading && !error && (
           <>
             {mindmaps.length === 0 ? (
-              // 空状态
-              <div className="text-center py-12">
-                <div className="text-gray-400 text-6xl mb-4">🌳</div>
-                <h3 className="text-lg font-semibold text-gray-700 mb-2">还没有思维导图</h3>
-                <p className="text-gray-500 mb-6">
-                  创建您的第一个 AI 思维导图，开始整理和可视化您的想法
-                </p>
-                <a
-                  href="/create"
-                  className="inline-block bg-indigo-600 text-white px-6 py-3 rounded-md text-sm font-medium hover:bg-indigo-700"
-                >
-                  🚀 创建第一个思维导图
-                </a>
+              // 空状态 - 友好提示
+              <div className="flex justify-center">
+                <Card className="w-full max-w-2xl">
+                  <CardContent className="pt-6">
+                    <div className="text-center py-12">
+                      <div className="text-gray-400 text-6xl mb-6">🌳</div>
+                      <h3 className="text-xl font-semibold text-text-primary mb-3">
+                        还没有思维导图
+                      </h3>
+                      <p className="text-text-secondary mb-8 max-w-md mx-auto">
+                        创建您的第一个 AI 思维导图，开始整理和可视化您的想法。
+                        支持文档上传，智能解析，一键生成专业思维导图。
+                      </p>
+                      <Button 
+                        size="lg"
+                        onClick={() => router.push('/create')}
+                        className="flex items-center gap-2 mx-auto"
+                      >
+                        🚀 立即创建第一个
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             ) : (
-              // 思维导图网格列表
+              // 思维导图网格列表 - 现代化卡片设计
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {mindmaps.map((mindmap) => (
-                  <div
+                  <Card 
                     key={mindmap.id}
-                    className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
+                    className="hover:shadow-md transition-all duration-200 hover:scale-[1.02]"
                   >
                     {/* 卡片头部 */}
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-gray-900 line-clamp-2 mb-2">
-                          {mindmap.title}
-                        </h3>
-                        {mindmap.description && (
-                          <p className="text-sm text-gray-600 line-clamp-3 mb-3">
-                            {mindmap.description}
-                          </p>
-                        )}
+                    <CardHeader>
+                      <CardTitle className="line-clamp-2 text-lg">
+                        {mindmap.title}
+                      </CardTitle>
+                      <div className="text-xs text-text-tertiary mt-1">
+                        更新于 {formatDate(mindmap.updated_at)}
                       </div>
-                    </div>
+                    </CardHeader>
 
-                    {/* 标签 */}
-                    {mindmap.tags && mindmap.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mb-4">
-                        {mindmap.tags.slice(0, 3).map((tag, index) => (
-                          <span
-                            key={index}
-                            className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                        {mindmap.tags.length > 3 && (
-                          <span className="inline-block bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded">
-                            +{mindmap.tags.length - 3}
-                          </span>
-                        )}
-                      </div>
-                    )}
+                    {/* 卡片内容 */}
+                    <CardContent>
+                      {/* 描述或内容预览 */}
+                      {mindmap.description ? (
+                        <p className="text-sm text-text-secondary mb-4 line-clamp-3">
+                          {truncateText(mindmap.description, 120)}
+                        </p>
+                      ) : (
+                        <p className="text-sm text-text-secondary mb-4 line-clamp-3 bg-background-secondary p-2 rounded">
+                          {truncateText(mindmap.content_preview, 120)}
+                        </p>
+                      )}
 
-                    {/* 内容预览 */}
-                    <div className="mb-4">
-                      <p className="text-xs text-gray-500 mb-2">内容预览:</p>
-                      <p className="text-sm text-gray-700 bg-gray-50 p-2 rounded text-left">
-                        {mindmap.content_preview}
-                      </p>
-                    </div>
+                      {/* 标签 */}
+                      {mindmap.tags && mindmap.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mb-4">
+                          {mindmap.tags.slice(0, 3).map((tag, index) => (
+                            <span
+                              key={index}
+                              className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                          {mindmap.tags.length > 3 && (
+                            <span className="inline-block bg-border-secondary text-text-tertiary text-xs px-2 py-1 rounded">
+                              +{mindmap.tags.length - 3}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </CardContent>
 
-                    {/* 卡片底部 */}
-                    <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                      <div className="text-xs text-gray-500">
-                        <p>更新于</p>
-                        <p className="font-medium">{formatDate(mindmap.updated_at)}</p>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => router.push(`/mindmap/${mindmap.id}`)}
-                          className="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
-                        >
-                          👁️ 查看
-                        </button>
-                        <button
+                    {/* 卡片底部操作区 */}
+                    <CardFooter className="flex items-center justify-between gap-2">
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => router.push(`/mindmap/${mindmap.id}`)}
+                        className="flex items-center gap-1"
+                      >
+                        👁️ 查看
+                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="secondary"
+                          size="sm"
                           onClick={() => handleShareClick(mindmap.id, mindmap.title)}
-                          className="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
+                          className="flex items-center gap-1"
                         >
                           🔗 分享
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => handleDelete(mindmap.id, mindmap.title)}
-                          className="text-red-600 hover:text-red-700 text-sm font-medium"
+                          className="flex items-center gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
                         >
                           🗑️ 删除
-                        </button>
+                        </Button>
                       </div>
-                    </div>
-                  </div>
+                    </CardFooter>
+                  </Card>
                 ))}
               </div>
             )}

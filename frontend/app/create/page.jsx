@@ -11,6 +11,8 @@ import FileUpload from '../../components/upload/FileUpload'
 import { useAuth } from '../../context/AuthContext'
 import { ToastManager } from '../../components/common/Toast'
 import Header from '../../components/common/Header'
+import { Button } from '../../components/ui/Button'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../components/ui/Card'
 
 export default function CreatePage() {
   const { user, token, isLoading } = useAuth()
@@ -33,14 +35,18 @@ export default function CreatePage() {
   // 如果正在加载认证状态或未登录，显示加载页面
   if (isLoading || !user) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full mx-auto mb-4"></div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            {isLoading ? '正在验证登录状态...' : '正在跳转到登录页面...'}
-          </h3>
-          <p className="text-gray-600">请稍候</p>
-        </div>
+      <div className="min-h-screen bg-background-secondary flex items-center justify-center">
+        <Card className="w-full max-w-md mx-4">
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <div className="animate-spin w-12 h-12 border-4 border-brand-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+              <h3 className="text-lg font-semibold text-text-primary mb-2">
+                {isLoading ? '正在验证登录状态...' : '正在跳转到登录页面...'}
+              </h3>
+              <p className="text-text-secondary">请稍候</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     )
   }
@@ -122,7 +128,7 @@ export default function CreatePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background-secondary">
       {/* 头部导航 */}
       <Header 
         title="🎨 思维导图创建"
@@ -134,77 +140,85 @@ export default function CreatePage() {
           
           {/* 左侧：文件上传区 */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                📤 上传文档或输入文本
-              </h2>
-              
-              <FileUpload
-                onUploadStart={handleUploadStart}
-                onUploadSuccess={handleUploadSuccess}
-                onUploadError={handleUploadError}
-                token={token}
-              />
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  📤 上传文档或输入文本
+                </CardTitle>
+                <CardDescription>
+                  支持多种文件格式，AI智能解析生成思维导图
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <FileUpload
+                  onUploadStart={handleUploadStart}
+                  onUploadSuccess={handleUploadSuccess}
+                  onUploadError={handleUploadError}
+                  token={token}
+                />
 
-              {/* 上传信息显示 */}
-              {uploadInfo && (
-                <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
-                  <h4 className="text-sm font-medium text-green-800 mb-1">
-                    ✅ 文件处理成功
-                  </h4>
-                  <div className="text-xs text-green-700 space-y-1">
-                    <p><strong>文件:</strong> {uploadInfo.filename}</p>
-                    <p><strong>类型:</strong> {uploadInfo.fileType}</p>
-                    {uploadInfo.contentPreview && (
-                      <p><strong>内容预览:</strong> {uploadInfo.contentPreview}</p>
-                    )}
+                {/* 上传信息显示 */}
+                {uploadInfo && (
+                  <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
+                    <h4 className="text-sm font-medium text-green-800 mb-1">
+                      ✅ 文件处理成功
+                    </h4>
+                    <div className="text-xs text-green-700 space-y-1">
+                      <p><strong>文件:</strong> {uploadInfo.filename}</p>
+                      <p><strong>类型:</strong> {uploadInfo.fileType}</p>
+                      {uploadInfo.contentPreview && (
+                        <p><strong>内容预览:</strong> {uploadInfo.contentPreview}</p>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* 清空按钮 */}
-              {(mindmapData || error) && (
-                <div className="mt-4">
-                  <button
-                    onClick={handleClear}
-                    className="w-full bg-gray-200 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
-                  >
-                    🗑️ 清空结果
-                  </button>
-                </div>
-              )}
-            </div>
+                {/* 清空按钮 */}
+                {(mindmapData || error) && (
+                  <div className="mt-4">
+                    <Button
+                      variant="secondary"
+                      onClick={handleClear}
+                      className="w-full"
+                    >
+                      🗑️ 清空结果
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
 
           {/* 右侧：思维导图展示区 */}
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-lg shadow-sm">
+            <Card>
               {/* 思维导图展示 */}
               {mindmapData && (
-                <div className="h-[600px] border border-gray-200 rounded-lg">
-                  <div className="flex items-center justify-between p-4 border-b border-gray-200">
-                    <h2 className="text-lg font-semibold text-gray-900">
+                <div className="h-[600px] rounded-lg overflow-hidden">
+                  <div className="flex items-center justify-between p-4 border-b border-border-primary">
+                    <h2 className="text-lg font-semibold text-text-primary">
                       🎨 {mindmapData.data?.title || '思维导图'}
                     </h2>
                     <div className="flex items-center space-x-4">
                       {user && (
-                        <button
+                        <Button
                           onClick={handleSave}
                           disabled={saveLoading}
-                          className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                          size="sm"
                         >
                           {saveLoading ? '保存中...' : '💾 保存'}
-                        </button>
+                        </Button>
                       )}
                       {!user && (
-                        <a
-                          href="/login"
-                          className="bg-gray-100 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                        <Button
+                          variant="secondary"
+                          onClick={() => router.push('/login')}
+                          size="sm"
                         >
                           🔒 登录后保存
-                        </a>
+                        </Button>
                       )}
-                      <div className="text-sm text-gray-500 flex items-center space-x-2">
+                      <div className="text-sm text-text-secondary flex items-center space-x-2">
                         <span>Markmap 思维导图</span>
                         {uploadInfo && (
                           <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
@@ -222,73 +236,83 @@ export default function CreatePage() {
 
               {/* 错误提示 */}
               {error && (
-                <div className="h-[600px] flex items-center justify-center border border-red-200 rounded-lg bg-red-50">
-                  <div className="text-center">
-                    <div className="text-red-500 text-4xl mb-4">❌</div>
-                    <h3 className="text-lg font-semibold text-red-900 mb-2">处理失败</h3>
-                    <p className="text-red-700 mb-4">{error}</p>
-                    <div className="text-sm text-red-600">
-                      <p>请检查：</p>
-                      <ul className="mt-2 text-left inline-block">
-                        <li>• 文件格式是否支持</li>
-                        <li>• 文件大小是否超限</li>
-                        <li>• 后端服务是否启动</li>
-                        <li>• 网络连接是否正常</li>
-                      </ul>
+                <CardContent>
+                  <div className="h-[600px] flex items-center justify-center border border-red-200 rounded-lg bg-red-50">
+                    <div className="text-center">
+                      <div className="text-red-500 text-4xl mb-4">❌</div>
+                      <h3 className="text-lg font-semibold text-red-900 mb-2">处理失败</h3>
+                      <p className="text-red-700 mb-4">{error}</p>
+                      <div className="text-sm text-red-600">
+                        <p>请检查：</p>
+                        <ul className="mt-2 text-left inline-block">
+                          <li>• 文件格式是否支持</li>
+                          <li>• 文件大小是否超限</li>
+                          <li>• 后端服务是否启动</li>
+                          <li>• 网络连接是否正常</li>
+                        </ul>
+                      </div>
                     </div>
                   </div>
-                </div>
+                </CardContent>
               )}
 
               {/* 默认状态 */}
               {!mindmapData && !error && !uploadLoading && (
-                <div className="h-[600px] flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg">
-                  <div className="text-center">
-                    <div className="text-gray-400 text-6xl mb-4">🌳</div>
-                    <h3 className="text-lg font-semibold text-gray-700 mb-2">准备生成思维导图</h3>
-                    <p className="text-gray-500 mb-4">
-                      上传文档（PDF、Word、TXT等）或直接输入文本
-                    </p>
-                    <div className="text-xs text-gray-400 space-y-1">
-                      <p>✅ 支持 PDF、DOCX、TXT、MD、SRT 格式</p>
-                      <p>✅ 最大文件大小：10MB</p>
-                      <p>✅ AI智能解析，零信息损失</p>
+                <CardContent>
+                  <div className="h-[600px] flex items-center justify-center border-2 border-dashed border-border-primary rounded-lg">
+                    <div className="text-center">
+                      <div className="text-gray-400 text-6xl mb-4">🌳</div>
+                      <h3 className="text-lg font-semibold text-text-primary mb-2">准备生成思维导图</h3>
+                      <p className="text-text-secondary mb-4">
+                        上传文档（PDF、Word、TXT等）或直接输入文本
+                      </p>
+                      <div className="text-xs text-text-tertiary space-y-1">
+                        <p>✅ 支持 PDF、DOCX、TXT、MD、SRT 格式</p>
+                        <p>✅ 最大文件大小：10MB</p>
+                        <p>✅ AI智能解析，零信息损失</p>
+                      </div>
                     </div>
                   </div>
-                </div>
+                </CardContent>
               )}
 
               {/* 加载状态 */}
               {uploadLoading && (
-                <div className="h-[600px] flex items-center justify-center border border-gray-200 rounded-lg bg-blue-50">
-                  <div className="text-center">
-                    <div className="animate-spin w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full mx-auto mb-4"></div>
-                    <h3 className="text-lg font-semibold text-indigo-900 mb-2">AI 正在处理</h3>
-                    <div className="text-indigo-700 space-y-1">
-                      <p>正在解析文档内容...</p>
-                      <p className="text-sm">运用知识架构师算法生成思维导图</p>
+                <CardContent>
+                  <div className="h-[600px] flex items-center justify-center border border-border-primary rounded-lg bg-blue-50">
+                    <div className="text-center">
+                      <div className="animate-spin w-12 h-12 border-4 border-brand-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+                      <h3 className="text-lg font-semibold text-brand-primary mb-2">AI 正在处理</h3>
+                      <div className="text-text-secondary space-y-1">
+                        <p>正在解析文档内容...</p>
+                        <p className="text-sm">运用知识架构师算法生成思维导图</p>
+                      </div>
                     </div>
                   </div>
-                </div>
+                </CardContent>
               )}
-            </div>
+            </Card>
           </div>
         </div>
 
         {/* 底部说明 */}
-        <div className="mt-6 bg-blue-50 rounded-lg p-4">
-          <div className="flex items-start">
-            <div className="text-blue-600 text-lg mr-3 mt-0.5">💡</div>
-            <div>
-              <h4 className="font-medium text-blue-900 mb-1">v1.1.0 新功能</h4>
-              <div className="text-blue-800 text-sm space-y-1">
-                <p><strong>📁 多格式文档上传：</strong> 支持 PDF、Word、文本文件等多种格式</p>
-                <p><strong>🧠 AI智能解析：</strong> 零信息损失，完整保留文档结构和细节</p>
-                <p><strong>⚡ 高性能解析：</strong> 新增 PyMuPDF 库，PDF解析速度提升 3-5 倍</p>
-                <p><strong>🎨 简洁界面：</strong> 优化的用户体验，专注核心功能</p>
+        <div className="mt-6">
+          <Card className="bg-blue-50 border-blue-200">
+            <CardContent className="pt-6">
+              <div className="flex items-start">
+                <div className="text-blue-600 text-lg mr-3 mt-0.5">💡</div>
+                <div>
+                  <h4 className="font-medium text-blue-900 mb-1">v1.1.0 新功能</h4>
+                  <div className="text-blue-800 text-sm space-y-1">
+                    <p><strong>📁 多格式文档上传：</strong> 支持 PDF、Word、文本文件等多种格式</p>
+                    <p><strong>🧠 AI智能解析：</strong> 零信息损失，完整保留文档结构和细节</p>
+                    <p><strong>⚡ 高性能解析：</strong> 新增 PyMuPDF 库，PDF解析速度提升 3-5 倍</p>
+                    <p><strong>🎨 简洁界面：</strong> 优化的用户体验，专注核心功能</p>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
 
@@ -319,24 +343,27 @@ function SaveModal({ onSave, onCancel, isLoading, defaultTitle }) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">💾 保存思维导图</h3>
-            <button
+      <Card className="max-w-md w-full mx-4">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>💾 保存思维导图</CardTitle>
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={onCancel}
               disabled={isLoading}
-              className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
+              className="h-8 w-8 p-0"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
-            </button>
+            </Button>
           </div>
-
+        </CardHeader>
+        <CardContent>
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
-              <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="title" className="block text-sm font-medium text-text-primary mb-2">
                 标题 <span className="text-red-500">*</span>
               </label>
               <input
@@ -345,16 +372,16 @@ function SaveModal({ onSave, onCancel, isLoading, defaultTitle }) {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 disabled={isLoading}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:opacity-50"
+                className="w-full px-3 py-2 border border-border-primary rounded-md focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent disabled:opacity-50"
                 placeholder="请输入思维导图标题"
                 maxLength={200}
                 required
               />
-              <p className="text-xs text-gray-500 mt-1">{title.length}/200 字符</p>
+              <p className="text-xs text-text-tertiary mt-1">{title.length}/200 字符</p>
             </div>
 
             <div className="mb-6">
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="description" className="block text-sm font-medium text-text-primary mb-2">
                 描述 (可选)
               </label>
               <textarea
@@ -363,26 +390,25 @@ function SaveModal({ onSave, onCancel, isLoading, defaultTitle }) {
                 onChange={(e) => setDescription(e.target.value)}
                 disabled={isLoading}
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:opacity-50"
+                className="w-full px-3 py-2 border border-border-primary rounded-md focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent disabled:opacity-50"
                 placeholder="描述这个思维导图的内容或用途..."
                 maxLength={500}
               />
-              <p className="text-xs text-gray-500 mt-1">{description.length}/500 字符</p>
+              <p className="text-xs text-text-tertiary mt-1">{description.length}/500 字符</p>
             </div>
 
             <div className="flex justify-end space-x-3">
-              <button
+              <Button
                 type="button"
+                variant="secondary"
                 onClick={onCancel}
                 disabled={isLoading}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50"
               >
                 取消
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
                 disabled={isLoading || !title.trim()}
-                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
                   <>
@@ -395,11 +421,11 @@ function SaveModal({ onSave, onCancel, isLoading, defaultTitle }) {
                 ) : (
                   '保存'
                 )}
-              </button>
+              </Button>
             </div>
           </form>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

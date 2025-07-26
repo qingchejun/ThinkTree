@@ -7,6 +7,9 @@ import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '../../context/AuthContext'
+import { Button } from '../../components/ui/Button'
+import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card'
+import { Input } from '../../components/ui/Input'
 
 function LoginForm() {
   const router = useRouter()
@@ -113,125 +116,120 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="max-w-md w-full space-y-8 p-8">
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          {/* 头部 */}
-          <div className="text-center">
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">
+    <div className="min-h-screen flex items-center justify-center bg-background-secondary p-4">
+      <div className="max-w-md w-full">
+        <Card>
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl font-bold text-text-primary mb-2">
               登录到 ThinkSo
-            </h2>
-            <p className="text-gray-600 mb-4">
+            </CardTitle>
+            <p className="text-text-secondary">
               使用您的账户登录访问思维导图工具
             </p>
-            
-          </div>
+          </CardHeader>
 
-          {/* 表单 */}
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* 邮箱输入框 */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                邮箱地址
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={formData.email}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                placeholder="请输入您的邮箱"
-              />
-            </div>
-
-            {/* 密码输入框 */}
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                  密码
+          <CardContent>
+            {/* 表单 */}
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* 邮箱输入框 */}
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-text-primary mb-2">
+                  邮箱地址
                 </label>
-                <Link 
-                  href="/forgot-password" 
-                  className="text-sm text-indigo-600 hover:text-indigo-500"
-                >
-                  忘记密码？
-                </Link>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  placeholder="请输入您的邮箱"
+                />
               </div>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={formData.password}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                placeholder="请输入您的密码"
-              />
-            </div>
 
-            {/* 错误/成功信息 */}
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
-                {error}
+              {/* 密码输入框 */}
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <label htmlFor="password" className="block text-sm font-medium text-text-primary">
+                    密码
+                  </label>
+                  <Link 
+                    href="/forgot-password" 
+                    className="text-sm text-brand-primary hover:underline"
+                  >
+                    忘记密码？
+                  </Link>
+                </div>
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  placeholder="请输入您的密码"
+                />
               </div>
-            )}
-            {success && (
-              <div className={`px-4 py-3 rounded-md text-sm ${
-                verificationSuccess 
-                  ? 'bg-blue-50 border border-blue-200 text-blue-600' 
-                  : 'bg-green-50 border border-green-200 text-green-600'
-              }`}>
-                {verificationSuccess && (
-                  <div className="flex items-center mb-2">
-                    <span className="text-lg mr-2">🎉</span>
-                    <span className="font-medium">账户激活成功！</span>
-                  </div>
-                )}
-                {success}
-              </div>
-            )}
 
+              {/* 错误/成功信息 */}
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
+                  {error}
+                </div>
+              )}
+              {success && (
+                <div className={`px-4 py-3 rounded-md text-sm ${
+                  verificationSuccess 
+                    ? 'bg-blue-50 border border-blue-200 text-blue-600' 
+                    : 'bg-green-50 border border-green-200 text-green-600'
+                }`}>
+                  {verificationSuccess && (
+                    <div className="flex items-center mb-2">
+                      <span className="text-lg mr-2">🎉</span>
+                      <span className="font-medium">账户激活成功！</span>
+                    </div>
+                  )}
+                  {success}
+                </div>
+              )}
 
-            {/* 登录按钮 */}
-            <div>
-              <button
+              {/* 登录按钮 */}
+              <Button
                 type="submit"
                 disabled={loading}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200"
+                className="w-full"
               >
                 {loading ? (
-                  <div className="flex items-center">
+                  <div className="flex items-center justify-center">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                     登录中...
                   </div>
                 ) : (
                   '登录'
                 )}
-              </button>
-            </div>
+              </Button>
 
-            {/* 注册链接 */}
-            <div className="text-center">
-              <p className="text-sm text-gray-600">
-                还没有账户？{' '}
-                <Link href="/register" className="font-medium text-indigo-600 hover:text-indigo-500">
-                  立即注册
-                </Link>
-              </p>
-            </div>
-          </form>
+              {/* 注册链接 */}
+              <div className="text-center">
+                <p className="text-sm text-text-secondary">
+                  还没有账户？{' '}
+                  <Link href="/register" className="font-medium text-brand-primary hover:underline">
+                    立即注册
+                  </Link>
+                </p>
+              </div>
+            </form>
 
-          {/* 返回首页 */}
-          <div className="text-center mt-6">
-            <Link href="/" className="text-sm text-gray-500 hover:text-gray-700">
-              ← 返回首页
-            </Link>
-          </div>
-        </div>
+            {/* 返回首页 */}
+            <div className="text-center mt-6 pt-6 border-t border-border-secondary">
+              <Link href="/" className="text-sm text-text-tertiary hover:text-text-secondary">
+                ← 返回首页
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )
@@ -240,11 +238,15 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p>加载中...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-background-secondary">
+        <Card className="w-full max-w-md mx-4">
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary mx-auto mb-4"></div>
+              <p>加载中...</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     }>
       <LoginForm />

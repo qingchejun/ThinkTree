@@ -1,6 +1,10 @@
 import '../styles/globals.css'
 import { AuthProvider } from '../context/AuthContext'
 import { ToastContainer } from '../components/common/Toast'
+import { Inter } from 'next/font/google'
+
+// 初始化 Inter 字体
+const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
   title: 'ThinkSo - AI驱动的思维导图生成工具',
@@ -17,7 +21,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="zh-CN">
-      <body className="antialiased">
+      <body className={`${inter.className} antialiased`}>
         <AuthProvider>
           <div id="root">
             {children}
