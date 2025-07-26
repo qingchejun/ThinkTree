@@ -8,9 +8,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
-# Restore full functionality with all modules
-from app.api import upload, mindmaps, auth, share, invitations
-from app.api import admin_minimal as admin
+# Restore full functionality with all modules  
+from app.api import upload, mindmaps, auth, share, invitations, admin
 from app.core.config import settings
 
 # 创建rate limiter实例
@@ -91,7 +90,7 @@ if __name__ == "__main__":
         
         # 检查关键模块导入
         logger.info("Checking module imports...")
-        logger.info("Admin minimal module loaded successfully")
+        logger.info("Admin module loaded successfully")
         logger.info("Basic modules imported successfully")
         
         uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)

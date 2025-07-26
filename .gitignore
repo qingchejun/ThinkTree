@@ -146,6 +146,9 @@ backend/uploads/
 # Project Documentation (Private)
 CLAUDE.md
 任务清单.md
+PROJECT_DETAILS.md
+API_REFERENCE.md
+ROADMAP.md
 
 # Development Scripts (Personal)
 diagnose.sh
