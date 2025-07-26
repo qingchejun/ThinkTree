@@ -1,0 +1,51 @@
+# 文件: .github/workflows/ci.yml
+
+# 1. Workflow 的名称
+name: CI Checks for Pull Requests
+
+# 2. 触发条件：在何时运行此工作流
+on:
+  # 当有 Pull Request 推送到 main 分支时触发
+  pull_request:
+    branches: [main]
+  # 也允许您在 Actions 页面手动触发此工作流
+  workflow_dispatch:
+
+# 3. 任务定义：要执行的具体工作
+jobs:
+  # 定义一个名为 "build-and-test" 的任务
+  build-and-test:
+    # 4. 运行环境：指定任务运行在哪个操作系统上
+    runs-on: ubuntu-latest
+
+    # 5. 步骤：任务执行的具体步骤
+    steps:
+      # 第 1 步：检出代码
+      # 这个 action 会把您的仓库代码下载到运行器中，以便后续步骤使用
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 第 2 步：设置 Node.js 环境
+      # 如果您用的是 Python/Go/Java，请更换为对应的 setup-python/setup-go 等 action
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20" # 指定您项目使用的 Node.js 版本
+          cache: "npm" # 缓存 npm 依赖，加快后续运行速度
+
+      # 第 3 步：安装项目依赖
+      # 这会执行 npm install 或 npm ci 命令
+      - name: Install dependencies
+        run: npm ci
+
+      # 第 4 步：运行测试
+      # 这会执行您在 package.json 中定义的 "test" 脚本
+      # 这是保证代码质量的核心步骤！
+      - name: Run tests
+        run: npm test
+
+      # (可选) 第 5 步：运行代码构建
+      # 如果您的项目需要构建步骤（例如 React/Vue 项目）
+      # 这可以确保您的代码至少能成功构建
+      - name: Build project
+        run: npm run build
