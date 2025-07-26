@@ -134,26 +134,19 @@ async def create_invitation(
     """
     创建新的邀请码
     """
-    try:
-        # 添加调试信息
-        print(f"DEBUG: 用户 {current_user.id} 尝试创建邀请码")
-        print(f"DEBUG: 用户验证状态: {current_user.is_verified}")
-        print(f"DEBUG: 请求数据: {request}")
-        
-        # 检查用户是否可以生成邀请码
-        can_generate, error_msg = can_generate_invitation(db, current_user.id)
-        print(f"DEBUG: 权限检查结果: {can_generate}, 错误: {error_msg}")
-        
-        if not can_generate:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=error_msg
-            )
-    except Exception as e:
-        print(f"DEBUG: 权限检查异常: {str(e)}")
+    # 添加调试信息
+    print(f"DEBUG: 用户 {current_user.id} 尝试创建邀请码")
+    print(f"DEBUG: 用户验证状态: {current_user.is_verified}")
+    print(f"DEBUG: 请求数据: {request}")
+    
+    # 检查用户是否可以生成邀请码
+    can_generate, error_msg = can_generate_invitation(db, current_user.id)
+    print(f"DEBUG: 权限检查结果: {can_generate}, 错误: {error_msg}")
+    
+    if not can_generate:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"权限检查失败: {str(e)}"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=error_msg
         )
     
     try:
