@@ -5,6 +5,7 @@
 
 import { useAuth } from '../context/AuthContext'
 import Header from '../components/common/Header'
+import { Button } from '../components/ui/Button'
 
 export default function HomePage() {
   const { user, logout } = useAuth()
@@ -25,12 +26,13 @@ export default function HomePage() {
           
           {/* 快速开始按钮 */}
           <div className="space-y-4">
-            <a
-              href="/create"
-              className="inline-block bg-indigo-600 text-white px-8 py-3 rounded-lg text-lg font-medium hover:bg-indigo-700 transition-colors"
+            <Button 
+              size="lg"
+              onClick={() => window.location.href = '/create'}
+              className="inline-flex items-center"
             >
               🚀 开始生成思维导图
-            </a>
+            </Button>
             <p className="text-sm text-gray-500">
               点击上方按钮开始使用 AI 思维导图生成功能
             </p>

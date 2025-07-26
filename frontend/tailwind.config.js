@@ -9,7 +9,25 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // ThinkSo 品牌色彩
+        // 新增品牌色彩系统
+        brand: {
+          primary: '#5A54F2', // 品牌主色 - 更活泼的紫色
+          secondary: '#F7F8FA' // 辅助背景色
+        },
+        text: {
+          primary: '#1A1A1A', // 主文字色 - 深灰色
+          secondary: '#6B7280', // 辅助文字色
+          tertiary: '#9CA3AF'  // 第三级文字色
+        },
+        border: {
+          primary: '#E5E7EB', // 主要边框色
+          secondary: '#F3F4F6' // 次要边框色
+        },
+        background: {
+          primary: '#FFFFFF', // 主背景色
+          secondary: '#F7F8FA' // 次要背景色
+        },
+        // ThinkSo 品牌色彩 - 保留现有配置
         primary: {
           50: '#eff6ff',
           100: '#dbeafe',
@@ -72,7 +90,9 @@ module.exports = {
         },
       },
       fontFamily: {
+        // 更新字体系统，以 Inter 为首选
         sans: [
+          'Inter',
           '-apple-system',
           'BlinkMacSystemFont',
           'Segoe UI',

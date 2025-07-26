@@ -2,6 +2,7 @@
 import { useState, useContext, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AuthContext from '../../context/AuthContext';
+import { Button } from '../ui/Button';
 
 const Header = ({ title, subtitle, showCreateButton = false }) => {
   const { user, logout, isAdmin } = useContext(AuthContext);
@@ -72,12 +73,13 @@ const Header = ({ title, subtitle, showCreateButton = false }) => {
           <div className="flex items-center space-x-4">
             {/* 创建按钮 */}
             {showCreateButton && (
-              <button
+              <Button
+                variant="secondary"
                 onClick={() => router.push('/create')}
-                className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors"
+                className="inline-flex items-center"
               >
                 ➕ 创建思维导图
-              </button>
+              </Button>
             )}
 
             {/* 积分显示 - 仅登录用户可见 */}
@@ -233,18 +235,18 @@ const Header = ({ title, subtitle, showCreateButton = false }) => {
             ) : (
               /* 未登录状态 */
               <div className="flex items-center space-x-4">
-                <button
+                <Button
+                  variant="ghost"
                   onClick={() => router.push('/login')}
-                  className="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
                 >
                   登录
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="primary"
                   onClick={() => router.push('/register')}
-                  className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                 >
                   注册
-                </button>
+                </Button>
               </div>
             )}
           </div>

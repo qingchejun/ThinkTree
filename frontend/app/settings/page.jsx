@@ -6,6 +6,9 @@ import Header from '@/components/common/Header';
 import { getProfile, updateProfile, generateInvitationCode, getUserInvitations, updatePassword } from '@/lib/api';
 import Toast from '@/components/common/Toast';
 import PasswordInput from '@/components/common/PasswordInput';
+import { Button } from '../../components/ui/Button';
+import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
+import { Input } from '../../components/ui/Input';
 
 const settingsNavItems = [
   {
@@ -106,8 +109,15 @@ const SettingsContent = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-background-secondary">
+        <Card className="w-full max-w-md mx-4">
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-brand-primary border-t-transparent mx-auto mb-4"></div>
+              <p className="text-text-secondary">加载中...</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -134,55 +144,57 @@ const SettingsContent = () => {
   const renderContent = () => {
     switch (activeTab) {
       case 'profile':
-
         return (
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-2xl font-bold mb-4">个人资料</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  邮箱地址
-                </label>
-                <input
-                  type="email"
-                  value={profileData?.email || user?.email || ''}
-                  disabled
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500"
-                />
+          <Card>
+            <CardHeader>
+              <CardTitle>个人资料</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-text-primary mb-2">
+                    邮箱地址
+                  </label>
+                  <Input
+                    type="email"
+                    value={profileData?.email || user?.email || ''}
+                    disabled
+                    className="bg-background-secondary text-text-tertiary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-text-primary mb-2">
+                    显示名称
+                  </label>
+                  <Input
+                    type="text"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    placeholder="输入您的显示名称"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-text-primary mb-2">
+                    注册时间
+                  </label>
+                  <Input
+                    type="text"
+                    value={profileData ? new Date(profileData.created_at).toLocaleString() : '加载中...'}
+                    disabled
+                    className="bg-background-secondary text-text-tertiary"
+                  />
+                </div>
+                <Button 
+                  onClick={handleSaveProfile}
+                  disabled={isLoading}
+                >
+                  {isLoading ? '保存中...' : '保存更改'}
+                </Button>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  显示名称
-                </label>
-                <input
-                  type="text"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  placeholder="输入您的显示名称"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  注册时间
-                </label>
-                <input
-                  type="text"
-                  value={profileData ? new Date(profileData.created_at).toLocaleString() : '加载中...'}
-                  disabled
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500"
-                />
-              </div>
-              <button 
-                onClick={handleSaveProfile}
-                disabled={isLoading}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400"
-              >
-                {isLoading ? '保存中...' : '保存更改'}
-              </button>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         );
+
       case 'security':
         const handlePasswordUpdate = async (e) => {
           e.preventDefault();
@@ -232,88 +244,104 @@ const SettingsContent = () => {
         };
 
         return (
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-2xl font-bold mb-4">账户与安全</h2>
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-medium mb-3">修改密码</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      当前密码
-                    </label>
-                    <PasswordInput
-                      value={passwordForm.currentPassword}
-                      onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
-                      placeholder="请输入当前密码"
-                    />
+          <Card>
+            <CardHeader>
+              <CardTitle>账户与安全</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-medium text-text-primary mb-4">修改密码</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-text-primary mb-2">
+                        当前密码
+                      </label>
+                      <PasswordInput
+                        value={passwordForm.currentPassword}
+                        onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
+                        placeholder="请输入当前密码"
+                        className="border border-border-primary bg-transparent px-3 py-2 text-sm placeholder:text-text-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-text-primary mb-2">
+                        新密码
+                      </label>
+                      <PasswordInput
+                        value={passwordForm.newPassword}
+                        onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
+                        placeholder="请输入新密码（至少8位）"
+                        className="border border-border-primary bg-transparent px-3 py-2 text-sm placeholder:text-text-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-text-primary mb-2">
+                        确认新密码
+                      </label>
+                      <PasswordInput
+                        value={passwordForm.confirmPassword}
+                        onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
+                        placeholder="请再次输入新密码"
+                        className="border border-border-primary bg-transparent px-3 py-2 text-sm placeholder:text-text-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2"
+                      />
+                    </div>
+                    <Button 
+                      onClick={handlePasswordUpdate}
+                      disabled={isLoading}
+                    >
+                      {isLoading ? '更新中...' : '更新密码'}
+                    </Button>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      新密码
-                    </label>
-                    <PasswordInput
-                      value={passwordForm.newPassword}
-                      onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
-                      placeholder="请输入新密码（至少8位）"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      确认新密码
-                    </label>
-                    <PasswordInput
-                      value={passwordForm.confirmPassword}
-                      onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
-                      placeholder="请再次输入新密码"
-                    />
-                  </div>
-                  <button 
-                    onClick={handlePasswordUpdate}
-                    disabled={isLoading}
-                    className={`px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed ${isLoading ? 'opacity-50' : ''}`}
-                  >
-                    {isLoading ? '更新中...' : '更新密码'}
-                  </button>
                 </div>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         );
+
       case 'billing':
         return (
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-2xl font-bold mb-4">用量与计费</h2>
-            <div className="space-y-6">
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <h3 className="text-lg font-medium mb-2">当前积分</h3>
-                <p className="text-3xl font-bold text-blue-600">
-                  {profileData ? profileData.credits.toLocaleString() : '加载中...'}
-                </p>
-                <p className="text-sm text-gray-600 mt-1">积分余额</p>
-              </div>
-              <div>
-                <h3 className="text-lg font-medium mb-3">使用统计</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <p className="text-sm text-gray-600">账户状态</p>
-                    <p className="text-2xl font-bold">
-                      {profileData && profileData.is_verified ? '已验证' : '未验证'}
-                    </p>
-                    <p className="text-sm text-gray-600">邮箱验证</p>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <p className="text-sm text-gray-600">用户类型</p>
-                    <p className="text-2xl font-bold">
-                      {profileData && profileData.is_superuser ? '管理员' : '普通用户'}
-                    </p>
-                    <p className="text-sm text-gray-600">权限级别</p>
+          <Card>
+            <CardHeader>
+              <CardTitle>用量与计费</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
+                  <h3 className="text-lg font-medium text-blue-900 mb-2">当前积分</h3>
+                  <p className="text-3xl font-bold text-blue-600">
+                    {profileData ? profileData.credits.toLocaleString() : '加载中...'}
+                  </p>
+                  <p className="text-sm text-blue-700 mt-1">积分余额</p>
+                </div>
+                <div>
+                  <h3 className="text-lg font-medium text-text-primary mb-4">使用统计</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Card className="bg-background-secondary">
+                      <CardContent className="pt-6">
+                        <p className="text-sm text-text-secondary">账户状态</p>
+                        <p className="text-2xl font-bold text-text-primary">
+                          {profileData && profileData.is_verified ? '已验证' : '未验证'}
+                        </p>
+                        <p className="text-sm text-text-tertiary">邮箱验证</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-background-secondary">
+                      <CardContent className="pt-6">
+                        <p className="text-sm text-text-secondary">用户类型</p>
+                        <p className="text-2xl font-bold text-text-primary">
+                          {profileData && profileData.is_superuser ? '管理员' : '普通用户'}
+                        </p>
+                        <p className="text-sm text-text-tertiary">权限级别</p>
+                      </CardContent>
+                    </Card>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         );
+
       case 'invitations':
         const handleGenerateInvitation = async () => {
           try {
@@ -343,79 +371,99 @@ const SettingsContent = () => {
           }
         };
 
-
         return (
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-2xl font-bold mb-4">邀请好友</h2>
-            <div className="space-y-6">
-              <div className="bg-green-50 p-4 rounded-lg">
-                <h3 className="text-lg font-medium mb-2">邀请配额</h3>
-                <p className="text-3xl font-bold text-green-600">
-                  {profileData ? profileData.invitation_remaining : '加载中...'}
-                </p>
-                <p className="text-sm text-gray-600 mt-1">
-                  剩余邀请码 (总配额: {profileData ? profileData.invitation_quota : '...'})
-                </p>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600">已生成</p>
-                  <p className="text-2xl font-bold">
-                    {profileData ? profileData.invitation_used : '...'}
+          <Card>
+            <CardHeader>
+              <CardTitle>邀请好友</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                <div className="bg-green-50 p-6 rounded-lg border border-green-200">
+                  <h3 className="text-lg font-medium text-green-900 mb-2">邀请配额</h3>
+                  <p className="text-3xl font-bold text-green-600">
+                    {profileData ? profileData.invitation_remaining : '加载中...'}
                   </p>
-                  <p className="text-sm text-gray-600">邀请码</p>
-                </div>
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600">总配额</p>
-                  <p className="text-2xl font-bold">
-                    {profileData ? profileData.invitation_quota : '...'}
+                  <p className="text-sm text-green-700 mt-1">
+                    剩余邀请码 (总配额: {profileData ? profileData.invitation_quota : '...'})
                   </p>
-                  <p className="text-sm text-gray-600">邀请码</p>
                 </div>
-              </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Card className="bg-background-secondary">
+                    <CardContent className="pt-6">
+                      <p className="text-sm text-text-secondary">已生成</p>
+                      <p className="text-2xl font-bold text-text-primary">
+                        {profileData ? profileData.invitation_used : '...'}
+                      </p>
+                      <p className="text-sm text-text-tertiary">邀请码</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-background-secondary">
+                    <CardContent className="pt-6">
+                      <p className="text-sm text-text-secondary">总配额</p>
+                      <p className="text-2xl font-bold text-text-primary">
+                        {profileData ? profileData.invitation_quota : '...'}
+                      </p>
+                      <p className="text-sm text-text-tertiary">邀请码</p>
+                    </CardContent>
+                  </Card>
+                </div>
 
-              <div>
-                <h3 className="text-lg font-medium mb-3">生成邀请码</h3>
-                <button 
-                  onClick={handleGenerateInvitation}
-                  disabled={isLoading || (profileData && profileData.invitation_remaining <= 0)}
-                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                >
-                  {isLoading ? '生成中...' : '生成新的邀请码'}
-                </button>
-                {profileData && profileData.invitation_remaining <= 0 && (
-                  <p className="text-sm text-red-600 mt-2">已达到邀请码生成上限</p>
-                )}
+                <div>
+                  <h3 className="text-lg font-medium text-text-primary mb-4">生成邀请码</h3>
+                  <Button 
+                    onClick={handleGenerateInvitation}
+                    disabled={isLoading || (profileData && profileData.invitation_remaining <= 0)}
+                    variant="secondary"
+                  >
+                    {isLoading ? '生成中...' : '生成新的邀请码'}
+                  </Button>
+                  {profileData && profileData.invitation_remaining <= 0 && (
+                    <p className="text-sm text-red-600 mt-2">已达到邀请码生成上限</p>
+                  )}
+                </div>
+                
+                <div>
+                  <h3 className="text-lg font-medium text-text-primary mb-4">我的邀请码</h3>
+                  {invitations.length > 0 ? (
+                    <div className="space-y-2">
+                      {invitations.map((invitation, index) => (
+                        <Card key={index} className="border border-border-secondary">
+                          <CardContent className="py-3">
+                            <div className="flex items-center justify-between">
+                              <span className="font-mono text-sm text-text-primary">{invitation.code}</span>
+                              <span className={`text-sm ${invitation.is_used ? 'text-green-600' : 'text-text-tertiary'}`}>
+                                {invitation.is_used ? '已使用' : '未使用'}
+                              </span>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-text-tertiary text-sm">暂无邀请码</p>
+                  )}
+                </div>
               </div>
-              
-              <div>
-                <h3 className="text-lg font-medium mb-3">我的邀请码</h3>
-                {invitations.length > 0 ? (
-                  <div className="space-y-2">
-                    {invitations.map((invitation, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 border border-gray-200 rounded-md">
-                        <span className="font-mono text-sm">{invitation.code}</span>
-                        <span className={`text-sm ${invitation.is_used ? 'text-green-600' : 'text-gray-500'}`}>
-                          {invitation.is_used ? '已使用' : '未使用'}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-gray-500 text-sm">暂无邀请码</p>
-                )}
-              </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         );
+
       default:
-        return <div>功能开发中...</div>;
+        return (
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-center py-12">
+                <p className="text-text-secondary">功能开发中...</p>
+              </div>
+            </CardContent>
+          </Card>
+        );
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background-secondary">
       {/* 头部导航 */}
       <Header 
         title="⚙️ 账户设置"
@@ -423,31 +471,33 @@ const SettingsContent = () => {
       />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
         <div className="flex flex-col lg:flex-row gap-8">
           {/* 左侧导航栏 */}
           <div className="lg:w-64 flex-shrink-0">
-            <div className="bg-white rounded-lg shadow">
-              <nav className="p-4">
-                <ul className="space-y-2">
-                  {settingsNavItems.map((item) => (
-                    <li key={item.id}>
-                      <button
-                        onClick={() => setActiveTab(item.id)}
-                        className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                          activeTab === item.id
-                            ? 'bg-blue-100 text-blue-700'
-                            : 'text-gray-700 hover:bg-gray-100'
-                        }`}
-                      >
-                        <span className="mr-3 text-lg">{item.icon}</span>
-                        {item.name}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </nav>
-            </div>
+            <Card>
+              <CardContent className="p-4">
+                <nav>
+                  <ul className="space-y-2">
+                    {settingsNavItems.map((item) => (
+                      <li key={item.id}>
+                        <Button
+                          onClick={() => setActiveTab(item.id)}
+                          variant="ghost"
+                          className={`w-full justify-start ${
+                            activeTab === item.id
+                              ? 'bg-background-secondary text-brand-primary'
+                              : 'text-text-secondary hover:text-text-primary'
+                          }`}
+                        >
+                          <span className="mr-3 text-lg">{item.icon}</span>
+                          {item.name}
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                </nav>
+              </CardContent>
+            </Card>
           </div>
 
           {/* 右侧内容区域 */}
@@ -473,8 +523,15 @@ const SettingsContent = () => {
 const SettingsPage = () => {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-background-secondary">
+        <Card className="w-full max-w-md mx-4">
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-brand-primary border-t-transparent mx-auto mb-4"></div>
+              <p className="text-text-secondary">加载中...</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     }>
       <SettingsContent />

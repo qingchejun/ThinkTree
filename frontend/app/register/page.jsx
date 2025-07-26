@@ -10,6 +10,9 @@ import { GoogleReCaptchaProvider, useGoogleReCaptcha } from 'react-google-recapt
 import { useAuth } from '../../context/AuthContext'
 import PasswordStrengthIndicator from '../../components/common/PasswordStrengthIndicator'
 import PasswordInput from '../../components/common/PasswordInput'
+import { Button } from '../../components/ui/Button'
+import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card'
+import { Input } from '../../components/ui/Input'
 
 function RegisterForm() {
   const router = useRouter()
@@ -180,181 +183,177 @@ function RegisterForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-100">
-      <div className="max-w-md w-full space-y-8 p-8">
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          {/* 头部 */}
-          <div className="text-center">
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">
+    <div className="min-h-screen flex items-center justify-center bg-background-secondary p-4">
+      <div className="max-w-md w-full">
+        <Card>
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl font-bold text-text-primary mb-2">
               注册 ThinkSo 账户
-            </h2>
-            <p className="text-gray-600 mb-8">
+            </CardTitle>
+            <p className="text-text-secondary">
               使用邀请码创建您的账户，开始使用AI思维导图工具 (v3.2.0)
             </p>
-          </div>
+          </CardHeader>
 
-          {/* 表单 */}
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* 邀请码输入框 */}
-            <div>
-              <label htmlFor="invitationCode" className="block text-sm font-medium text-gray-700 mb-2">
-                邀请码 <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <input
-                  id="invitationCode"
-                  name="invitationCode"
-                  type="text"
-                  required
-                  value={formData.invitationCode}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="请输入6-8位邀请码"
-                />
-                {validatingInvitation && (
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+          <CardContent>
+            {/* 表单 */}
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* 邀请码输入框 */}
+              <div>
+                <label htmlFor="invitationCode" className="block text-sm font-medium text-text-primary mb-2">
+                  邀请码 <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <Input
+                    id="invitationCode"
+                    name="invitationCode"
+                    type="text"
+                    required
+                    value={formData.invitationCode}
+                    onChange={handleInputChange}
+                    placeholder="请输入6-8位邀请码"
+                  />
+                  {validatingInvitation && (
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-brand-primary"></div>
+                    </div>
+                  )}
+                </div>
+                {/* 邀请码验证状态 */}
+                {invitationInfo && (
+                  <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-md">
+                    <div className="flex items-center">
+                      <div className="text-green-500 mr-2">✓</div>
+                      <div className="text-sm">
+                        <p className="text-green-700 font-medium">邀请码有效</p>
+                        <p className="text-green-600">
+                          来自: {invitationInfo.inviter_email} 
+                          {invitationInfo.description && ` • ${invitationInfo.description}`}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
-              {/* 邀请码验证状态 */}
-              {invitationInfo && (
-                <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-md">
-                  <div className="flex items-center">
-                    <div className="text-green-500 mr-2">✓</div>
-                    <div className="text-sm">
-                      <p className="text-green-700 font-medium">邀请码有效</p>
-                      <p className="text-green-600">
-                        来自: {invitationInfo.inviter_email} 
-                        {invitationInfo.description && ` • ${invitationInfo.description}`}
-                      </p>
-                    </div>
-                  </div>
+
+              {/* 邮箱输入框 */}
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-text-primary mb-2">
+                  邮箱地址
+                </label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  placeholder="请输入您的邮箱"
+                />
+              </div>
+
+              {/* 密码输入框 */}
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-text-primary mb-2">
+                  密码
+                </label>
+                <PasswordInput
+                  id="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  placeholder="请输入密码"
+                  className="border border-border-primary bg-transparent px-3 py-2 text-sm placeholder:text-text-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2"
+                />
+                
+                {/* 密码强度指示器 */}
+                <PasswordStrengthIndicator 
+                  password={formData.password}
+                  onStrengthChange={setPasswordStrength}
+                />
+              </div>
+
+              {/* 确认密码输入框 */}
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-text-primary mb-2">
+                  确认密码
+                </label>
+                <PasswordInput
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleInputChange}
+                  placeholder="请再次输入密码"
+                  className="border border-border-primary bg-transparent px-3 py-2 text-sm placeholder:text-text-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2"
+                />
+              </div>
+
+              {/* 显示名称输入框 */}
+              <div>
+                <label htmlFor="displayName" className="block text-sm font-medium text-text-primary mb-2">
+                  显示名称 <span className="text-text-tertiary">(可选)</span>
+                </label>
+                <Input
+                  id="displayName"
+                  name="displayName"
+                  type="text"
+                  value={formData.displayName}
+                  onChange={handleInputChange}
+                  placeholder="请输入您的显示名称"
+                />
+                <p className="mt-1 text-xs text-text-tertiary">
+                  不填写将使用邮箱前缀作为显示名称
+                </p>
+              </div>
+
+              {/* 错误/成功信息 */}
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
+                  {error}
                 </div>
               )}
-            </div>
+              {success && (
+                <div className="bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded-md text-sm">
+                  {success}
+                </div>
+              )}
 
-            {/* 邮箱输入框 */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                邮箱地址
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={formData.email}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="请输入您的邮箱"
-              />
-            </div>
-
-            {/* 密码输入框 */}
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                密码
-              </label>
-              <PasswordInput
-                id="password"
-                name="password"
-                value={formData.password}
-                onChange={handleInputChange}
-                placeholder="请输入密码"
-                className="shadow-sm placeholder-gray-400 focus:border-blue-500"
-              />
-              
-              {/* 密码强度指示器 */}
-              <PasswordStrengthIndicator 
-                password={formData.password}
-                onStrengthChange={setPasswordStrength}
-              />
-            </div>
-
-            {/* 确认密码输入框 */}
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                确认密码
-              </label>
-              <PasswordInput
-                id="confirmPassword"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleInputChange}
-                placeholder="请再次输入密码"
-                className="shadow-sm placeholder-gray-400 focus:border-blue-500"
-              />
-            </div>
-
-            {/* 显示名称输入框 */}
-            <div>
-              <label htmlFor="displayName" className="block text-sm font-medium text-gray-700 mb-2">
-                显示名称 <span className="text-gray-400">(可选)</span>
-              </label>
-              <input
-                id="displayName"
-                name="displayName"
-                type="text"
-                value={formData.displayName}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="请输入您的显示名称"
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                不填写将使用邮箱前缀作为显示名称
-              </p>
-            </div>
-
-            {/* 错误/成功信息 */}
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
-                {error}
-              </div>
-            )}
-            {success && (
-              <div className="bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded-md text-sm">
-                {success}
-              </div>
-            )}
-
-            {/* 注册按钮 */}
-            <div>
-              <button
+              {/* 注册按钮 */}
+              <Button
                 type="submit"
                 disabled={loading}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200"
+                className="w-full"
               >
                 {loading ? (
-                  <div className="flex items-center">
+                  <div className="flex items-center justify-center">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                     注册中...
                   </div>
                 ) : (
                   '注册账户'
                 )}
-              </button>
-            </div>
+              </Button>
 
-            {/* 登录链接 */}
-            <div className="text-center">
-              <p className="text-sm text-gray-600">
-                已有账户？{' '}
-                <Link href="/login" className="font-medium text-blue-600 hover:text-blue-500">
-                  立即登录
-                </Link>
-              </p>
-            </div>
-          </form>
+              {/* 登录链接 */}
+              <div className="text-center">
+                <p className="text-sm text-text-secondary">
+                  已有账户？{' '}
+                  <Link href="/login" className="font-medium text-brand-primary hover:underline">
+                    立即登录
+                  </Link>
+                </p>
+              </div>
+            </form>
 
-          {/* 返回首页 */}
-          <div className="text-center mt-6">
-            <Link href="/" className="text-sm text-gray-500 hover:text-gray-700">
-              ← 返回首页
-            </Link>
-          </div>
-        </div>
+            {/* 返回首页 */}
+            <div className="text-center mt-6 pt-6 border-t border-border-secondary">
+              <Link href="/" className="text-sm text-text-tertiary hover:text-text-secondary">
+                ← 返回首页
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )
@@ -364,39 +363,34 @@ export default function RegisterPage() {
   // 检查是否配置了reCAPTCHA
   const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY
   
+  const LoadingCard = () => (
+    <div className="min-h-screen flex items-center justify-center bg-background-secondary">
+      <Card className="w-full max-w-md mx-4">
+        <CardContent className="pt-6">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary mx-auto mb-4"></div>
+            <p>加载中...</p>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+  
   if (!siteKey) {
     // 如果没有配置reCAPTCHA，直接渲染表单
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-100">
-        <div className="max-w-md w-full space-y-8 p-8">
-          <Suspense fallback={
-            <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
-              <p>加载中...</p>
-            </div>
-          }>
-            <RegisterForm />
-          </Suspense>
-        </div>
-      </div>
+      <Suspense fallback={<LoadingCard />}>
+        <RegisterForm />
+      </Suspense>
     )
   }
 
   // 如果配置了reCAPTCHA，使用Provider包装
   return (
     <GoogleReCaptchaProvider reCaptchaKey={siteKey}>
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-100">
-        <div className="max-w-md w-full space-y-8 p-8">
-          <Suspense fallback={
-            <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
-              <p>加载中...</p>
-            </div>
-          }>
-            <RegisterForm />
-          </Suspense>
-        </div>
-      </div>
+      <Suspense fallback={<LoadingCard />}>
+        <RegisterForm />
+      </Suspense>
     </GoogleReCaptchaProvider>
   )
 }
