@@ -32,13 +32,16 @@ async function apiCall(endpoint, options = {}) {
 }
 
 // 文件上传
-export async function uploadFile(file, format = 'tree') {
+export async function uploadFile(file, token, format = 'tree') {
   const formData = new FormData()
   formData.append('file', file)
   
   try {
     const response = await fetch(`${API_BASE_URL}/api/upload?format_type=${format}`, {
       method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
       body: formData,
     })
     
@@ -56,13 +59,17 @@ export async function uploadFile(file, format = 'tree') {
 }
 
 // 处理文本
-export async function processText(text, format = 'tree') {
+export async function processText(text, token, format = 'tree') {
   if (!text || !text.trim()) {
     throw new Error('文本内容不能为空')
   }
   
   return await apiCall('/api/process-text', {
     method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
     body: JSON.stringify({
       text: text.trim(),
       format_type: format
@@ -71,32 +78,51 @@ export async function processText(text, format = 'tree') {
 }
 
 // 思维导图 CRUD 操作
-export async function createMindMap(mindmapData) {
+export async function createMindMap(mindmapData, token) {
   return await apiCall('/api/mindmaps', {
     method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
     body: JSON.stringify(mindmapData)
   })
 }
 
-export async function getMindMap(mindmapId) {
-  return await apiCall(`/api/mindmaps/${mindmapId}`)
+export async function getMindMap(mindmapId, token) {
+  return await apiCall(`/api/mindmaps/${mindmapId}`, {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  })
 }
 
-export async function updateMindMap(mindmapId, mindmapData) {
+export async function updateMindMap(mindmapId, mindmapData, token) {
   return await apiCall(`/api/mindmaps/${mindmapId}`, {
     method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
     body: JSON.stringify(mindmapData)
   })
 }
 
-export async function deleteMindMap(mindmapId) {
+export async function deleteMindMap(mindmapId, token) {
   return await apiCall(`/api/mindmaps/${mindmapId}`, {
-    method: 'DELETE'
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
   })
 }
 
-export async function listMindMaps() {
-  return await apiCall('/api/mindmaps')
+export async function listMindMaps(token) {
+  return await apiCall('/api/mindmaps', {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  })
 }
 
 // 分享功能

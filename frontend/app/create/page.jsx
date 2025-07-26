@@ -144,6 +144,7 @@ export default function CreatePage() {
                 onUploadStart={handleUploadStart}
                 onUploadSuccess={handleUploadSuccess}
                 onUploadError={handleUploadError}
+                token={token}
               />
 
               {/* 上传信息显示 */}

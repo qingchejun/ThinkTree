@@ -13,7 +13,7 @@ const SUPPORTED_FORMATS = {
   '.srt': 'text/plain'
 }
 
-export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadError }) {
+export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadError, token }) {
   const [dragActive, setDragActive] = useState(false)
   const [textInput, setTextInput] = useState('')
   const [uploadMode, setUploadMode] = useState('file') // 'file' or 'text'
@@ -78,6 +78,9 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
       const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
       const response = await fetch(`${API_BASE_URL}/api/upload?format_type=standard`, {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
         body: formData,
       })
 
@@ -112,6 +115,7 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           text: textInput.trim(),
