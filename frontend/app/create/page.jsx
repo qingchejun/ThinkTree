@@ -6,7 +6,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import SimpleMarkmap from '../../components/mindmap/SimpleMarkmap'
+import SimpleMarkmapBasic from '../../components/mindmap/SimpleMarkmapBasic'
 import FileUpload from '../../components/upload/FileUpload'
 import { useAuth } from '../../context/AuthContext'
 import { ToastManager } from '../../components/common/Toast'
@@ -216,7 +216,7 @@ export default function CreatePage() {
                     </div>
                   </div>
                   <div className="h-[calc(600px-65px)]">
-                    <SimpleMarkmap mindmapData={mindmapData.data} />
+                    <SimpleMarkmapBasic mindmapData={mindmapData.data} />
                   </div>
                 </div>
               )}
