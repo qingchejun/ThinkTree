@@ -50,52 +50,9 @@ export default function SimpleMarkmap({ mindmapData }) {
       const svg = svgRef.current
       if (!svg) return
       
-      // 尝试多种选择器查找markmap节点
-      let allNodes = svg.querySelectorAll('g[data-depth]')
-      
-      // 如果没有data-depth属性，尝试其他选择器
-      if (allNodes.length === 0) {
-        allNodes = svg.querySelectorAll('.markmap-node, g.mm-node, g[transform]')
-      }
-      
-      console.log('找到节点数量:', allNodes.length)
-      
-      if (allNodes.length === 0) {
-        console.log('未找到可操作的节点，回退到数据方法')
-        throw new Error('无法找到DOM节点')
-      }
-      
-      if (newExpandedState) {
-        // 展开模式：显示所有节点
-        console.log('展开所有节点')
-        allNodes.forEach((node, index) => {
-          node.style.display = ''
-          node.style.opacity = '1'
-          console.log('展开节点', index, node.textContent?.substring(0, 20))
-        })
-      } else {
-        // 折叠模式：隐藏部分节点
-        console.log('折叠到关键节点')
-        allNodes.forEach((node, index) => {
-          // 获取节点深度信息
-          const depth = parseInt(node.getAttribute('data-depth') || '0')
-          const transform = node.getAttribute('transform') || ''
-          
-          // 如果有data-depth属性，使用它
-          if (node.hasAttribute('data-depth')) {
-            if (depth >= 2) {
-              node.style.display = 'none'
-              console.log('隐藏节点(深度' + depth + ')', node.textContent?.substring(0, 20))
-            }
-          } else {
-            // 否则，隐藏索引大于某个值的节点（简单的层级估算）
-            if (index > 5) {  // 前6个节点通常是主要分支
-              node.style.display = 'none'
-              console.log('隐藏节点(索引' + index + ')', node.textContent?.substring(0, 20))
-            }
-          }
-        })
-      }
+      // 直接回退到数据方法 - DOM操作方式有问题
+      console.log('使用数据方法进行折叠展开')
+      throw new Error('跳过DOM操作，使用数据方法')
       
       // 重新适应视图
       setTimeout(() => {
@@ -107,24 +64,64 @@ export default function SimpleMarkmap({ mindmapData }) {
     } catch (error) {
       console.error('折叠展开失败:', error)
       
-      // 回退到数据操作方式
+      // 使用正确的markmap fold机制
       if (rootDataRef.current) {
+        console.log('开始数据方法折叠展开，目标状态:', newExpandedState ? '展开' : '折叠')
         const dataCopy = JSON.parse(JSON.stringify(rootDataRef.current))
         
-        if (newExpandedState) {
-          // 展开所有节点
-          const removeFold = (node) => {
-            if (node.data) delete node.data.fold
-            if (node.children) node.children.forEach(removeFold)
+        const processNodeForFold = (node, depth = 0) => {
+          if (!node) return
+          
+          console.log(`处理节点深度${depth}:`, node.content || node.value || '根节点')
+          
+          if (newExpandedState) {
+            // 展开所有节点 - 移除fold状态
+            if (node.state) {
+              delete node.state.fold
+            }
+            if (node.payload) {
+              delete node.payload.fold  
+            }
+            delete node.fold
+          } else {
+            // 折叠深度>=2的节点
+            if (depth >= 2) {
+              // 尝试多种fold设置方式
+              if (!node.state) node.state = {}
+              node.state.fold = 1
+              
+              if (!node.payload) node.payload = {}
+              node.payload.fold = 1
+              
+              node.fold = 1
+              console.log(`折叠节点深度${depth}`)
+            }
           }
-          removeFold(dataCopy)
-        } else {
-          // 折叠节点
-          setNodeDepth(dataCopy, 2)
+          
+          // 递归处理子节点
+          if (node.children && node.children.length > 0) {
+            node.children.forEach(child => processNodeForFold(child, depth + 1))
+          }
         }
         
+        processNodeForFold(dataCopy)
+        
+        console.log('处理后的数据:', dataCopy)
+        console.log('调用setData更新思维导图')
+        
         mmRef.current.setData(dataCopy)
-        setTimeout(() => mmRef.current?.fit(), 300)
+        
+        // 尝试调用markmap的rescale方法
+        setTimeout(() => {
+          if (mmRef.current) {
+            if (mmRef.current.rescale) {
+              console.log('调用rescale方法')
+              mmRef.current.rescale()
+            }
+            console.log('调用fit方法')
+            mmRef.current.fit()
+          }
+        }, 300)
       }
     }
   }
