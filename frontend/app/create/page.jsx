@@ -13,9 +13,9 @@ import { ToastManager } from '../../components/common/Toast'
 import Header from '../../components/common/Header'
 
 export default function CreatePage() {
-  const { user, token, loading } = useAuth()
+  const { user, token, isLoading } = useAuth()
   const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
+  const [uploadLoading, setUploadLoading] = useState(false)
   const [mindmapData, setMindmapData] = useState(null)
   const [error, setError] = useState(null)
   const [uploadInfo, setUploadInfo] = useState(null)
@@ -24,20 +24,20 @@ export default function CreatePage() {
 
   // 认证检查 - 未登录用户重定向到登录页
   useEffect(() => {
-    if (!loading && !user) {
+    if (!isLoading && !user) {
       ToastManager.warning('请先登录才能创建思维导图')
       router.push('/login?redirect=/create')
     }
-  }, [user, loading, router])
+  }, [user, isLoading, router])
 
   // 如果正在加载认证状态或未登录，显示加载页面
-  if (loading || !user) {
+  if (isLoading || !user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full mx-auto mb-4"></div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            {loading ? '正在验证登录状态...' : '正在跳转到登录页面...'}
+            {isLoading ? '正在验证登录状态...' : '正在跳转到登录页面...'}
           </h3>
           <p className="text-gray-600">请稍候</p>
         </div>
@@ -46,7 +46,7 @@ export default function CreatePage() {
   }
 
   const handleUploadStart = () => {
-    setIsLoading(true)
+    setUploadLoading(true)
     setError(null)
     setMindmapData(null)
     setUploadInfo(null)
@@ -59,13 +59,13 @@ export default function CreatePage() {
       fileType: result.file_type,
       contentPreview: result.content_preview
     })
-    setIsLoading(false)
+    setUploadLoading(false)
     setError(null)
   }
 
   const handleUploadError = (errorMessage) => {
     setError(errorMessage)
-    setIsLoading(false)
+    setUploadLoading(false)
     setMindmapData(null)
     setUploadInfo(null)
   }
@@ -242,7 +242,7 @@ export default function CreatePage() {
               )}
 
               {/* 默认状态 */}
-              {!mindmapData && !error && !isLoading && (
+              {!mindmapData && !error && !uploadLoading && (
                 <div className="h-[600px] flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg">
                   <div className="text-center">
                     <div className="text-gray-400 text-6xl mb-4">🌳</div>
@@ -260,7 +260,7 @@ export default function CreatePage() {
               )}
 
               {/* 加载状态 */}
-              {isLoading && (
+              {uploadLoading && (
                 <div className="h-[600px] flex items-center justify-center border border-gray-200 rounded-lg bg-blue-50">
                   <div className="text-center">
                     <div className="animate-spin w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full mx-auto mb-4"></div>
