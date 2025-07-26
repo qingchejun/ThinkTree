@@ -25,9 +25,13 @@ export default function MarkmapView({ mindmapData }) {
         const transformer = new Transformer()
         
         // 转换 Markdown 为 markmap 数据
-        console.log('Markdown data:', mindmapData.markdown)
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Markdown data:', mindmapData.markdown)
+        }
         const { root } = transformer.transform(mindmapData.markdown)
-        console.log('Transformed root:', root)
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Transformed root:', root)
+        }
         
         // 清理之前的实例
         if (mmRef.current) {

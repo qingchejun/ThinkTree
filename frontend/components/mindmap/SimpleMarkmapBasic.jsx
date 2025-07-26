@@ -216,6 +216,17 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
         return
       }
 
+      // 在生产环境中静默控制台日志
+      const originalConsole = {}
+      if (process.env.NODE_ENV === 'production') {
+        originalConsole.log = console.log
+        originalConsole.info = console.info
+        originalConsole.debug = console.debug
+        console.log = () => {}
+        console.info = () => {}
+        console.debug = () => {}
+      }
+      
       try {
         // 清空SVG
         svgRef.current.innerHTML = ''
@@ -280,7 +291,21 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
           }
         }, 300)
 
+        // 恢复控制台日志
+        if (process.env.NODE_ENV === 'production') {
+          console.log = originalConsole.log
+          console.info = originalConsole.info
+          console.debug = originalConsole.debug
+        }
+
       } catch (error) {
+        // 恢复控制台日志（错误情况）
+        if (process.env.NODE_ENV === 'production' && originalConsole.log) {
+          console.log = originalConsole.log
+          console.info = originalConsole.info
+          console.debug = originalConsole.debug
+        }
+        
         // 思维导图渲染失败，显示错误信息
         if (svgRef.current) {
           svgRef.current.innerHTML = `
