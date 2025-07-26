@@ -171,7 +171,7 @@ export default function ShareModal({ isOpen, onClose, mindmapId, mindmapTitle })
             </button>
           </div>
           <p className="text-sm text-gray-600 mt-1">
-            "{mindmapTitle}"
+            &ldquo;{mindmapTitle}&rdquo;
           </p>
         </div>
 
