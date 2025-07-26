@@ -25,50 +25,59 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
     },
   }))
 
+  // 控制节点展开深度的函数
+  const setNodeDepth = (node, maxDepth, currentDepth = 0) => {
+    if (!node) return
+    
+    // 设置节点的展开状态 - 使用正确的markmap API
+    if (currentDepth >= maxDepth) {
+      if (!node.data) node.data = {}
+      node.data.fold = true
+    } else {
+      if (node.data) {
+        delete node.data.fold
+      }
+    }
+    
+    // 递归处理子节点
+    if (node.children) {
+      node.children.forEach(child => {
+        setNodeDepth(child, maxDepth, currentDepth + 1)
+      })
+    }
+  }
+
   // 展开折叠控制函数
   const toggleMarkmapFold = (shouldCollapse) => {
-    if (!mmRef.current) return
+    if (!mmRef.current || !rootDataRef.current) return
     
     try {
-      // 获取当前的数据树
-      const currentData = mmRef.current.state?.data
-      if (!currentData) return
+      // 创建数据副本避免修改原始数据
+      const dataCopy = JSON.parse(JSON.stringify(rootDataRef.current))
       
-      // 递归处理节点
-      const processNode = (node, depth = 0) => {
-        if (!node) return
-        
-        if (shouldCollapse && depth >= 1 && node.children && node.children.length > 0) {
-          // 折叠深度>=1的节点，只保留根节点可见
-          node.fold = 1
-          node.folded = true
-          if (!node.payload) node.payload = {}
-          node.payload.fold = 1
-        } else if (!shouldCollapse) {
-          // 展开节点 - 清除所有fold属性
-          delete node.fold
-          delete node.folded
-          if (node.payload) {
-            delete node.payload.fold
-            delete node.payload.folded
+      if (shouldCollapse) {
+        // 折叠到二级目录 - 深度为2
+        setNodeDepth(dataCopy, 2)
+      } else {
+        // 展开所有节点 - 移除所有fold属性
+        const removeFold = (node) => {
+          if (node.data) {
+            delete node.data.fold
+          }
+          if (node.children) {
+            node.children.forEach(removeFold)
           }
         }
-        
-        // 递归处理子节点
-        if (node.children) {
-          node.children.forEach(child => processNode(child, depth + 1))
-        }
+        removeFold(dataCopy)
       }
       
-      processNode(currentData)
-      
       // 重新渲染并适应视图
-      mmRef.current.setData(currentData)
+      mmRef.current.setData(dataCopy)
       setTimeout(() => {
         if (mmRef.current) {
           mmRef.current.fit()
         }
-      }, 200)
+      }, 300)
       
     } catch (error) {
       console.error('展开/折叠操作失败:', error)
@@ -282,7 +291,7 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
               ? 'bg-orange-500 hover:bg-orange-600' 
               : 'bg-green-500 hover:bg-green-600'
           } text-white px-3 py-1 rounded text-sm shadow-md transition-colors flex items-center space-x-1`}
-          title={isExpanded ? '点击折叠到主要节点' : '点击展开所有节点'}
+          title={isExpanded ? '点击折叠到二级目录' : '点击展开所有节点'}
         >
           <span className="text-base">
             {isExpanded ? '📄' : '📖'}
