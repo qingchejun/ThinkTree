@@ -197,7 +197,19 @@ class PasswordStrengthResponse(BaseModel):
     has_special: bool
     is_valid: bool
     strength_level: str
-    score: int
+
+
+class PasswordUpdateRequest(BaseModel):
+    """密码更新请求模型"""
+    current_password: str
+    new_password: str
+    confirm_password: str
+
+
+class PasswordUpdateResponse(BaseModel):
+    """密码更新响应模型"""
+    success: bool
+    message: str
 
 
 # 依赖注入：获取当前用户
@@ -816,4 +828,75 @@ async def verify_early_user(
         "success": True,
         "message": f"用户 {email} 已手动设置为验证状态",
         "was_already_verified": False
+    }
+
+
+@router.put("/password", response_model=PasswordUpdateResponse)
+async def update_password(
+    request: PasswordUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    更新用户密码
+    """
+    # 验证新密码和确认密码是否一致
+    if request.new_password != request.confirm_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="新密码和确认密码不一致"
+        )
+    
+    # 验证当前密码是否正确
+    if not verify_password(request.current_password, current_user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="当前密码不正确"
+        )
+    
+    # 验证新密码强度
+    is_valid, error_message = validate_password(request.new_password)
+    if not is_valid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=error_message
+        )
+    
+    # 检查新密码是否与当前密码相同
+    if verify_password(request.new_password, current_user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="新密码不能与当前密码相同"
+        )
+    
+    try:
+        # 更新密码
+        new_password_hash = get_password_hash(request.new_password)
+        current_user.password_hash = new_password_hash
+        db.commit()
+        
+        return PasswordUpdateResponse(
+            success=True,
+            message="密码更新成功"
+        )
+    
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"密码更新失败: {str(e)}"
+        )
+
+
+@router.get("/config-status")
+async def get_config_status():
+    """
+    获取系统配置状态（调试用）
+    """
+    from app.utils.recaptcha import is_recaptcha_enabled
+    
+    return {
+        "recaptcha_enabled": is_recaptcha_enabled(),
+        "password_endpoint_available": True,
+        "timestamp": "2024-07-26"
     }
