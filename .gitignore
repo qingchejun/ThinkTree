@@ -152,7 +152,6 @@ ROADMAP.md
 
 # Development Scripts (Personal)
 diagnose.sh
-start_services.sh
 
 # Claude IDE Configuration
 .claude/
