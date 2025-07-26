@@ -22,9 +22,18 @@ export default function SimpleMarkmap({ mindmapData }) {
     
     // 设置节点的展开状态
     if (currentDepth >= maxDepth) {
-      node.data = { ...node.data, fold: true }
+      if (!node.data) node.data = {}
+      node.data.fold = true
+      if (currentDepth <= 3) { // 只记录前几层的日志，避免过多输出
+        console.log('🔧 折叠节点(深度' + currentDepth + '):', node.content || node.value || '未知')
+      }
     } else {
-      node.data = { ...node.data, fold: false }
+      if (node.data) {
+        delete node.data.fold
+      }
+      if (currentDepth <= 3) {
+        console.log('🔧 展开节点(深度' + currentDepth + '):', node.content || node.value || '未知')
+      }
     }
     
     // 递归处理子节点
@@ -37,7 +46,12 @@ export default function SimpleMarkmap({ mindmapData }) {
 
   // 展开/折叠切换函数
   const toggleExpandCollapse = () => {
-    if (!mmRef.current || !rootDataRef.current) return
+    console.log('🔧 展开/折叠按钮被点击，当前状态:', isExpanded)
+    
+    if (!mmRef.current || !rootDataRef.current) {
+      console.error('🔧 缺少必要引用: mmRef=', !!mmRef.current, 'rootDataRef=', !!rootDataRef.current)
+      return
+    }
     
     const newExpandedState = !isExpanded
     setIsExpanded(newExpandedState)
@@ -47,6 +61,7 @@ export default function SimpleMarkmap({ mindmapData }) {
     
     if (newExpandedState) {
       // 展开所有节点 - 移除所有fold属性
+      console.log('🔧 展开所有节点')
       const removeFold = (node) => {
         if (node.data) {
           delete node.data.fold
@@ -58,15 +73,20 @@ export default function SimpleMarkmap({ mindmapData }) {
       removeFold(dataCopy)
     } else {
       // 折叠到二级目录 - 深度为2
+      console.log('🔧 折叠到二级目录')
       setNodeDepth(dataCopy, 2)
     }
     
     // 更新markmap数据
+    console.log('🔧 更新markmap数据')
     mmRef.current.setData(dataCopy)
     
     // 延迟执行fit以确保渲染完成
     setTimeout(() => {
-      mmRef.current.fit()
+      if (mmRef.current) {
+        console.log('🔧 执行fit操作')
+        mmRef.current.fit()
+      }
     }, 300)
   }
 
