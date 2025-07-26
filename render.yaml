@@ -31,9 +31,14 @@ services:
     env: node
     buildCommand: cd frontend && npm install && npm run build
     startCommand: cd frontend && npm start
+    healthCheckPath: /api/health
     envVars:
       - key: NEXT_PUBLIC_API_URL
         value: https://thinktree-backend.onrender.com # 后端服务 URL
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "10000"
 
 # PostgreSQL 数据库
 databases:
