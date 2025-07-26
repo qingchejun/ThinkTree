@@ -183,6 +183,53 @@ const SettingsContent = () => {
           </div>
         );
       case 'security':
+        const handlePasswordUpdate = async (e) => {
+          e.preventDefault();
+          
+          // 基本验证
+          if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+            showToast('请填写所有密码字段', 'error');
+            return;
+          }
+          
+          if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+            showToast('新密码和确认密码不一致', 'error');
+            return;
+          }
+          
+          if (passwordForm.newPassword.length < 8) {
+            showToast('新密码长度不能少于8位', 'error');
+            return;
+          }
+          
+          try {
+            setIsLoading(true);
+            const response = await updatePassword(
+              token, 
+              passwordForm.currentPassword, 
+              passwordForm.newPassword, 
+              passwordForm.confirmPassword
+            );
+            
+            if (response.success) {
+              showToast('密码更新成功');
+              // 清空表单
+              setPasswordForm({
+                currentPassword: '',
+                newPassword: '',
+                confirmPassword: ''
+              });
+            } else {
+              showToast(response.message || '密码更新失败', 'error');
+            }
+          } catch (error) {
+            console.error('密码更新失败:', error);
+            showToast(error.message || '密码更新失败，请稍后重试', 'error');
+          } finally {
+            setIsLoading(false);
+          }
+        };
+
         return (
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-2xl font-bold mb-4">账户与安全</h2>
@@ -301,52 +348,6 @@ const SettingsContent = () => {
           }
         };
 
-        const handlePasswordUpdate = async (e) => {
-          e.preventDefault();
-          
-          // 基本验证
-          if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
-            showToast('请填写所有密码字段', 'error');
-            return;
-          }
-          
-          if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-            showToast('新密码和确认密码不一致', 'error');
-            return;
-          }
-          
-          if (passwordForm.newPassword.length < 8) {
-            showToast('新密码长度不能少于8位', 'error');
-            return;
-          }
-          
-          try {
-            setIsLoading(true);
-            const response = await updatePassword(
-              token, 
-              passwordForm.currentPassword, 
-              passwordForm.newPassword, 
-              passwordForm.confirmPassword
-            );
-            
-            if (response.success) {
-              showToast('密码更新成功');
-              // 清空表单
-              setPasswordForm({
-                currentPassword: '',
-                newPassword: '',
-                confirmPassword: ''
-              });
-            } else {
-              showToast(response.message || '密码更新失败', 'error');
-            }
-          } catch (error) {
-            console.error('密码更新失败:', error);
-            showToast(error.message || '密码更新失败，请稍后重试', 'error');
-          } finally {
-            setIsLoading(false);
-          }
-        };
 
         return (
           <div className="bg-white rounded-lg shadow p-6">
