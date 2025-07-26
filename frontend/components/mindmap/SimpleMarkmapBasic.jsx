@@ -25,118 +25,89 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
     },
   }))
 
-  // 控制节点展开深度的函数
-  const setNodeDepth = (node, maxDepth, currentDepth = 0) => {
-    if (!node) return
-    
-    console.log(`🔧 DEBUG: 处理节点，深度${currentDepth}，最大深度${maxDepth}，节点内容:`, node.content || node.value || '未知')
-    
-    // 设置节点的展开状态 - 使用正确的markmap API
-    if (currentDepth >= maxDepth) {
-      if (!node.data) node.data = {}
-      node.data.fold = true
-      console.log(`🔧 DEBUG: 折叠节点(深度${currentDepth})，设置fold=true`)
-    } else {
-      if (node.data) {
-        delete node.data.fold
-        console.log(`🔧 DEBUG: 展开节点(深度${currentDepth})，删除fold属性`)
-      }
-    }
-    
-    // 递归处理子节点
-    if (node.children) {
-      console.log(`🔧 DEBUG: 节点有${node.children.length}个子节点，递归处理`)
-      node.children.forEach(child => {
-        setNodeDepth(child, maxDepth, currentDepth + 1)
-      })
-    }
-  }
-
-  // 展开折叠控制函数
+  // 用户提供的优化版折叠/展开函数
   const toggleMarkmapFold = (shouldCollapse) => {
-    console.log('🔧 DEBUG: toggleMarkmapFold被调用，shouldCollapse:', shouldCollapse)
-    
-    if (!mmRef.current || !rootDataRef.current) {
-      console.error('🔧 DEBUG: 缺少必要的引用')
-      console.log('🔧 DEBUG: mmRef.current:', !!mmRef.current)
-      console.log('🔧 DEBUG: rootDataRef.current:', !!rootDataRef.current)
-      return
-    }
+    if (!mmRef.current) return
     
     try {
-      console.log('🔧 DEBUG: 原始数据结构:', rootDataRef.current)
+      console.log(`[简化方法] ${shouldCollapse ? '折叠' : '展开'}所有深度>=1的节点`)
       
-      // 创建数据副本避免修改原始数据
-      const dataCopy = JSON.parse(JSON.stringify(rootDataRef.current))
-      console.log('🔧 DEBUG: 数据副本创建成功')
-      
-      if (shouldCollapse) {
-        console.log('🔧 DEBUG: 开始折叠操作，深度限制为2')
-        // 折叠到二级目录 - 深度为2
-        setNodeDepth(dataCopy, 2)
-      } else {
-        console.log('🔧 DEBUG: 开始展开操作，移除所有fold属性')
-        // 展开所有节点 - 移除所有fold属性
-        const removeFold = (node) => {
-          if (node.data) {
-            delete node.data.fold
-          }
-          if (node.children) {
-            node.children.forEach(removeFold)
-          }
-        }
-        removeFold(dataCopy)
+      // 获取当前的数据树
+      const currentData = mmRef.current.state?.data
+      if (!currentData) {
+        console.warn('无法获取当前数据')
+        return
       }
       
-      console.log('🔧 DEBUG: 处理后的数据结构:', dataCopy)
-      console.log('🔧 DEBUG: 调用markmap的setData方法')
+      // 递归处理节点
+      const processNode = (node, depth = 0) => {
+        if (!node) return
+        
+        if (shouldCollapse && depth >= 1 && node.children && node.children.length > 0) {
+          // 折叠深度>=1的节点，只保留根节点可见
+          node.fold = 1
+          node.folded = true
+          // 也尝试设置payload属性
+          if (!node.payload) node.payload = {}
+          node.payload.fold = 1
+          console.log(`[简化方法] 折叠深度${depth}节点 (设置多个fold属性)`)
+        } else if (!shouldCollapse) {
+          // 展开节点 - 清除所有可能的fold属性
+          delete node.fold
+          delete node.folded
+          if (node.payload) {
+            delete node.payload.fold
+            delete node.payload.folded
+          }
+          console.log(`[简化方法] 展开深度${depth}节点`)
+        }
+        
+        // 递归处理子节点
+        if (node.children) {
+          node.children.forEach(child => processNode(child, depth + 1))
+        }
+      }
       
-      // 重新渲染并适应视图
-      mmRef.current.setData(dataCopy)
+      processNode(currentData)
       
-      console.log('🔧 DEBUG: setData调用成功，等待fit')
+      // 强制重新渲染
+      mmRef.current.setData(currentData)
       
       setTimeout(() => {
         if (mmRef.current) {
-          console.log('🔧 DEBUG: 执行fit操作')
           mmRef.current.fit()
         }
-      }, 300)
+      }, 200)
       
     } catch (error) {
-      console.error('🔧 DEBUG: 展开/折叠操作失败:', error)
-      console.error('🔧 DEBUG: 错误详情:', error.stack)
+      console.error('[简化方法] 操作失败:', error)
     }
   }
 
   // 展开/折叠切换函数
   const handleToggleExpandCollapse = () => {
-    console.log('🔧 DEBUG: 折叠展开按钮被点击')
-    console.log('🔧 DEBUG: mmRef.current存在:', !!mmRef.current)
-    console.log('🔧 DEBUG: rootDataRef.current存在:', !!rootDataRef.current)
-    console.log('🔧 DEBUG: 当前展开状态:', isExpanded)
+    console.log('🔄 [新方法] 按钮点击，当前状态:', isExpanded)
     
     if (!mmRef.current) {
-      console.error('🔧 DEBUG: mmRef.current不存在，无法执行折叠操作')
+      console.warn('❌ 思维导图未准备就绪')
       return
     }
 
     try {
       const newExpandedState = !isExpanded
-      const shouldCollapse = !newExpandedState
+      const shouldCollapse = !newExpandedState  // true=折叠, false=展开
       
-      console.log('🔧 DEBUG: 新的展开状态:', newExpandedState)
-      console.log('🔧 DEBUG: 应该折叠:', shouldCollapse)
+      console.log('🔄 [新方法] 切换到状态:', newExpandedState ? '展开所有节点' : '折叠到主要分支')
       
-      // 执行展开/折叠操作
+      // 使用优化的折叠方法
       toggleMarkmapFold(shouldCollapse)
       
-      // 更新UI状态
+      // 更新状态
       setIsExpanded(newExpandedState)
-      console.log('🔧 DEBUG: UI状态已更新为:', newExpandedState)
+      console.log('✅ [新方法] 展开/折叠操作完成，状态:', newExpandedState)
       
     } catch (error) {
-      console.error('🔧 DEBUG: 展开/折叠操作失败:', error)
+      console.error('❌ [新方法] 展开/折叠操作失败:', error)
     }
   }
 
@@ -233,13 +204,8 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
           throw new Error('思维导图实例创建失败')
         }
         
-        console.log('🔧 DEBUG: markmap实例创建成功')
-        console.log('🔧 DEBUG: markmap实例方法:', Object.getOwnPropertyNames(mmRef.current))
-        console.log('🔧 DEBUG: markmap实例原型方法:', Object.getOwnPropertyNames(Object.getPrototypeOf(mmRef.current)))
-        
         // 设置数据
         mmRef.current.setData(root)
-        console.log('🔧 DEBUG: 初始数据设置成功')
         
         // 延迟执行fit以确保渲染完成
         setTimeout(() => {
@@ -333,7 +299,7 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
               ? 'bg-orange-500 hover:bg-orange-600' 
               : 'bg-green-500 hover:bg-green-600'
           } text-white px-3 py-1 rounded text-sm shadow-md transition-colors flex items-center space-x-1`}
-          title={isExpanded ? '点击折叠到二级目录' : '点击展开所有节点'}
+          title={isExpanded ? '点击折叠到主要节点' : '点击展开所有节点'}
         >
           <span className="text-base">
             {isExpanded ? '📄' : '📖'}
