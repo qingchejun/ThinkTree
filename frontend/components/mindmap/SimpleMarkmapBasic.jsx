@@ -62,8 +62,9 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
         console.log(`处理节点深度${depth}:`, node.content || node.v || '无内容')
         processedNodeCount++
         
-        if (shouldCollapse && depth >= 2 && node.children && node.children.length > 0) {
-          // 折叠深度>=2的节点，保留根节点和一级子节点可见
+        if (shouldCollapse && depth >= 1 && node.children && node.children.length > 0) {
+          // 在深度为1及以上的节点上设置折叠，这样它们的子节点就会被隐藏
+          // 效果就是只保留根节点(depth=0)和一级节点(depth=1)可见
           node.fold = 1
           node.folded = true
           if (!node.payload) node.payload = {}
