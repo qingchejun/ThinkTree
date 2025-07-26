@@ -18,7 +18,12 @@ jobs:
     # 4. 运行环境：指定任务运行在哪个操作系统上
     runs-on: ubuntu-latest
 
-    # 5. 步骤：任务执行的具体步骤
+    # 5. 默认工作目录：所有步骤都在 frontend 目录中执行
+    defaults:
+      run:
+        working-directory: frontend
+
+    # 6. 步骤：任务执行的具体步骤
     steps:
       # 第 1 步：检出代码
       # 这个 action 会把您的仓库代码下载到运行器中，以便后续步骤使用
@@ -32,6 +37,7 @@ jobs:
         with:
           node-version: "20" # 指定您项目使用的 Node.js 版本
           cache: "npm" # 缓存 npm 依赖，加快后续运行速度
+          cache-dependency-path: frontend/package-lock.json # 指定依赖锁文件路径
 
       # 第 3 步：安装项目依赖
       # 这会执行 npm install 或 npm ci 命令
