@@ -5,6 +5,7 @@ import AuthContext from '@/context/AuthContext';
 import Header from '@/components/common/Header';
 import { getProfile, updateProfile, generateInvitationCode, getUserInvitations, updatePassword } from '@/lib/api';
 import Toast from '@/components/common/Toast';
+import PasswordInput from '@/components/common/PasswordInput';
 
 const settingsNavItems = [
   {
@@ -241,11 +242,9 @@ const SettingsContent = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       当前密码
                     </label>
-                    <input
-                      type="password"
+                    <PasswordInput
                       value={passwordForm.currentPassword}
                       onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="请输入当前密码"
                     />
                   </div>
@@ -253,11 +252,9 @@ const SettingsContent = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       新密码
                     </label>
-                    <input
-                      type="password"
+                    <PasswordInput
                       value={passwordForm.newPassword}
                       onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="请输入新密码（至少8位）"
                     />
                   </div>
@@ -265,11 +262,9 @@ const SettingsContent = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       确认新密码
                     </label>
-                    <input
-                      type="password"
+                    <PasswordInput
                       value={passwordForm.confirmPassword}
                       onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="请再次输入新密码"
                     />
                   </div>

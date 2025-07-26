@@ -9,6 +9,7 @@ import Link from 'next/link'
 import { GoogleReCaptchaProvider, useGoogleReCaptcha } from 'react-google-recaptcha-v3'
 import { useAuth } from '../../context/AuthContext'
 import PasswordStrengthIndicator from '../../components/common/PasswordStrengthIndicator'
+import PasswordInput from '../../components/common/PasswordInput'
 
 function RegisterForm() {
   const router = useRouter()
@@ -256,16 +257,13 @@ function RegisterForm() {
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                 密码
               </label>
-              <input
+              <PasswordInput
                 id="password"
                 name="password"
-                type="password"
-                autoComplete="new-password"
-                required
                 value={formData.password}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="请输入密码"
+                className="shadow-sm placeholder-gray-400 focus:border-blue-500"
               />
               
               {/* 密码强度指示器 */}
@@ -280,16 +278,13 @@ function RegisterForm() {
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
                 确认密码
               </label>
-              <input
+              <PasswordInput
                 id="confirmPassword"
                 name="confirmPassword"
-                type="password"
-                autoComplete="new-password"
-                required
                 value={formData.confirmPassword}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="请再次输入密码"
+                className="shadow-sm placeholder-gray-400 focus:border-blue-500"
               />
             </div>
 
