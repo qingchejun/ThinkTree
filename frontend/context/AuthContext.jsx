@@ -24,21 +24,60 @@ export function AuthProvider({ children }) {
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
 
-  // 获取用户信息
-  const fetchUserProfile = async (authToken) => {
-    try {
-      // 设置请求超时
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 8000) // 8秒超时
+  // 防止重复请求的标志
+  const [pendingRequests, setPendingRequests] = useState(new Set())
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/profile`, {
+  // 获取用户信息
+  const fetchUserProfile = async (authToken, options = {}) => {
+    const { skipTimeout = false, timeoutMs = 12000, requestId = 'default' } = options
+    
+    // 防重复请求检查
+    const requestKey = `profile_${authToken.substring(0, 10)}_${requestId}`
+    if (pendingRequests.has(requestKey)) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('跳过重复的用户信息请求')
+      }
+      return null
+    }
+    
+    // 标记请求进行中
+    setPendingRequests(prev => new Set([...prev, requestKey]))
+    
+    let controller = null
+    let timeoutId = null
+    
+    try {
+      // 只在不跳过超时时设置AbortController
+      if (!skipTimeout) {
+        controller = new AbortController()
+        timeoutId = setTimeout(() => {
+          if (controller && !controller.signal.aborted) {
+            if (process.env.NODE_ENV === 'development') {
+              console.log('用户信息请求超时，主动中止')
+            }
+            controller.abort()
+          }
+        }, timeoutMs)
+      }
+
+      const fetchOptions = {
         headers: {
           'Authorization': `Bearer ${authToken}`
-        },
-        signal: controller.signal
-      })
+        }
+      }
+      
+      // 只有在设置了controller时才添加signal
+      if (controller) {
+        fetchOptions.signal = controller.signal
+      }
 
-      clearTimeout(timeoutId)
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/profile`, fetchOptions)
+
+      // 清除超时
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+        timeoutId = null
+      }
 
       if (response.ok) {
         const userData = await response.json()
@@ -55,16 +94,33 @@ export function AuthProvider({ children }) {
         return null
       }
     } catch (error) {
+      // 静默处理AbortError，避免控制台噪音
+      if (error.name === 'AbortError') {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('用户信息请求被中止')
+        }
+        return null
+      }
+      
       console.error('获取用户信息失败:', error)
       
-      // 超时或网络错误时，不清除token，让用户可以重试
-      if (error.name === 'AbortError') {
-        console.error('用户信息获取超时')
-      } else if (error instanceof TypeError && error.message.includes('fetch')) {
+      // 其他网络错误
+      if (error instanceof TypeError && error.message.includes('fetch')) {
         console.error('无法连接到服务器')
       }
       
       return null
+    } finally {
+      // 清理资源
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+      }
+      // 移除请求标记
+      setPendingRequests(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(requestKey)
+        return newSet
+      })
     }
   }
 
@@ -79,8 +135,12 @@ export function AuthProvider({ children }) {
       localStorage.setItem('access_token', accessToken)
       setToken(accessToken)
       
-      // 获取用户信息
-      const userData = await fetchUserProfile(accessToken)
+      // 获取用户信息 - 使用唯一ID避免重复请求，跳过超时控制避免AbortController冲突
+      const userData = await fetchUserProfile(accessToken, { 
+        skipTimeout: true, 
+        requestId: `login_${Date.now()}` 
+      })
+      
       if (userData) {
         if (process.env.NODE_ENV === 'development') {
           console.log('设置用户数据:', userData)
@@ -119,7 +179,10 @@ export function AuthProvider({ children }) {
   // 刷新用户信息
   const refreshUser = async () => {
     if (token) {
-      const userData = await fetchUserProfile(token)
+      const userData = await fetchUserProfile(token, { 
+        requestId: `refresh_${Date.now()}`,
+        timeoutMs: 8000 
+      })
       setUser(userData)
     }
   }
@@ -128,38 +191,33 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const initializeAuth = async () => {
       if (process.env.NODE_ENV === 'development') {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('开始初始化认证状态')
-        }
+        console.log('开始初始化认证状态')
       }
       setIsLoading(true)
       
       // 检查 localStorage 中的令牌
       const storedToken = localStorage.getItem('access_token')
       if (process.env.NODE_ENV === 'development') {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('存储的token:', storedToken ? '存在' : '不存在')
-        }
+        console.log('存储的token:', storedToken ? '存在' : '不存在')
       }
       
       if (storedToken) {
         setToken(storedToken)
         
         // 验证令牌并获取用户信息
-        const userData = await fetchUserProfile(storedToken)
+        const userData = await fetchUserProfile(storedToken, { 
+          requestId: `init_${Date.now()}`,
+          timeoutMs: 8000 // 初始化时使用较短超时
+        })
         if (userData) {
           if (process.env.NODE_ENV === 'development') {
-            if (process.env.NODE_ENV === 'development') {
-              console.log('初始化时设置用户数据:', userData)
-            }
+            console.log('初始化时设置用户数据:', userData)
           }
           setUser(userData)
         } else {
           // 令牌无效，清除所有数据
           if (process.env.NODE_ENV === 'development') {
-            if (process.env.NODE_ENV === 'development') {
-              console.log('令牌无效，清除数据')
-            }
+            console.log('令牌无效，清除数据')
           }
           setToken(null)
           localStorage.removeItem('access_token')
@@ -167,9 +225,7 @@ export function AuthProvider({ children }) {
       }
       
       if (process.env.NODE_ENV === 'development') {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('认证状态初始化完成')
-        }
+        console.log('认证状态初始化完成')
       }
       setIsLoading(false)
     }

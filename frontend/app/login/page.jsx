@@ -45,14 +45,25 @@ function LoginForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    
+    // 防止重复提交
+    if (loading) return
+    
     setLoading(true)
     setError('')
     setSuccess('')
 
+    let controller = null
+    let timeoutId = null
+
     try {
       // 设置请求超时
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10秒超时
+      controller = new AbortController()
+      timeoutId = setTimeout(() => {
+        if (controller && !controller.signal.aborted) {
+          controller.abort()
+        }
+      }, 15000) // 增加到15秒超时，给后续操作留足时间
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`, {
         method: 'POST',
@@ -63,7 +74,11 @@ function LoginForm() {
         signal: controller.signal
       })
 
-      clearTimeout(timeoutId)
+      // 立即清除超时，避免干扰后续操作
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+        timeoutId = null
+      }
 
       if (!response.ok) {
         // 尝试解析错误响应
@@ -87,7 +102,7 @@ function LoginForm() {
 
       setSuccess('登录成功！正在跳转...')
       
-      // 使用全局AuthContext的login函数
+      // 使用全局AuthContext的login函数 - 不使用AbortController避免冲突
       const loginResult = await login(data.access_token)
       
       if (loginResult.success) {
@@ -100,17 +115,24 @@ function LoginForm() {
         setError(loginResult.error || '登录处理失败')
       }
     } catch (err) {
-      console.error('登录错误:', err)
-      
-      // 具体的错误处理
+      // 静默处理某些错误，减少控制台噪音
       if (err.name === 'AbortError') {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('登录请求被中止')
+        }
         setError('请求超时，请检查网络连接后重试')
       } else if (err instanceof TypeError && err.message.includes('fetch')) {
+        console.error('网络连接错误:', err)
         setError('无法连接到服务器，请检查网络连接')
       } else {
+        console.error('登录错误:', err)
         setError('网络错误，请稍后重试')
       }
     } finally {
+      // 清理资源
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+      }
       setLoading(false)
     }
   }
