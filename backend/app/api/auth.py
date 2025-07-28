@@ -237,10 +237,10 @@ async def get_current_user(
     
     try:
         token = credentials.credentials
-        logger.info(f"🔍 DEBUG: 开始验证令牌，令牌长度: {len(token) if token else 0}")
+        logger.debug(f"🔍 DEBUG: 开始验证令牌，令牌长度: {len(token) if token else 0}")
         
         user_id = get_user_id_from_token(token)
-        logger.info(f"🔍 DEBUG: 从令牌解析出用户ID: {user_id}")
+        logger.debug(f"🔍 DEBUG: 从令牌解析出用户ID: {user_id}")
         
         if user_id is None:
             logger.error("❌ DEBUG: 令牌解析失败，用户ID为None")
@@ -251,7 +251,7 @@ async def get_current_user(
             )
         
         user = db.query(User).filter(User.id == user_id).first()
-        logger.info(f"🔍 DEBUG: 数据库查询结果 - 用户: {user.email if user else 'None'}")
+        logger.debug(f"🔍 DEBUG: 数据库查询结果 - 用户: {user.email if user else 'None'}")
         
         if user is None:
             logger.error(f"❌ DEBUG: 用户ID {user_id} 在数据库中不存在")
@@ -270,7 +270,7 @@ async def get_current_user(
             )
         
         # 检查用户积分字段
-        logger.info(f"🔍 DEBUG: 用户积分信息 - credits: {user.credits}, type: {type(user.credits)}")
+        logger.debug(f"🔍 DEBUG: 用户积分信息 - credits: {user.credits}, type: {type(user.credits)}")
         
         # 如果积分为None，立即初始化
         if user.credits is None:
@@ -280,7 +280,7 @@ async def get_current_user(
             db.refresh(user)
             logger.info(f"✅ DEBUG: 积分初始化完成，当前积分: {user.credits}")
         
-        logger.info(f"✅ DEBUG: 用户认证成功 - ID: {user.id}, Email: {user.email}, Credits: {user.credits}")
+        logger.debug(f"✅ DEBUG: 用户认证成功 - ID: {user.id}, Email: {user.email}, Credits: {user.credits}")
         return user
         
     except HTTPException:

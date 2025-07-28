@@ -46,8 +46,8 @@ async def upload_file(
     import logging
     logger = logging.getLogger(__name__)
     
-    logger.info(f"🔍 DEBUG: 开始处理文件上传 - 用户ID: {current_user.id}, 用户邮箱: {current_user.email}")
-    logger.info(f"🔍 DEBUG: 当前用户对象 - credits: {current_user.credits}, is_active: {current_user.is_active}")
+    logger.debug(f"🔍 DEBUG: 开始处理文件上传 - 用户ID: {current_user.id}, 用户邮箱: {current_user.email}")
+    logger.debug(f"🔍 DEBUG: 当前用户对象 - credits: {current_user.credits}, is_active: {current_user.is_active}")
     
     # 初始化积分服务
     credit_service = get_credit_service(db)
@@ -68,7 +68,7 @@ async def upload_file(
             detail=f"文件过大。最大支持 {settings.max_file_size // (1024*1024)} MB"
         )
     
-    logger.info(f"🔍 DEBUG: 文件验证通过 - 文件名: {file.filename}, 类型: {file_ext}, 大小: {len(file_content)} bytes")
+    logger.debug(f"🔍 DEBUG: 文件验证通过 - 文件名: {file.filename}, 类型: {file_ext}, 大小: {len(file_content)} bytes")
     
     # ========== 积分系统集成 ==========
     # 1. 估算所需积分
@@ -77,7 +77,7 @@ async def upload_file(
         file_type=file.content_type or file_ext
     )
     
-    logger.info(f"🔍 DEBUG: 积分估算完成 - 需要积分: {required_credits}")
+    logger.debug(f"🔍 DEBUG: 积分估算完成 - 需要积分: {required_credits}")
     
     # 2. 检查积分是否充足
     is_sufficient, current_balance = credit_service.check_sufficient_credits(
@@ -85,11 +85,11 @@ async def upload_file(
         required_credits=required_credits
     )
     
-    logger.info(f"🔍 DEBUG: 积分检查完成 - 充足: {is_sufficient}, 余额: {current_balance}")
+    logger.debug(f"🔍 DEBUG: 积分检查完成 - 充足: {is_sufficient}, 余额: {current_balance}")
     
     # 3. 如果不是管理员且积分不足，返回错误
     is_admin = credit_service.is_admin_user(current_user.id)
-    logger.info(f"🔍 DEBUG: 管理员检查 - 是否管理员: {is_admin}")
+    logger.debug(f"🔍 DEBUG: 管理员检查 - 是否管理员: {is_admin}")
     
     if not is_admin and not is_sufficient:
         error_detail = {
