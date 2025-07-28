@@ -28,15 +28,28 @@ class CreditService:
         Returns:
             int: 用户积分余额，如果用户不存在返回0
         """
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        logger.info(f"🔍 DEBUG: 开始获取用户积分 - user_id: {user_id}")
+        
         user = self.db.query(User).filter(User.id == user_id).first()
         if not user:
+            logger.error(f"❌ DEBUG: 用户ID {user_id} 不存在")
             return 0
+        
+        logger.info(f"🔍 DEBUG: 找到用户 - email: {user.email}, credits: {user.credits}, type: {type(user.credits)}")
         
         # 处理历史用户credits字段为NULL的情况
         if user.credits is None:
+            logger.warning(f"⚠️ DEBUG: 用户 {user.email} 积分字段为None，开始初始化")
+            
             # 自动为存量用户初始化积分并保存
             user.credits = 100  # 默认初始积分
             self.db.commit()
+            self.db.refresh(user)
+            
+            logger.info(f"✅ DEBUG: 积分初始化完成 - 新积分: {user.credits}")
             
             # 记录初始化历史
             self._create_history_record(
@@ -65,8 +78,17 @@ class CreditService:
         Returns:
             Tuple[bool, int]: (是否充足, 当前积分余额)
         """
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        logger.info(f"🔍 DEBUG: 检查积分充足性 - user_id: {user_id}, required: {required_credits}")
+        
         current_credits = self.get_user_credits(user_id)
-        return current_credits >= required_credits, current_credits
+        is_sufficient = current_credits >= required_credits
+        
+        logger.info(f"🔍 DEBUG: 积分检查结果 - current: {current_credits}, required: {required_credits}, sufficient: {is_sufficient}")
+        
+        return is_sufficient, current_credits
 
     def is_admin_user(self, user_id: int) -> bool:
         """

@@ -232,32 +232,67 @@ async def get_current_user(
     """
     从 JWT 令牌获取当前用户
     """
-    token = credentials.credentials
-    user_id = get_user_id_from_token(token)
+    import logging
+    logger = logging.getLogger(__name__)
     
-    if user_id is None:
+    try:
+        token = credentials.credentials
+        logger.info(f"🔍 DEBUG: 开始验证令牌，令牌长度: {len(token) if token else 0}")
+        
+        user_id = get_user_id_from_token(token)
+        logger.info(f"🔍 DEBUG: 从令牌解析出用户ID: {user_id}")
+        
+        if user_id is None:
+            logger.error("❌ DEBUG: 令牌解析失败，用户ID为None")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="无效的访问令牌",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        user = db.query(User).filter(User.id == user_id).first()
+        logger.info(f"🔍 DEBUG: 数据库查询结果 - 用户: {user.email if user else 'None'}")
+        
+        if user is None:
+            logger.error(f"❌ DEBUG: 用户ID {user_id} 在数据库中不存在")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="用户不存在",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        if not user.is_active:
+            logger.error(f"❌ DEBUG: 用户 {user.email} 账户已被禁用")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="用户账户已被禁用",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        # 检查用户积分字段
+        logger.info(f"🔍 DEBUG: 用户积分信息 - credits: {user.credits}, type: {type(user.credits)}")
+        
+        # 如果积分为None，立即初始化
+        if user.credits is None:
+            logger.warning(f"⚠️ DEBUG: 用户 {user.email} 积分字段为None，立即初始化")
+            user.credits = 100
+            db.commit()
+            db.refresh(user)
+            logger.info(f"✅ DEBUG: 积分初始化完成，当前积分: {user.credits}")
+        
+        logger.info(f"✅ DEBUG: 用户认证成功 - ID: {user.id}, Email: {user.email}, Credits: {user.credits}")
+        return user
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ DEBUG: 用户认证过程中发生异常: {str(e)}")
+        logger.error(f"❌ DEBUG: 异常类型: {type(e)}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="无效的访问令牌",
+            detail=f"用户认证失败: {str(e)}",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
-    user = db.query(User).filter(User.id == user_id).first()
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="用户不存在",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    
-    if not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="用户账户已被禁用",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    
-    return user
 
 
 class RegisterResponse(BaseModel):
