@@ -86,6 +86,14 @@ const Header = ({ title, subtitle, showCreateButton = false }) => {
             {user && (
               <div className="hidden sm:flex items-center space-x-3">
                 
+                {/* 积分余额 */}
+                <div className="flex items-center bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-full px-3 py-2">
+                  <span className="text-amber-600 mr-2">💎</span>
+                  <span className="text-xs font-semibold text-gray-700">
+                    {user.credits || 0} 积分
+                  </span>
+                </div>
+
                 {/* 邀请码剩余 */}
                 {user.invitation_remaining !== undefined && (
                   <div className="flex items-center bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-full px-3 py-2">
@@ -132,17 +140,25 @@ const Header = ({ title, subtitle, showCreateButton = false }) => {
                       <div className="px-4 py-3 border-b border-gray-100">
                         <p className="text-sm font-medium text-gray-900">{getUserDisplayName()}</p>
                         <p className="text-sm text-gray-500 truncate">{user.email}</p>
-                        {/* 邀请码信息 */}
-                        {user.invitation_remaining !== undefined && (
-                          <div className="flex items-center mt-2">
+                        {/* 用户状态信息 */}
+                        <div className="flex items-center space-x-2 mt-2">
+                          {/* 积分信息 */}
+                          <div className="flex items-center bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-full px-3 py-1">
+                            <span className="text-amber-600 mr-2 text-xs">💎</span>
+                            <span className="text-xs font-semibold text-gray-700">
+                              {user.credits || 0} 积分
+                            </span>
+                          </div>
+                          {/* 邀请码信息 */}
+                          {user.invitation_remaining !== undefined && (
                             <div className="flex items-center bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-full px-3 py-1">
                               <span className="text-green-600 mr-2 text-xs">👥</span>
                               <span className="text-xs font-semibold text-gray-700">
                                 {user.invitation_remaining} 邀请码
                               </span>
                             </div>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </div>
 
                       {/* 菜单项 */}
