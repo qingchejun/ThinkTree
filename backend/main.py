@@ -9,7 +9,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 # Restore full functionality with all modules  
-from app.api import upload, mindmaps, auth, share, invitations, admin
+from app.api import upload, mindmaps, auth, share, invitations, admin, credits
 from app.core.config import settings
 
 # 创建rate limiter实例
@@ -66,6 +66,7 @@ app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(share.router, prefix="/api", tags=["share"])
 app.include_router(invitations.router, prefix="/api/invitations", tags=["invitations"])
 app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
+app.include_router(credits.router, prefix="/api/credits", tags=["credits"])
 
 @app.get("/")
 async def root():

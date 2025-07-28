@@ -59,6 +59,15 @@ class User(Base):
         lazy="dynamic"
     )
     
+    # 关系定义 - 与积分历史记录的关联
+    credit_history = relationship(
+        "CreditHistory",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="dynamic",
+        order_by="CreditHistory.created_at.desc()"  # 按时间倒序排列
+    )
+    
     def __repr__(self):
         return f"<User(id={self.id}, email='{self.email}', is_active={self.is_active}, is_superuser={self.is_superuser})>"
     
