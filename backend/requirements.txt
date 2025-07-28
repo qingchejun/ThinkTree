@@ -15,8 +15,8 @@ PyMuPDF>=1.24.0
 
 # 认证和安全
 python-jose>=3.3.0
-passlib>=1.7.4
-bcrypt>=4.0.1
+passlib==1.7.4
+bcrypt==3.2.0
 PyJWT>=2.8.0  # JWT令牌处理
 slowapi>=0.1.9  # Rate limiting
 
