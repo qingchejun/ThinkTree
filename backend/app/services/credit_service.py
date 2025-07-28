@@ -29,7 +29,30 @@ class CreditService:
             int: 用户积分余额，如果用户不存在返回0
         """
         user = self.db.query(User).filter(User.id == user_id).first()
-        return user.credits if user else 0
+        if not user:
+            return 0
+        
+        # 处理历史用户credits字段为NULL的情况
+        if user.credits is None:
+            # 自动为存量用户初始化积分并保存
+            user.credits = 100  # 默认初始积分
+            self.db.commit()
+            
+            # 记录初始化历史
+            self._create_history_record(
+                user_id=user_id,
+                change_amount=100,
+                balance_after=100,
+                reason="系统自动初始化积分",
+                operation_type=CreditOperationType.REWARD,
+                description="检测到存量用户积分为空，自动初始化为100积分",
+                related_id=f"auto_init_{user_id}"
+            )
+            self.db.commit()
+            
+            return 100
+        
+        return user.credits
 
     def check_sufficient_credits(self, user_id: int, required_credits: int) -> Tuple[bool, int]:
         """
