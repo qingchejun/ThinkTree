@@ -26,6 +26,7 @@ class CreditReason:
     # 消耗类
     AI_GENERATION = "AI思维导图生成"
     FILE_PROCESSING = "文件处理"
+    PROCESS_FILE = "文件处理"  # 兼容性别名
     TEXT_PROCESSING = "文本处理"
     
     # 奖励类
