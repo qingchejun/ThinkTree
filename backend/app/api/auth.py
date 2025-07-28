@@ -13,6 +13,7 @@ from slowapi.util import get_remote_address
 from ..core.database import get_db
 from ..models.user import User
 from ..models.invitation import InvitationCode
+from ..services.credit_service import CreditService
 from ..utils.security import (
     verify_password,
     get_password_hash,
@@ -332,6 +333,13 @@ async def register(request: Request, user_data: UserRegister, db: Session = Depe
         db.commit()
         db.refresh(new_user)
         
+        # 为新用户创建初始积分记录
+        try:
+            CreditService.create_initial_credits(db, new_user)
+        except Exception as credit_error:
+            # 积分创建失败不影响用户注册，但要记录日志
+            print(f"为用户 {new_user.email} 创建初始积分失败: {credit_error}")
+        
         # 标记邀请码为已使用
         use_invitation_code(db, user_data.invitation_code, new_user.id)
         
@@ -405,7 +413,7 @@ async def login(request: Request, credentials: UserLogin, db: Session = Depends(
         is_verified=user.is_verified,
         is_superuser=user.is_superuser,
         created_at=user.created_at.isoformat(),
-        credits=user.credits,
+        credits=user.credits_balance,
         invitation_quota=user.invitation_quota
     )
     
@@ -457,7 +465,7 @@ async def get_profile(current_user: User = Depends(get_current_user), db: Sessio
         is_verified=current_user.is_verified,
         is_superuser=current_user.is_superuser,
         created_at=current_user.created_at.isoformat(),
-        credits=current_user.credits,
+        credits=current_user.credits_balance,
         invitation_quota=current_user.invitation_quota,
         invitation_used=invitation_used,
         invitation_remaining=invitation_remaining

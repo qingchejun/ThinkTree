@@ -48,7 +48,7 @@ class User(Base):
     avatar_url = Column(String(500), nullable=True)
     
     # 临时保留积分字段以保持数据库兼容性 - 等待迁移执行
-    credits = Column(Integer, default=100, nullable=False)  # 临时保留
+    credits_balance = Column(Integer, default=100, nullable=False)  # 临时保留，重命名避免冲突
     invitation_quota = Column(Integer, default=10, nullable=False)  # 临时保留
     
     # 关系定义 - 与思维导图表的关联
@@ -57,6 +57,14 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan",
         lazy="dynamic"
+    )
+    
+    # 关系定义 - 与用户积分表的一对一关联
+    credits = relationship(
+        "UserCredits",
+        back_populates="user",
+        uselist=False,  # 一对一关系
+        cascade="all, delete-orphan"
     )
     
     def __repr__(self):
@@ -74,7 +82,7 @@ class User(Base):
             "is_superuser": self.is_superuser,
             "display_name": self.display_name,
             "avatar_url": self.avatar_url,
-            "credits": self.credits,  # 临时保留
+            "credits": self.credits_balance,  # 临时保留，使用重命名后的字段
             "invitation_quota": self.invitation_quota,  # 临时保留
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None
