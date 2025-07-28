@@ -413,7 +413,7 @@ async def login(request: Request, credentials: UserLogin, db: Session = Depends(
         is_verified=user.is_verified,
         is_superuser=user.is_superuser,
         created_at=user.created_at.isoformat(),
-        credits=user.credits_balance,
+        credits=user.credits.balance if user.credits else 0,
         invitation_quota=user.invitation_quota
     )
     
@@ -465,7 +465,7 @@ async def get_profile(current_user: User = Depends(get_current_user), db: Sessio
         is_verified=current_user.is_verified,
         is_superuser=current_user.is_superuser,
         created_at=current_user.created_at.isoformat(),
-        credits=current_user.credits_balance,
+        credits=current_user.credits.balance if current_user.credits else 0,
         invitation_quota=current_user.invitation_quota,
         invitation_used=invitation_used,
         invitation_remaining=invitation_remaining
