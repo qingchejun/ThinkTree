@@ -3,7 +3,8 @@
  */
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import { useAuth } from '../../context/AuthContext'
 
 const SUPPORTED_FORMATS = {
   '.txt': 'text/plain',
@@ -36,11 +37,70 @@ const getErrorMessage = (detail, defaultMessage = '处理失败') => {
 }
 
 export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadError, token }) {
+  const { user, refreshUser } = useAuth()
   const [dragActive, setDragActive] = useState(false)
   const [textInput, setTextInput] = useState('')
   const [uploadMode, setUploadMode] = useState('file') // 'file' or 'text'
   const [isUploading, setIsUploading] = useState(false)
+  const [creditEstimate, setCreditEstimate] = useState(null)
+  const [estimating, setEstimating] = useState(false)
   const fileInputRef = useRef(null)
+
+  // 估算积分成本
+  const estimateCreditCost = async (text) => {
+    if (!text.trim()) {
+      setCreditEstimate(null)
+      return
+    }
+
+    try {
+      setEstimating(true)
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+      const response = await fetch(`${API_BASE_URL}/api/estimate-credit-cost`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ text: text.trim() })
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        setCreditEstimate(result)
+      } else {
+        setCreditEstimate(null)
+      }
+    } catch (error) {
+      console.error('积分估算失败:', error)
+      setCreditEstimate(null)
+    } finally {
+      setEstimating(false)
+    }
+  }
+
+  // 监听文本输入变化，实时估算积分
+  useEffect(() => {
+    if (uploadMode === 'text' && textInput.trim()) {
+      const timer = setTimeout(() => {
+        estimateCreditCost(textInput)
+      }, 500) // 防抖，避免频繁请求
+      
+      return () => clearTimeout(timer)
+    } else {
+      setCreditEstimate(null)
+    }
+  }, [textInput, uploadMode, token])
+
+  // 处理积分不足的友好提示
+  const showInsufficientCreditsAlert = (requiredCredits, currentBalance) => {
+    const shortfall = requiredCredits - currentBalance
+    const message = `积分不足！需要 ${requiredCredits} 积分，当前余额 ${currentBalance} 积分，还差 ${shortfall} 积分。快去邀请好友赚取更多积分吧！`
+    
+    if (onUploadError) {
+      onUploadError(message)
+    }
+  }
 
   // 处理拖拽事件
   const handleDragOver = (e) => {
@@ -109,7 +169,17 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
       const result = await response.json()
       
       if (response.ok && result.success) {
+        // 成功后刷新用户积分信息
+        if (refreshUser) refreshUser()
         if (onUploadSuccess) onUploadSuccess(result)
+      } else if (response.status === 402) {
+        // 积分不足的特殊处理
+        const errorDetail = result.detail
+        if (typeof errorDetail === 'object' && errorDetail.message === '积分不足') {
+          showInsufficientCreditsAlert(errorDetail.required_credits, errorDetail.current_balance)
+        } else {
+          throw new Error(getErrorMessage(result.detail, '积分不足'))
+        }
       } else {
         throw new Error(getErrorMessage(result.detail, '上传失败'))
       }
@@ -148,7 +218,17 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
       const result = await response.json()
       
       if (response.ok && result.success) {
+        // 成功后刷新用户积分信息
+        if (refreshUser) refreshUser()
         if (onUploadSuccess) onUploadSuccess(result)
+      } else if (response.status === 402) {
+        // 积分不足的特殊处理
+        const errorDetail = result.detail
+        if (typeof errorDetail === 'object' && errorDetail.message === '积分不足') {
+          showInsufficientCreditsAlert(errorDetail.required_credits, errorDetail.current_balance)
+        } else {
+          throw new Error(getErrorMessage(result.detail, '积分不足'))
+        }
       } else {
         throw new Error(getErrorMessage(result.detail, '处理失败'))
       }
@@ -241,13 +321,61 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
               className="w-full h-40 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
               disabled={isUploading}
             />
-            <div className="mt-1 text-xs text-gray-500 text-right">
-              字符数：{textInput.length}
+            <div className="mt-1 flex justify-between text-xs">
+              <span className="text-gray-500">字符数：{textInput.length}</span>
+              {creditEstimate && (
+                <span className={`font-medium ${
+                  creditEstimate.sufficient_credits 
+                    ? 'text-green-600' 
+                    : 'text-red-600'
+                }`}>
+                  {estimating ? '计算中...' : `预计消耗: ${creditEstimate.estimated_cost} 积分`}
+                </span>
+              )}
             </div>
           </div>
+
+          {/* 积分状态提示 */}
+          {creditEstimate && (
+            <div className={`p-3 rounded-md text-sm ${
+              creditEstimate.sufficient_credits
+                ? 'bg-green-50 border border-green-200 text-green-800'
+                : 'bg-red-50 border border-red-200 text-red-800'
+            }`}>
+              <div className="flex items-center">
+                <span className="mr-2">
+                  {creditEstimate.sufficient_credits ? '✅' : '⚠️'}
+                </span>
+                <div>
+                  <div className="font-medium">
+                    {creditEstimate.sufficient_credits 
+                      ? '积分充足，可以生成' 
+                      : '积分不足，无法生成'
+                    }
+                  </div>
+                  <div className="mt-1 text-xs opacity-75">
+                    当前余额: {creditEstimate.user_balance} 积分 | 
+                    预计消耗: {creditEstimate.estimated_cost} 积分 | 
+                    {creditEstimate.pricing_rule}
+                  </div>
+                  {!creditEstimate.sufficient_credits && (
+                    <div className="mt-2">
+                      <a 
+                        href="/settings?tab=invitations" 
+                        className="text-red-700 underline hover:text-red-900"
+                      >
+                        📨 邀请好友赚取积分
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           <button
             onClick={handleTextSubmit}
-            disabled={!textInput.trim() || isUploading}
+            disabled={!textInput.trim() || isUploading || (creditEstimate && !creditEstimate.sufficient_credits)}
             className="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isUploading ? (
