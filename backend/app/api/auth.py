@@ -221,7 +221,7 @@ class UserProfileUpdateResponse(BaseModel):
     """用户资料更新响应模型"""
     success: bool
     message: str
-    user: UserProfileResponse
+    user: "UserProfileResponse"
 
 
 # 依赖注入：获取当前用户
@@ -997,3 +997,6 @@ async def get_config_status():
         "password_endpoint_available": True,
         "timestamp": "2024-07-26"
     }
+
+# 更新前向引用
+UserProfileUpdateResponse.model_rebuild()

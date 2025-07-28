@@ -16,6 +16,8 @@ from app.core.database import get_db
 from app.models.user import User
 from app.models.mindmap import Mindmap
 from app.models.invitation import InvitationCode
+from app.services.credit_service import get_credit_service
+from app.models.credit_history import CreditReason, CreditOperationType
 from app.utils.admin_auth import get_current_admin, log_admin_action
 from app.utils.invitation_utils import create_invitation_code
 from app.utils.security import get_password_hash, validate_password
@@ -795,4 +797,254 @@ async def send_password_reset_email(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="发送重置邮件失败"
+        )
+
+
+# 积分管理相关的Pydantic模型
+class CreditAdjustmentRequest(BaseModel):
+    """积分调整请求模型"""
+    user_id: int
+    amount: int
+    reason: str
+    description: Optional[str] = None
+
+
+class CreditAdjustmentResponse(BaseModel):
+    """积分调整响应模型"""
+    success: bool
+    message: str
+    user_id: int
+    change_amount: int
+    balance_after: int
+
+
+@router.post("/credits/adjust", response_model=CreditAdjustmentResponse)
+async def adjust_user_credits(
+    request: CreditAdjustmentRequest,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    管理员调整用户积分
+    """
+    try:
+        credit_service = get_credit_service(db)
+        
+        # 验证用户是否存在
+        target_user = db.query(User).filter(User.id == request.user_id).first()
+        if not target_user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"用户 ID {request.user_id} 不存在"
+            )
+        
+        # 执行积分调整
+        if request.amount > 0:
+            # 增加积分
+            success, message, balance_after = credit_service.add_credits(
+                user_id=request.user_id,
+                amount=request.amount,
+                reason=request.reason,
+                description=request.description or f"管理员 {current_admin.email} 操作",
+                operation_type=CreditOperationType.ADMIN_ADJUSTMENT
+            )
+        else:
+            # 扣除积分
+            success, message, balance_after = credit_service.deduct_credits(
+                user_id=request.user_id,
+                amount=abs(request.amount),
+                reason=request.reason,
+                description=request.description or f"管理员 {current_admin.email} 操作",
+                force_deduct=True  # 管理员强制扣除
+            )
+            request.amount = -abs(request.amount)  # 确保是负数
+        
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"积分调整失败: {message}"
+            )
+        
+        # 记录管理员操作
+        log_admin_action(
+            current_admin.id,
+            f"调整用户积分",
+            f"用户ID: {request.user_id}, 调整金额: {request.amount}, 原因: {request.reason}"
+        )
+        
+        return CreditAdjustmentResponse(
+            success=True,
+            message=message,
+            user_id=request.user_id,
+            change_amount=request.amount,
+            balance_after=balance_after
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"调整用户积分失败: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"调整积分失败: {str(e)}"
+        )
+
+
+@router.post("/credits/batch-grant")
+async def batch_grant_credits(
+    amount: int = Query(..., description="要发放的积分数量"),
+    reason: str = Query(..., description="发放原因"),
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    批量给所有用户发放积分（用于活动奖励等）
+    """
+    try:
+        if amount <= 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="发放积分数量必须大于0"
+            )
+        
+        credit_service = get_credit_service(db)
+        
+        # 获取所有活跃用户
+        active_users = db.query(User).filter(
+            User.is_active == True,
+            User.is_verified == True
+        ).all()
+        
+        success_count = 0
+        error_count = 0
+        
+        for user in active_users:
+            try:
+                success, message, balance_after = credit_service.add_credits(
+                    user_id=user.id,
+                    amount=amount,
+                    reason=reason,
+                    description=f"管理员批量发放 - 操作者: {current_admin.email}",
+                    operation_type=CreditOperationType.ADMIN_ADJUSTMENT
+                )
+                if success:
+                    success_count += 1
+                else:
+                    error_count += 1
+                    logger.warning(f"给用户 {user.id} 发放积分失败: {message}")
+            except Exception as e:
+                error_count += 1
+                logger.error(f"给用户 {user.id} 发放积分时发生异常: {str(e)}")
+        
+        # 记录管理员操作
+        log_admin_action(
+            current_admin.id,
+            f"批量发放积分",
+            f"发放金额: {amount}, 原因: {reason}, 成功: {success_count}, 失败: {error_count}"
+        )
+        
+        return {
+            "success": True,
+            "message": f"批量发放积分完成",
+            "total_users": len(active_users),
+            "success_count": success_count,
+            "error_count": error_count,
+            "amount_per_user": amount,
+            "reason": reason
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"批量发放积分失败: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"批量发放失败: {str(e)}"
+        )
+
+
+@router.get("/credits/statistics")
+async def get_system_credit_statistics(
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    获取系统积分统计信息（管理员视图）
+    """
+    try:
+        from app.models.credit_history import CreditHistory
+        from sqlalchemy import func, and_
+        from datetime import datetime, timedelta
+        
+        # 获取基础统计
+        total_users = db.query(User).filter(User.is_active == True).count()
+        
+        # 积分总量统计
+        total_credits_in_system = db.query(func.sum(User.credits)).scalar() or 0
+        
+        # 今日积分变动
+        today = datetime.now().date()
+        today_consumption = db.query(func.sum(CreditHistory.change_amount)).filter(
+            and_(
+                func.date(CreditHistory.created_at) == today,
+                CreditHistory.change_amount < 0
+            )
+        ).scalar() or 0
+        
+        today_rewards = db.query(func.sum(CreditHistory.change_amount)).filter(
+            and_(
+                func.date(CreditHistory.created_at) == today,
+                CreditHistory.change_amount > 0
+            )
+        ).scalar() or 0
+        
+        # 本周积分变动
+        week_ago = datetime.now() - timedelta(days=7)
+        week_consumption = db.query(func.sum(CreditHistory.change_amount)).filter(
+            and_(
+                CreditHistory.created_at >= week_ago,
+                CreditHistory.change_amount < 0
+            )
+        ).scalar() or 0
+        
+        week_rewards = db.query(func.sum(CreditHistory.change_amount)).filter(
+            and_(
+                CreditHistory.created_at >= week_ago,
+                CreditHistory.change_amount > 0
+            )
+        ).scalar() or 0
+        
+        # 积分不足的用户数量
+        low_credit_users = db.query(User).filter(
+            and_(
+                User.is_active == True,
+                User.credits < 10  # 少于10积分视为积分不足
+            )
+        ).count()
+        
+        return {
+            "success": True,
+            "data": {
+                "total_users": total_users,
+                "total_credits_in_system": total_credits_in_system,
+                "low_credit_users": low_credit_users,
+                "today_statistics": {
+                    "consumption": abs(today_consumption),
+                    "rewards": today_rewards,
+                    "net_change": today_rewards + today_consumption
+                },
+                "week_statistics": {
+                    "consumption": abs(week_consumption),
+                    "rewards": week_rewards,
+                    "net_change": week_rewards + week_consumption
+                },
+                "average_credits_per_user": round(total_credits_in_system / total_users, 2) if total_users > 0 else 0
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"获取积分统计失败: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"获取统计信息失败: {str(e)}"
         )

@@ -89,7 +89,20 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
       if (response.ok && result.success) {
         if (onUploadSuccess) onUploadSuccess(result)
       } else {
-        throw new Error(result.detail || '上传失败')
+        // 处理积分不足的特殊情况 (HTTP 402)
+        if (response.status === 402) {
+          // 积分不足错误的详细处理
+          if (result.detail && typeof result.detail === 'object') {
+            const errorInfo = result.detail
+            const message = `积分不足！需要 ${errorInfo.required_credits} 积分，当前余额 ${errorInfo.current_balance} 积分，还需 ${errorInfo.shortfall} 积分。`
+            throw new Error(message)
+          } else {
+            throw new Error('积分不足，无法处理此文件')
+          }
+        } else {
+          // 其他错误
+          throw new Error(result.detail || result.message || '上传失败')
+        }
       }
     } catch (error) {
       console.error('文件上传错误:', error)
@@ -128,7 +141,20 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
       if (response.ok && result.success) {
         if (onUploadSuccess) onUploadSuccess(result)
       } else {
-        throw new Error(result.detail || '处理失败')
+        // 处理积分不足的特殊情况 (HTTP 402)
+        if (response.status === 402) {
+          // 积分不足错误的详细处理
+          if (result.detail && typeof result.detail === 'object') {
+            const errorInfo = result.detail
+            const message = `积分不足！需要 ${errorInfo.required_credits} 积分，当前余额 ${errorInfo.current_balance} 积分，还需 ${errorInfo.shortfall} 积分。`
+            throw new Error(message)
+          } else {
+            throw new Error('积分不足，无法处理此文本')
+          }
+        } else {
+          // 其他错误
+          throw new Error(result.detail || result.message || '处理失败')
+        }
       }
     } catch (error) {
       console.error('文本处理错误:', error)
