@@ -143,8 +143,6 @@ class UserResponse(BaseModel):
     is_verified: bool
     is_superuser: bool
     created_at: str
-    credits: int = 100
-    invitation_quota: int = 10
 
 
 class TokenResponse(BaseModel):
@@ -403,10 +401,8 @@ async def login(request: Request, credentials: UserLogin, db: Session = Depends(
         display_name=user.display_name,
         is_active=user.is_active,
         is_verified=user.is_verified,
-        is_superuser=user.is_superuser,  # 添加缺失的字段
-        created_at=user.created_at.isoformat(),
-        credits=user.credits,
-        invitation_quota=user.invitation_quota
+        is_superuser=user.is_superuser,
+        created_at=user.created_at.isoformat()
     )
     
     return TokenResponse(
@@ -425,8 +421,6 @@ class UserProfileResponse(BaseModel):
     is_verified: bool
     is_superuser: bool
     created_at: str
-    credits: int = 100
-    invitation_quota: int = 10
     invitation_used: int = 0  # 已使用的邀请码数量
     invitation_remaining: int = 10  # 剩余邀请码配额
 
@@ -434,7 +428,7 @@ class UserProfileResponse(BaseModel):
 @router.get("/profile", response_model=UserProfileResponse)
 async def get_profile(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """
-    获取当前用户信息 - 包含积分余额和邀请码配额信息
+    获取当前用户信息 - 包含邀请码配额信息
     """
     # 计算已使用的邀请码数量
     invitation_used = 0
@@ -446,8 +440,8 @@ async def get_profile(current_user: User = Depends(get_current_user), db: Sessio
         # 如果查询失败（表不存在等），使用默认值0
         invitation_used = 0
     
-    # 计算剩余邀请配额
-    invitation_remaining = max(0, current_user.invitation_quota - invitation_used)
+    # 计算剩余邀请配额 - 使用固定默认值10
+    invitation_remaining = max(0, 10 - invitation_used)
     
     return UserProfileResponse(
         id=current_user.id,
@@ -457,8 +451,6 @@ async def get_profile(current_user: User = Depends(get_current_user), db: Sessio
         is_verified=current_user.is_verified,
         is_superuser=current_user.is_superuser,
         created_at=current_user.created_at.isoformat(),
-        credits=current_user.credits,
-        invitation_quota=current_user.invitation_quota,
         invitation_used=invitation_used,
         invitation_remaining=invitation_remaining
     )
@@ -516,7 +508,7 @@ async def update_profile(
         except Exception:
             invitation_used = 0
         
-        invitation_remaining = max(0, current_user.invitation_quota - invitation_used)
+        invitation_remaining = max(0, 10 - invitation_used)  # 使用固定值10
         
         # 构造更新后的用户信息
         updated_user = UserProfileResponse(
@@ -527,8 +519,6 @@ async def update_profile(
             is_verified=current_user.is_verified,
             is_superuser=current_user.is_superuser,
             created_at=current_user.created_at.isoformat(),
-            credits=current_user.credits,
-            invitation_quota=current_user.invitation_quota,
             invitation_used=invitation_used,
             invitation_remaining=invitation_remaining
         )
@@ -593,9 +583,7 @@ async def verify_email(request: VerifyEmailRequest, db: Session = Depends(get_db
                 is_active=user.is_active,
                 is_verified=user.is_verified,
                 is_superuser=user.is_superuser,
-                created_at=user.created_at.isoformat(),
-                credits=user.credits,
-                invitation_quota=user.invitation_quota
+                created_at=user.created_at.isoformat()
             )
             
             return VerifyEmailResponse(
@@ -627,9 +615,7 @@ async def verify_email(request: VerifyEmailRequest, db: Session = Depends(get_db
             is_active=user.is_active,
             is_verified=user.is_verified,
             is_superuser=user.is_superuser,
-            created_at=user.created_at.isoformat(),
-            credits=user.credits,
-            invitation_quota=user.invitation_quota
+            created_at=user.created_at.isoformat()
         )
         
         return VerifyEmailResponse(

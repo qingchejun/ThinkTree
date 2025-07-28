@@ -307,12 +307,12 @@ const SettingsContent = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
-                <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
-                  <h3 className="text-lg font-medium text-blue-900 mb-2">当前积分</h3>
-                  <p className="text-3xl font-bold text-blue-600">
-                    {profileData ? profileData.credits.toLocaleString() : '加载中...'}
+                <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">积分系统</h3>
+                  <p className="text-lg text-gray-600">
+                    积分系统正在重新设计中...
                   </p>
-                  <p className="text-sm text-blue-700 mt-1">积分余额</p>
+                  <p className="text-sm text-gray-500 mt-1">敬请期待新版本</p>
                 </div>
                 <div>
                   <h3 className="text-lg font-medium text-text-primary mb-4">使用统计</h3>
