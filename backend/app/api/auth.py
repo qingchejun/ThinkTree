@@ -425,7 +425,7 @@ async def login(request: Request, credentials: UserLogin, db: Session = Depends(
 
 
 class UserProfileResponse(BaseModel):
-    """用户详细资料响应模型 - 包含邀请码使用统计"""
+    """用户详细资料响应模型 - 包含积分余额和邀请码使用统计"""
     id: int
     email: str
     display_name: Optional[str] = None
@@ -433,8 +433,8 @@ class UserProfileResponse(BaseModel):
     is_verified: bool
     is_superuser: bool
     created_at: str
-    credits: int = 100  # 临时保留
-    invitation_quota: int = 10  # 临时保留
+    credits: int = 0  # 用户积分余额（来自UserCredits表）
+    invitation_quota: int = 10  # 邀请码配额
     invitation_used: int = 0  # 已使用的邀请码数量
     invitation_remaining: int = 10  # 剩余邀请码配额
 
