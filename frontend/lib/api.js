@@ -2,7 +2,9 @@
  * API 调用工具库
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+import { API_CONFIG } from './config';
+
+const API_BASE_URL = API_CONFIG.baseUrl;
 
 // 通用 API 调用函数
 async function apiCall(endpoint, options = {}) {
