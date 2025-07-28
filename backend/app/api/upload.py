@@ -87,10 +87,11 @@ async def upload_file(
     
     logger.debug(f"🔍 DEBUG: 积分检查完成 - 充足: {is_sufficient}, 余额: {current_balance}")
     
-    # 3. 如果不是管理员且积分不足，返回错误
+    # 3. 权限和积分检查
     is_admin = credit_service.is_admin_user(current_user.id)
     logger.debug(f"🔍 DEBUG: 管理员检查 - 是否管理员: {is_admin}")
     
+    # 如果不是管理员且积分不足，返回错误
     if not is_admin and not is_sufficient:
         error_detail = {
             "error": "积分不足",
@@ -108,6 +109,8 @@ async def upload_file(
             detail=error_detail
         )
     
+    logger.debug(f"✅ DEBUG: 权限检查通过 - 管理员: {is_admin}, 积分充足: {is_sufficient}")
+    
     try:
         # 解析文件内容
         parsed_content = file_parser.parse_from_bytes(file_content, file.filename)
@@ -118,24 +121,36 @@ async def upload_file(
                 detail="文件解析失败，请检查文件内容"
             )
         
-        # 4. 扣除积分（在AI处理前）
-        deduct_success, deduct_message, balance_after = credit_service.deduct_credits(
-            user_id=current_user.id,
-            amount=required_credits,
-            reason=CreditReason.PROCESS_FILE,
-            description=f"处理文件: {file.filename} ({file_ext}, {len(file_content)} bytes)",
-            related_id=f"file_{file.filename}_{current_user.id}"
-        )
+        logger.debug(f"✅ DEBUG: 文件解析成功 - 内容长度: {len(parsed_content)}")
         
-        if not deduct_success:
-            raise HTTPException(
-                status_code=status.HTTP_402_PAYMENT_REQUIRED,
-                detail={
-                    "error": "积分扣除失败",
-                    "message": deduct_message,
-                    "required_credits": required_credits
-                }
+        # 4. 积分扣除（仅对非管理员用户）
+        balance_after = current_balance  # 默认余额不变
+        
+        if not is_admin:
+            logger.debug(f"🔍 DEBUG: 开始扣除积分 - 用户: {current_user.email}, 金额: {required_credits}")
+            
+            deduct_success, deduct_message, balance_after = credit_service.deduct_credits(
+                user_id=current_user.id,
+                amount=required_credits,
+                reason=CreditReason.PROCESS_FILE,
+                description=f"处理文件: {file.filename} ({file_ext}, {len(file_content)} bytes)",
+                related_id=f"file_{file.filename}_{current_user.id}"
             )
+            
+            if not deduct_success:
+                logger.error(f"❌ DEBUG: 积分扣除失败 - {deduct_message}")
+                raise HTTPException(
+                    status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                    detail={
+                        "error": "积分扣除失败",
+                        "message": deduct_message,
+                        "required_credits": required_credits
+                    }
+                )
+            
+            logger.debug(f"✅ DEBUG: 积分扣除成功 - 扣除: {required_credits}, 余额: {balance_after}")
+        else:
+            logger.debug(f"ℹ️ DEBUG: 管理员用户跳过积分扣除")
         
         # 5. 生成思维导图结构（积分已扣除）
         mindmap_result = await ai_processor.generate_mindmap_structure(
@@ -160,9 +175,9 @@ async def upload_file(
             "format": "markdown",
             # 积分相关信息
             "credits_info": {
-                "consumed": required_credits,
+                "consumed": required_credits if not is_admin else 0,
                 "balance_after": balance_after,
-                "is_admin": credit_service.is_admin_user(current_user.id)
+                "is_admin": is_admin
             }
         })
         
@@ -203,8 +218,11 @@ async def process_text(
         required_credits=required_credits
     )
     
-    # 3. 如果不是管理员且积分不足，返回错误
-    if not credit_service.is_admin_user(current_user.id) and not is_sufficient:
+    # 3. 权限和积分检查
+    is_admin = credit_service.is_admin_user(current_user.id)
+    
+    # 如果不是管理员且积分不足，返回错误
+    if not is_admin and not is_sufficient:
         raise HTTPException(
             status_code=status.HTTP_402_PAYMENT_REQUIRED,
             detail={
@@ -217,24 +235,27 @@ async def process_text(
         )
     
     try:
-        # 4. 扣除积分（在AI处理前）
-        deduct_success, deduct_message, balance_after = credit_service.deduct_credits(
-            user_id=current_user.id,
-            amount=required_credits,
-            reason=CreditReason.PROCESS_TEXT,
-            description=f"处理文本内容 ({len(request.text)} 字符)",
-            related_id=f"text_{current_user.id}_{len(request.text)}"
-        )
+        # 4. 积分扣除（仅对非管理员用户）
+        balance_after = current_balance  # 默认余额不变
         
-        if not deduct_success:
-            raise HTTPException(
-                status_code=status.HTTP_402_PAYMENT_REQUIRED,
-                detail={
-                    "error": "积分扣除失败",
-                    "message": deduct_message,
-                    "required_credits": required_credits
-                }
+        if not is_admin:
+            deduct_success, deduct_message, balance_after = credit_service.deduct_credits(
+                user_id=current_user.id,
+                amount=required_credits,
+                reason=CreditReason.PROCESS_TEXT,
+                description=f"处理文本内容 ({len(request.text)} 字符)",
+                related_id=f"text_{current_user.id}_{len(request.text)}"
             )
+            
+            if not deduct_success:
+                raise HTTPException(
+                    status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                    detail={
+                        "error": "积分扣除失败",
+                        "message": deduct_message,
+                        "required_credits": required_credits
+                    }
+                )
         
         # 5. 生成思维导图结构（积分已扣除）
         mindmap_result = await ai_processor.generate_mindmap_structure(
@@ -257,9 +278,9 @@ async def process_text(
             "format": "markdown",
             # 积分相关信息
             "credits_info": {
-                "consumed": required_credits,
+                "consumed": required_credits if not is_admin else 0,
                 "balance_after": balance_after,
-                "is_admin": credit_service.is_admin_user(current_user.id)
+                "is_admin": is_admin
             }
         })
         
