@@ -47,7 +47,9 @@ class User(Base):
     display_name = Column(String(100), nullable=True)
     avatar_url = Column(String(500), nullable=True)
     
-    # 积分系统相关字段已移除 - 为重新设计做准备
+    # 临时保留积分字段以保持数据库兼容性 - 等待迁移执行
+    credits = Column(Integer, default=100, nullable=False)  # 临时保留
+    invitation_quota = Column(Integer, default=10, nullable=False)  # 临时保留
     
     # 关系定义 - 与思维导图表的关联
     mindmaps = relationship(
@@ -72,6 +74,8 @@ class User(Base):
             "is_superuser": self.is_superuser,
             "display_name": self.display_name,
             "avatar_url": self.avatar_url,
+            "credits": self.credits,  # 临时保留
+            "invitation_quota": self.invitation_quota,  # 临时保留
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None
         } 
