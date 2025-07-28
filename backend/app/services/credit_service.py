@@ -31,14 +31,14 @@ class CreditService:
         import logging
         logger = logging.getLogger(__name__)
         
-        logger.info(f"🔍 DEBUG: 开始获取用户积分 - user_id: {user_id}")
+        logger.debug(f"🔍 DEBUG: 开始获取用户积分 - user_id: {user_id}")
         
         user = self.db.query(User).filter(User.id == user_id).first()
         if not user:
             logger.error(f"❌ DEBUG: 用户ID {user_id} 不存在")
             return 0
         
-        logger.info(f"🔍 DEBUG: 找到用户 - email: {user.email}, credits: {user.credits}, type: {type(user.credits)}")
+        logger.debug(f"🔍 DEBUG: 找到用户 - email: {user.email}, credits: {user.credits}, type: {type(user.credits)}")
         
         # 处理历史用户credits字段为NULL的情况
         if user.credits is None:
@@ -81,12 +81,12 @@ class CreditService:
         import logging
         logger = logging.getLogger(__name__)
         
-        logger.info(f"🔍 DEBUG: 检查积分充足性 - user_id: {user_id}, required: {required_credits}")
+        logger.debug(f"🔍 DEBUG: 检查积分充足性 - user_id: {user_id}, required: {required_credits}")
         
         current_credits = self.get_user_credits(user_id)
         is_sufficient = current_credits >= required_credits
         
-        logger.info(f"🔍 DEBUG: 积分检查结果 - current: {current_credits}, required: {required_credits}, sufficient: {is_sufficient}")
+        logger.debug(f"🔍 DEBUG: 积分检查结果 - current: {current_credits}, required: {required_credits}, sufficient: {is_sufficient}")
         
         return is_sufficient, current_credits
 

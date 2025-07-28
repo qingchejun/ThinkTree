@@ -3,6 +3,14 @@ ThinkSo FastAPI 主应用入口
 """
 
 import os
+import logging
+
+# 配置全局日志级别 - 支持调试信息
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -78,10 +86,7 @@ async def health_check():
 
 if __name__ == "__main__":
     import uvicorn
-    import logging
     
-    # 配置日志
-    logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)
     
     try:
