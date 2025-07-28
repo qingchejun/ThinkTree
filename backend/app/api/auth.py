@@ -699,7 +699,7 @@ async def request_password_reset(
         
         # 生成密码重置令牌（15分钟有效期）
         logger.info(f"🔍 DEBUG: 正在生成密码重置令牌...")
-        from datetime import timedelta
+        from datetime import timedelta, datetime
         try:
             reset_token = create_access_token(
                 data={"sub": str(user.id), "type": "password_reset"},

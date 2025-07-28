@@ -13,6 +13,28 @@ const SUPPORTED_FORMATS = {
   '.srt': 'text/plain'
 }
 
+// 安全提取错误信息的工具函数
+const getErrorMessage = (detail, defaultMessage = '处理失败') => {
+  if (typeof detail === 'string') {
+    return detail
+  } else if (typeof detail === 'object' && detail !== null) {
+    // 如果是对象，尝试提取有用信息
+    if (detail.message) return detail.message
+    if (detail.error) return detail.error
+    if (Array.isArray(detail)) {
+      // 处理验证错误数组
+      return detail.map(err => typeof err === 'string' ? err : err.message || err.msg || '验证错误').join(', ')
+    }
+    // 其他对象情况，转换为可读字符串
+    try {
+      return JSON.stringify(detail)
+    } catch {
+      return defaultMessage
+    }
+  }
+  return defaultMessage
+}
+
 export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadError, token }) {
   const [dragActive, setDragActive] = useState(false)
   const [textInput, setTextInput] = useState('')
@@ -89,7 +111,7 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
       if (response.ok && result.success) {
         if (onUploadSuccess) onUploadSuccess(result)
       } else {
-        throw new Error(result.detail || '上传失败')
+        throw new Error(getErrorMessage(result.detail, '上传失败'))
       }
     } catch (error) {
       console.error('文件上传错误:', error)
@@ -128,7 +150,7 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
       if (response.ok && result.success) {
         if (onUploadSuccess) onUploadSuccess(result)
       } else {
-        throw new Error(result.detail || '处理失败')
+        throw new Error(getErrorMessage(result.detail, '处理失败'))
       }
     } catch (error) {
       console.error('文本处理错误:', error)
