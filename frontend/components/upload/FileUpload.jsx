@@ -1,5 +1,5 @@
 /**
- * 文件上传组件 - 简化版，只支持默认树状图格式
+ * 文件上传组件 - 支持两步文件上传流程
  */
 'use client'
 
@@ -44,9 +44,12 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
   const [isUploading, setIsUploading] = useState(false)
   const [creditEstimate, setCreditEstimate] = useState(null)
   const [estimating, setEstimating] = useState(false)
+  
+  // 两步流程相关状态
   const [fileAnalysis, setFileAnalysis] = useState(null) // 文件分析结果
   const [isAnalyzing, setIsAnalyzing] = useState(false) // 文件分析中
   const [isGenerating, setIsGenerating] = useState(false) // 思维导图生成中
+  
   const fileInputRef = useRef(null)
 
   // 估算积分成本
@@ -122,7 +125,7 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
     
     const files = Array.from(e.dataTransfer.files)
     if (files.length > 0) {
-      handleFileUpload(files[0])
+      handleFileAnalysis(files[0])
     }
   }
 
@@ -130,7 +133,7 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
   const handleFileSelect = (e) => {
     const files = Array.from(e.target.files)
     if (files.length > 0) {
-      handleFileUpload(files[0])
+      handleFileAnalysis(files[0])
     }
   }
 
@@ -149,7 +152,7 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
     return true
   }
 
-  // 处理文件分析（第一步）
+  // 第一步：处理文件分析
   const handleFileAnalysis = async (file) => {
     try {
       validateFile(file)
@@ -173,6 +176,7 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
       
       if (response.ok && result.success) {
         setFileAnalysis(result)
+        console.log('文件分析成功:', result)
       } else {
         throw new Error(getErrorMessage(result.detail, '文件分析失败'))
       }
@@ -184,7 +188,7 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
     }
   }
 
-  // 处理文件生成（第二步）
+  // 第二步：处理文件生成
   const handleFileGenerate = async () => {
     if (!fileAnalysis?.file_token) return
 
@@ -229,9 +233,6 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
       setIsGenerating(false)
     }
   }
-
-  // 兼容旧的文件上传接口
-  const handleFileUpload = handleFileAnalysis
 
   // 处理文本输入
   const handleTextSubmit = async () => {
@@ -287,7 +288,10 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
       {/* 上传模式选择 */}
       <div className="flex mb-6 border-b border-gray-200">
         <button
-          onClick={() => setUploadMode('file')}
+          onClick={() => {
+            setUploadMode('file')
+            setFileAnalysis(null) // 切换模式时清空分析结果
+          }}
           className={`px-4 py-2 font-medium ${
             uploadMode === 'file'
               ? 'text-indigo-600 border-b-2 border-indigo-600'
@@ -297,7 +301,10 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
           📁 上传文件
         </button>
         <button
-          onClick={() => setUploadMode('text')}
+          onClick={() => {
+            setUploadMode('text')
+            setFileAnalysis(null) // 切换模式时清空分析结果
+          }}
           className={`px-4 py-2 font-medium ml-4 ${
             uploadMode === 'text'
               ? 'text-indigo-600 border-b-2 border-indigo-600'
@@ -310,130 +317,132 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
 
       {/* 文件上传区域 */}
       {uploadMode === 'file' && (
-        <div
-          className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-            dragActive
-              ? 'border-indigo-600 bg-indigo-50'
-              : 'border-gray-300 hover:border-indigo-400'
-          } ${isAnalyzing || isGenerating ? 'opacity-50 pointer-events-none' : ''}`}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".txt,.md,.docx,.pdf,.srt"
-            onChange={handleFileSelect}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            disabled={isAnalyzing || isGenerating}
-          />
-          
-          <div className="space-y-4">
-            <div className="text-4xl">📎</div>
-            <div>
-              <p className="text-lg font-medium text-gray-700">
-                {dragActive ? '释放文件以上传' : '拖拽文件到这里或点击选择'}
-              </p>
-              <p className="text-sm text-gray-500 mt-2">
-                支持 TXT, MD, DOCX, PDF, SRT 格式，最大 10MB
-              </p>
-            </div>
-            {isAnalyzing && (
-              <div className="text-indigo-600">
-                <div className="animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full mr-2"></div>
-                正在分析文件内容...
-              </div>
-            )}
-            {isGenerating && (
-              <div className="text-indigo-600">
-                <div className="animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full mr-2"></div>
-                正在生成思维导图...
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* 文件分析结果显示 */}
-      {uploadMode === 'file' && fileAnalysis && (
-        <div className="mt-4">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h4 className="text-sm font-medium text-blue-800 mb-2">
-              📊 文件分析完成
-            </h4>
+        <>
+          <div
+            className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+              dragActive
+                ? 'border-indigo-600 bg-indigo-50'
+                : 'border-gray-300 hover:border-indigo-400'
+            } ${isAnalyzing || isGenerating ? 'opacity-50 pointer-events-none' : ''}`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".txt,.md,.docx,.pdf,.srt"
+              onChange={handleFileSelect}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              disabled={isAnalyzing || isGenerating}
+            />
             
-            {/* 文件信息 */}
-            <div className="text-xs text-blue-700 space-y-1 mb-3">
-              <p><strong>文件:</strong> {fileAnalysis.filename}</p>
-              <p><strong>类型:</strong> {fileAnalysis.file_type}</p>
-              <p><strong>内容预览:</strong> {fileAnalysis.content_preview}</p>
+            <div className="space-y-4">
+              <div className="text-4xl">📎</div>
+              <div>
+                <p className="text-lg font-medium text-gray-700">
+                  {dragActive ? '释放文件以上传' : '拖拽文件到这里或点击选择'}
+                </p>
+                <p className="text-sm text-gray-500 mt-2">
+                  支持 TXT, MD, DOCX, PDF, SRT 格式，最大 10MB
+                </p>
+              </div>
+              {isAnalyzing && (
+                <div className="text-indigo-600">
+                  <div className="animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full mr-2"></div>
+                  正在分析文件内容...
+                </div>
+              )}
+              {isGenerating && (
+                <div className="text-indigo-600">
+                  <div className="animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full mr-2"></div>
+                  正在生成思维导图...
+                </div>
+              )}
             </div>
+          </div>
 
-            {/* 积分成本信息 */}
-            <div className={`p-3 rounded-md text-sm mb-3 ${
-              fileAnalysis.analysis.sufficient_credits
-                ? 'bg-green-50 border border-green-200 text-green-800'
-                : 'bg-red-50 border border-red-200 text-red-800'
-            }`}>
-              <div className="flex items-center">
-                <span className="mr-2">
-                  {fileAnalysis.analysis.sufficient_credits ? '✅' : '⚠️'}
-                </span>
-                <div>
-                  <div className="font-medium">
-                    预计消耗 {fileAnalysis.analysis.estimated_cost} 积分
-                    {fileAnalysis.analysis.sufficient_credits 
-                      ? ' - 积分充足，可以生成' 
-                      : ' - 积分不足，无法生成'
-                    }
-                  </div>
-                  <div className="mt-1 text-xs opacity-75">
-                    当前余额: {fileAnalysis.analysis.user_balance} 积分 | 
-                    文本长度: {fileAnalysis.analysis.text_length} 字符 | 
-                    {fileAnalysis.analysis.pricing_rule}
-                  </div>
-                  {!fileAnalysis.analysis.sufficient_credits && (
-                    <div className="mt-2">
-                      <a 
-                        href="/settings?tab=invitations" 
-                        className="text-red-700 underline hover:text-red-900"
-                      >
-                        📨 邀请好友赚取积分
-                      </a>
+          {/* 文件分析结果显示 - 关键的两步流程UI */}
+          {fileAnalysis && (
+            <div className="mt-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 className="text-sm font-medium text-blue-800 mb-2">
+                  📊 文件分析完成
+                </h4>
+                
+                {/* 文件信息 */}
+                <div className="text-xs text-blue-700 space-y-1 mb-3">
+                  <p><strong>文件:</strong> {fileAnalysis.filename}</p>
+                  <p><strong>类型:</strong> {fileAnalysis.file_type}</p>
+                  <p><strong>内容预览:</strong> {fileAnalysis.content_preview}</p>
+                </div>
+
+                {/* 积分成本信息 */}
+                <div className={`p-3 rounded-md text-sm mb-3 ${
+                  fileAnalysis.analysis?.sufficient_credits
+                    ? 'bg-green-50 border border-green-200 text-green-800'
+                    : 'bg-red-50 border border-red-200 text-red-800'
+                }`}>
+                  <div className="flex items-center">
+                    <span className="mr-2">
+                      {fileAnalysis.analysis?.sufficient_credits ? '✅' : '⚠️'}
+                    </span>
+                    <div>
+                      <div className="font-medium">
+                        预计消耗 {fileAnalysis.analysis?.estimated_cost || 0} 积分
+                        {fileAnalysis.analysis?.sufficient_credits 
+                          ? ' - 积分充足，可以生成' 
+                          : ' - 积分不足，无法生成'
+                        }
+                      </div>
+                      <div className="mt-1 text-xs opacity-75">
+                        当前余额: {fileAnalysis.analysis?.user_balance || 0} 积分 | 
+                        文本长度: {fileAnalysis.analysis?.text_length || 0} 字符 | 
+                        {fileAnalysis.analysis?.pricing_rule || '每500个字符消耗1积分'}
+                      </div>
+                      {!fileAnalysis.analysis?.sufficient_credits && (
+                        <div className="mt-2">
+                          <a 
+                            href="/settings?tab=invitations" 
+                            className="text-red-700 underline hover:text-red-900"
+                          >
+                            📨 邀请好友赚取积分
+                          </a>
+                        </div>
+                      )}
                     </div>
-                  )}
+                  </div>
+                </div>
+
+                {/* 开始生成按钮 - 关键的第二步触发按钮 */}
+                <div className="flex space-x-3">
+                  <button
+                    onClick={handleFileGenerate}
+                    disabled={!fileAnalysis.analysis?.sufficient_credits || isGenerating}
+                    className="flex-1 bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isGenerating ? (
+                      <>
+                        <div className="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+                        正在生成思维导图...
+                      </>
+                    ) : (
+                      '🚀 开始生成思维导图'
+                    )}
+                  </button>
+                  
+                  <button
+                    onClick={() => setFileAnalysis(null)}
+                    disabled={isGenerating}
+                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
+                  >
+                    取消
+                  </button>
                 </div>
               </div>
             </div>
-
-            {/* 开始生成按钮 */}
-            <div className="flex space-x-3">
-              <button
-                onClick={handleFileGenerate}
-                disabled={!fileAnalysis.analysis.sufficient_credits || isGenerating}
-                className="flex-1 bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isGenerating ? (
-                  <>
-                    <div className="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
-                    正在生成思维导图...
-                  </>
-                ) : (
-                  '🚀 开始生成思维导图'
-                )}
-              </button>
-              
-              <button
-                onClick={() => setFileAnalysis(null)}
-                disabled={isGenerating}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
-              >
-                取消
-              </button>
-            </div>
-          </div>
-        </div>
+          )}
+        </>
       )}
 
       {/* 文本输入区域 */}
