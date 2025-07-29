@@ -9,7 +9,7 @@ import { useRouter } from 'next/navigation'
 import SimpleMarkmapBasic from '../../components/mindmap/SimpleMarkmapBasic'
 import FileUpload from '../../components/upload/FileUpload'
 import { useAuth } from '../../context/AuthContext'
-import { ToastManager } from '../../components/common/Toast'
+// 移除ToastManager，使用内联提示样式
 import Header from '../../components/common/Header'
 import { Button } from '../../components/ui/Button'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../components/ui/Card'
@@ -27,7 +27,6 @@ export default function CreatePage() {
   // 认证检查 - 未登录用户重定向到登录页
   useEffect(() => {
     if (!isLoading && !user) {
-      ToastManager.warning('请先登录才能创建思维导图')
       router.push('/login?redirect=/create')
     }
   }, [user, isLoading, router])
@@ -79,7 +78,8 @@ export default function CreatePage() {
 
   const handleSave = () => {
     if (!user) {
-      ToastManager.warning('请先登录才能保存思维导图')
+      // 通过错误状态显示提示，而不是使用Toast
+      setError('请先登录才能保存思维导图')
       return
     }
     setShowSaveModal(true)
@@ -87,8 +87,7 @@ export default function CreatePage() {
 
   const handleSaveConfirm = async (title, description) => {
     if (!mindmapData?.data?.markdown) {
-      ToastManager.error('没有可保存的思维导图内容')
-      return
+      return { success: false, error: '没有可保存的思维导图内容' }
     }
 
     setSaveLoading(true)
@@ -293,7 +292,7 @@ function SaveModal({ onSave, onCancel, isLoading, defaultTitle }) {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!title.trim()) {
-      ToastManager.error('请输入思维导图标题')
+      setSaveResult({ success: false, error: '请输入思维导图标题' })
       return
     }
     

@@ -6,13 +6,14 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
-import { ToastManager } from '../common/Toast'
+// 移除ToastManager，使用内联提示样式
 
 export default function ShareModal({ isOpen, onClose, mindmapId, mindmapTitle }) {
   const { token } = useAuth()
   const [loading, setLoading] = useState(false)
   const [shareInfo, setShareInfo] = useState(null)
   const [error, setError] = useState(null)
+  const [successMessage, setSuccessMessage] = useState(null) // 成功消息状态
 
   // 获取分享信息
   useEffect(() => {
@@ -77,7 +78,9 @@ export default function ShareModal({ isOpen, onClose, mindmapId, mindmapTitle })
           share_url: data.share_url,
           updated_at: new Date().toISOString()
         })
-        ToastManager.success(data.is_existing ? '使用现有分享链接' : '分享链接创建成功')
+        setSuccessMessage(data.is_existing ? '使用现有分享链接' : '分享链接创建成功')
+        // 3秒后清除成功消息
+        setTimeout(() => setSuccessMessage(null), 3000)
       } else {
         const errorData = await response.json()
         throw new Error(errorData.detail || '创建分享链接失败')
@@ -85,7 +88,6 @@ export default function ShareModal({ isOpen, onClose, mindmapId, mindmapTitle })
     } catch (err) {
       console.error('创建分享链接失败:', err)
       setError(err.message)
-      ToastManager.error(err.message)
     } finally {
       setLoading(false)
     }
@@ -115,7 +117,9 @@ export default function ShareModal({ isOpen, onClose, mindmapId, mindmapTitle })
           share_url: null,
           updated_at: new Date().toISOString()
         })
-        ToastManager.success('分享已禁用')
+        setSuccessMessage('分享已禁用')
+        // 3秒后清除成功消息
+        setTimeout(() => setSuccessMessage(null), 3000)
       } else {
         const errorData = await response.json()
         throw new Error(errorData.detail || '禁用分享失败')
@@ -123,7 +127,6 @@ export default function ShareModal({ isOpen, onClose, mindmapId, mindmapTitle })
     } catch (err) {
       console.error('禁用分享失败:', err)
       setError(err.message)
-      ToastManager.error(err.message)
     } finally {
       setLoading(false)
     }
@@ -136,10 +139,12 @@ export default function ShareModal({ isOpen, onClose, mindmapId, mindmapTitle })
     try {
       const fullUrl = `${window.location.origin}${shareInfo.share_url}`
       await navigator.clipboard.writeText(fullUrl)
-      ToastManager.success('分享链接已复制到剪贴板')
+      setSuccessMessage('分享链接已复制到剪贴板')
+      // 2秒后清除成功消息
+      setTimeout(() => setSuccessMessage(null), 2000)
     } catch (err) {
       console.error('复制失败:', err)
-      ToastManager.error('复制失败，请手动复制')
+      setError('复制失败，请手动复制')
     }
   }
 
@@ -147,6 +152,7 @@ export default function ShareModal({ isOpen, onClose, mindmapId, mindmapTitle })
   const handleClose = () => {
     setShareInfo(null)
     setError(null)
+    setSuccessMessage(null)
     onClose()
   }
 
@@ -191,6 +197,18 @@ export default function ShareModal({ isOpen, onClose, mindmapId, mindmapTitle })
                 <div>
                   <h4 className="text-sm font-medium text-red-900">操作失败</h4>
                   <p className="text-sm text-red-700 mt-1">{error}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {successMessage && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+              <div className="flex items-center">
+                <div className="text-green-500 mr-3">✅</div>
+                <div>
+                  <h4 className="text-sm font-medium text-green-900">操作成功</h4>
+                  <p className="text-sm text-green-700 mt-1">{successMessage}</p>
                 </div>
               </div>
             </div>

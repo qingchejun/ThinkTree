@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import AuthContext from '../../../context/AuthContext';
 import Header from '../../../components/common/Header';
 import AdminRoute from '../../../components/common/AdminRoute';
-import { ToastManager } from '../../../components/common/Toast';
+// 移除ToastManager，使用内联提示样式
 
 const AdminUsers = () => {
   const { token } = useContext(AuthContext);
@@ -13,6 +13,8 @@ const AdminUsers = () => {
   // 状态管理
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null); // 错误消息状态
+  const [successMessage, setSuccessMessage] = useState(null); // 成功消息状态
   const [error, setError] = useState(null);
   
   // 分页和筛选
@@ -72,7 +74,7 @@ const AdminUsers = () => {
     } catch (err) {
       console.error('获取用户列表失败:', err);
       setError(err.message);
-      ToastManager.error(`获取用户列表失败: ${err.message}`);
+      setError(`获取用户列表失败: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -97,7 +99,8 @@ const AdminUsers = () => {
 
       if (response.ok) {
         const data = await response.json();
-        ToastManager.success(data.message);
+        setSuccessMessage(data.message);
+        setTimeout(() => setSuccessMessage(null), 3000);
         // 重新获取用户列表
         fetchUsers(currentPage, searchTerm, statusFilter);
       } else {
@@ -106,7 +109,7 @@ const AdminUsers = () => {
       }
     } catch (err) {
       console.error('更新用户失败:', err);
-      ToastManager.error(`更新用户失败: ${err.message}`);
+      setError(`更新用户失败: ${err.message}`);
     } finally {
       setUpdatingUser(null);
     }
@@ -134,7 +137,8 @@ const AdminUsers = () => {
 
       if (response.ok) {
         const data = await response.json();
-        ToastManager.success(data.message);
+        setSuccessMessage(data.message);
+        setTimeout(() => setSuccessMessage(null), 3000);
         // 重新获取用户列表
         fetchUsers(currentPage, searchTerm, statusFilter);
       } else {
@@ -143,7 +147,7 @@ const AdminUsers = () => {
       }
     } catch (err) {
       console.error('删除用户失败:', err);
-      ToastManager.error(`删除用户失败: ${err.message}`);
+      setError(`删除用户失败: ${err.message}`);
     } finally {
       setUpdatingUser(null);
     }
@@ -224,7 +228,7 @@ const AdminUsers = () => {
     const validHours = prompt('请输入临时密码有效期（小时），建议24小时：', '24');
     
     if (!validHours || isNaN(validHours) || validHours <= 0 || validHours > 168) {
-      ToastManager.error('请输入有效的小时数（1-168小时）');
+      setError('请输入有效的小时数（1-168小时）');
       return;
     }
     
@@ -246,13 +250,14 @@ const AdminUsers = () => {
       if (response.ok && data.success) {
         // 显示临时密码
         alert(`临时密码生成成功！\n\n用户: ${data.user_email}\n临时密码: ${data.temp_password}\n有效期: ${data.valid_hours} 小时\n\n⚠️ ${data.warning}`);
-        ToastManager.success('临时密码生成成功');
+        setSuccessMessage('临时密码生成成功');
+        setTimeout(() => setSuccessMessage(null), 3000);
       } else {
-        ToastManager.error(data.detail || '生成临时密码失败');
+        setError(data.detail || '生成临时密码失败');
       }
     } catch (error) {
       console.error('生成临时密码失败:', error);
-      ToastManager.error('生成临时密码失败，请稍后重试');
+      setError('生成临时密码失败，请稍后重试');
     } finally {
       setUpdatingUser(null);
     }

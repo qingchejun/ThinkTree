@@ -352,32 +352,26 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
               {/* 根据状态显示不同内容 */}
               {generationComplete && fileAnalysis ? (
                 // 生成完成后显示内容总结
-                <>
-                  <div className="text-4xl">📄</div>
-                  <div>
-                    <p className="text-lg font-medium text-gray-700 mb-2">
-                      文档内容总结
-                    </p>
-                    <p className="text-sm text-gray-600 leading-relaxed">
-                      {fileAnalysis.content_preview && fileAnalysis.content_preview.length > 50 
-                        ? fileAnalysis.content_preview.substring(0, 50) + '...'
-                        : fileAnalysis.content_preview || '文档已成功解析并生成思维导图'}
-                    </p>
-                  </div>
-                </>
+                <div>
+                  <p className="text-lg font-medium text-gray-700 mb-2">
+                    文档内容总结
+                  </p>
+                  <p className="text-sm text-gray-600 leading-relaxed">
+                    {fileAnalysis.content_preview && fileAnalysis.content_preview.length > 50 
+                      ? fileAnalysis.content_preview.substring(0, 50) + '...'
+                      : fileAnalysis.content_preview || '文档已成功解析并生成思维导图'}
+                  </p>
+                </div>
               ) : fileAnalysis && !generationComplete ? (
                 // 文件分析完成但未生成时的状态
-                <>
-                  <div className="text-4xl">📄</div>
-                  <div>
-                    <p className="text-lg font-medium text-gray-700 mb-2">
-                      文档已解析完成
-                    </p>
-                    <p className="text-sm text-gray-600 leading-relaxed">
-                      点击下方按钮开始生成思维导图
-                    </p>
-                  </div>
-                </>
+                <div>
+                  <p className="text-lg font-medium text-gray-700 mb-2">
+                    文档已解析完成
+                  </p>
+                  <p className="text-sm text-gray-600 leading-relaxed">
+                    点击下方按钮开始生成思维导图
+                  </p>
+                </div>
               ) : (
                 // 默认上传状态
                 <>

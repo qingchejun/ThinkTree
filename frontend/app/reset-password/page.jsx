@@ -6,7 +6,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { ToastManager } from '../../components/common/Toast'
+// 移除ToastManager，使用内联提示样式
 import PasswordStrengthIndicator from '../../components/common/PasswordStrengthIndicator'
 
 function ResetPasswordForm() {
@@ -17,6 +17,8 @@ function ResetPasswordForm() {
     confirmPassword: ''
   })
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null) // 错误消息状态
+  const [successMessage, setSuccessMessage] = useState(null) // 成功消息状态
   const [success, setSuccess] = useState(false)
   const [token, setToken] = useState('')
   const [tokenError, setTokenError] = useState('')
@@ -50,7 +52,7 @@ function ResetPasswordForm() {
     e.preventDefault()
     
     if (!token) {
-      ToastManager.error('重置令牌无效')
+      setError('重置令牌无效')
       return
     }
 
@@ -59,12 +61,12 @@ function ResetPasswordForm() {
     // 密码验证
     const passwordError = validatePassword(newPassword)
     if (passwordError) {
-      ToastManager.error(passwordError)
+      setError(passwordError)
       return
     }
 
     if (newPassword !== confirmPassword) {
-      ToastManager.error('两次输入的密码不一致')
+      setError('两次输入的密码不一致')
       return
     }
 
@@ -86,17 +88,17 @@ function ResetPasswordForm() {
 
       if (response.ok) {
         setSuccess(true)
-        ToastManager.success('密码重置成功！')
+        setSuccessMessage('密码重置成功！')
         // 3秒后跳转到登录页
         setTimeout(() => {
           router.push('/login')
         }, 3000)
       } else {
-        ToastManager.error(data.detail || '密码重置失败')
+        setError(data.detail || '密码重置失败')
       }
     } catch (error) {
       console.error('密码重置失败:', error)
-      ToastManager.error('网络错误，请检查您的网络连接')
+      setError('网络错误，请检查您的网络连接')
     } finally {
       setLoading(false)
     }

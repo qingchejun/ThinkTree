@@ -5,18 +5,20 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { ToastManager } from '../../components/common/Toast'
+// 移除ToastManager，使用内联提示样式
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null) // 错误消息状态
+  const [successMessage, setSuccessMessage] = useState(null) // 成功消息状态
   const [success, setSuccess] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     
     if (!email.trim()) {
-      ToastManager.error('请输入您的邮箱地址')
+      setError('请输入您的邮箱地址')
       return
     }
 
@@ -35,13 +37,13 @@ export default function ForgotPasswordPage() {
 
       if (response.ok) {
         setSuccess(true)
-        ToastManager.success('重置链接已发送')
+        setSuccessMessage('重置链接已发送')
       } else {
-        ToastManager.error(data.detail || '请求失败，请稍后重试')
+        setError(data.detail || '请求失败，请稍后重试')
       }
     } catch (error) {
       console.error('发送密码重置请求失败:', error)
-      ToastManager.error('网络错误，请检查您的网络连接')
+      setError('网络错误，请检查您的网络连接')
     } finally {
       setLoading(false)
     }

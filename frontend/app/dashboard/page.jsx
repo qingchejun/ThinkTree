@@ -7,7 +7,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../../context/AuthContext'
-import { ToastManager } from '../../components/common/Toast'
+// 移除ToastManager，使用内联提示样式
 import ShareModal from '../../components/share/ShareModal'
 import Header from '../../components/common/Header'
 import { Button } from '../../components/ui/Button'
@@ -21,6 +21,7 @@ export default function DashboardPage() {
   const [mindmaps, setMindmaps] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [successMessage, setSuccessMessage] = useState(null) // 成功消息状态
 
   // 分享模态框状态
   const [shareModal, setShareModal] = useState({
@@ -102,14 +103,18 @@ export default function DashboardPage() {
       if (response.ok) {
         // 从列表中移除已删除的思维导图
         setMindmaps(prev => prev.filter(mindmap => mindmap.id !== mindmapId))
-        ToastManager.success(`思维导图"${title}"已成功删除`)
+        setSuccessMessage(`思维导图"${title}"已成功删除`)
+        // 3秒后清除成功消息
+        setTimeout(() => setSuccessMessage(null), 3000)
       } else {
         const errorData = await response.json()
         throw new Error(errorData.detail || '删除失败')
       }
     } catch (err) {
       console.error('删除思维导图失败:', err)
-      ToastManager.error(err.message)
+      setError(err.message)
+      // 5秒后清除错误消息
+      setTimeout(() => setError(null), 5000)
     }
   }
 
@@ -200,19 +205,32 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {/* 成功消息 */}
+        {successMessage && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center">
+              <div className="text-green-500 mr-3">✅</div>
+              <div>
+                <h4 className="text-sm font-medium text-green-900">操作成功</h4>
+                <p className="text-sm text-green-700 mt-1">{successMessage}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* 错误状态 */}
         {error && (
           <Card className="border-red-200 bg-red-50">
             <CardContent className="pt-6">
               <div className="text-center">
                 <div className="text-red-500 text-4xl mb-4">❌</div>
-                <h3 className="text-lg font-semibold text-red-900 mb-2">加载失败</h3>
+                <h3 className="text-lg font-semibold text-red-900 mb-2">操作失败</h3>
                 <p className="text-red-700 mb-4">{error}</p>
                 <Button
                   variant="secondary"
-                  onClick={() => window.location.reload()}
+                  onClick={() => setError(null)}
                 >
-                  重新加载
+                  关闭
                 </Button>
               </div>
             </CardContent>

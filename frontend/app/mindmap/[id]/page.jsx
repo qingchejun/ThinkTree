@@ -9,7 +9,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { useAuth } from '../../../context/AuthContext'
 import SimpleMarkmapBasic from '../../../components/mindmap/SimpleMarkmapBasic'
 import ShareModal from '../../../components/share/ShareModal'
-import { ToastManager } from '../../../components/common/Toast'
+// 移除ToastManager，使用内联提示样式
 import { exportSVG, exportPNG, getSafeFilename, getTimestamp } from '../../../lib/exportUtils.js'
 
 export default function ViewMindmapPage() {
@@ -22,6 +22,7 @@ export default function ViewMindmapPage() {
   const [mindmap, setMindmap] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [successMessage, setSuccessMessage] = useState(null) // 成功消息状态
   
   // 导出功能状态 - 使用 useRef 避免重新渲染
   const isExportingRef = useRef(false)
@@ -119,7 +120,7 @@ export default function ViewMindmapPage() {
       })
 
       if (response.ok) {
-        ToastManager.success(`思维导图"${mindmap.title}"已成功删除`)
+        setSuccessMessage(`思维导图"${mindmap.title}"已成功删除`)
         router.push('/dashboard')
       } else {
         const errorData = await response.json()
@@ -127,7 +128,7 @@ export default function ViewMindmapPage() {
       }
     } catch (err) {
       console.error('删除思维导图失败:', err)
-      ToastManager.error(`删除失败: ${err.message}`)
+      setError(`删除失败: ${err.message}`)
     }
   }
 
@@ -153,7 +154,7 @@ export default function ViewMindmapPage() {
   const handleExportSVG = async () => {
     
     if (!markmapRef.current) {
-      ToastManager.error('思维导图未准备就绪，请稍后重试')
+      setError('思维导图未准备就绪，请稍后重试')
       return
     }
 
@@ -183,13 +184,13 @@ export default function ViewMindmapPage() {
       const result = exportSVG(markmapInstance, filename)
       
       if (result.success) {
-        ToastManager.success(`SVG文件导出成功: ${result.filename}`)
+        setSuccessMessage(`SVG文件导出成功: ${result.filename}`)
         setShowExportMenu(false)
       } else {
         throw new Error(result.error)
       }
           } catch (error) {
-        ToastManager.error(`SVG导出失败: ${error.message}`)
+        setError(`SVG导出失败: ${error.message}`)
       } finally {
         isExportingRef.current = false
         setIsExportingUI(false)
@@ -206,7 +207,7 @@ export default function ViewMindmapPage() {
   const handleExportPNG = async () => {
     
     if (!markmapRef.current) {
-      ToastManager.error('思维导图未准备就绪，请稍后重试')
+      setError('思维导图未准备就绪，请稍后重试')
       return
     }
 
@@ -233,18 +234,18 @@ export default function ViewMindmapPage() {
       const timestamp = getTimestamp()
       const filename = `${safeTitle}_${timestamp}`
       
-      ToastManager.info('正在生成PNG文件，请稍候...')
+      setSuccessMessage('正在生成PNG文件，请稍候...')
       
       const result = await exportPNG(markmapInstance, filename, 2) // 2x分辨率
       
       if (result.success) {
-        ToastManager.success(`PNG文件导出成功: ${result.filename}`)
+        setSuccessMessage(`PNG文件导出成功: ${result.filename}`)
         setShowExportMenu(false)
       } else {
         throw new Error(result.error)
       }
           } catch (error) {
-        ToastManager.error(`PNG导出失败: ${error.message}`)
+        setError(`PNG导出失败: ${error.message}`)
       } finally {
         isExportingRef.current = false
         setIsExportingUI(false)

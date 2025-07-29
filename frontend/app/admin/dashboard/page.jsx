@@ -4,13 +4,14 @@ import { useRouter } from 'next/navigation';
 import AuthContext from '../../../context/AuthContext';
 import Header from '../../../components/common/Header';
 import AdminRoute from '../../../components/common/AdminRoute';
-import { ToastManager } from '../../../components/common/Toast';
+// 移除ToastManager，使用内联提示样式
 
 const AdminDashboard = () => {
   const { user, token } = useContext(AuthContext);
   const router = useRouter();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null); // 错误消息状态
   const [error, setError] = useState(null);
 
   // 获取统计数据
@@ -40,7 +41,9 @@ const AdminDashboard = () => {
       } catch (err) {
         console.error('获取统计数据失败:', err);
         setError(err.message);
-        ToastManager.error(`获取统计数据失败: ${err.message}`);
+        setError(`获取统计数据失败: ${err.message}`);
+        // 5秒后清除错误消息
+        setTimeout(() => setError(null), 5000);
       } finally {
         setLoading(false);
       }

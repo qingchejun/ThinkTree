@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import AuthContext from '../../../context/AuthContext';
 import Header from '../../../components/common/Header';
 import AdminRoute from '../../../components/common/AdminRoute';
-import { ToastManager } from '../../../components/common/Toast';
+// 移除ToastManager，使用内联提示样式
 
 const AdminInvitations = () => {
   const { token } = useContext(AuthContext);
@@ -13,6 +13,8 @@ const AdminInvitations = () => {
   // 状态管理
   const [invitations, setInvitations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null); // 错误消息状态
+  const [successMessage, setSuccessMessage] = useState(null); // 成功消息状态
   const [error, setError] = useState(null);
   
   // 分页和筛选
@@ -66,7 +68,7 @@ const AdminInvitations = () => {
     } catch (err) {
       console.error('获取邀请码列表失败:', err);
       setError(err.message);
-      ToastManager.error(`获取邀请码列表失败: ${err.message}`);
+      setError(`获取邀请码列表失败: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -94,7 +96,8 @@ const AdminInvitations = () => {
 
       if (response.ok) {
         const data = await response.json();
-        ToastManager.success(data.message);
+        setSuccessMessage(data.message);
+        setTimeout(() => setSuccessMessage(null), 3000);
         setShowCreateModal(false);
         setCreateCount(5);
         setCreateDescription('');
@@ -107,7 +110,7 @@ const AdminInvitations = () => {
       }
     } catch (err) {
       console.error('创建邀请码失败:', err);
-      ToastManager.error(`创建邀请码失败: ${err.message}`);
+      setError(`创建邀请码失败: ${err.message}`);
     } finally {
       setCreating(false);
     }
@@ -130,9 +133,10 @@ const AdminInvitations = () => {
   const copyInvitationCode = (code) => {
     const inviteUrl = `${window.location.origin}/register?invitation_code=${code}`;
     navigator.clipboard.writeText(inviteUrl).then(() => {
-      ToastManager.success('邀请链接已复制到剪贴板');
+      setSuccessMessage('邀请链接已复制到剪贴板');
+      setTimeout(() => setSuccessMessage(null), 2000);
     }).catch(() => {
-      ToastManager.error('复制失败，请手动复制');
+      setError('复制失败，请手动复制');
     });
   };
 
