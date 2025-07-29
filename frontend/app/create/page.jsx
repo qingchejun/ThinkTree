@@ -76,11 +76,6 @@ export default function CreatePage() {
     setUploadInfo(null)
   }
 
-  const handleClear = () => {
-    setMindmapData(null)
-    setError(null)
-    setUploadInfo(null)
-  }
 
   const handleSave = () => {
     if (!user) {
@@ -160,31 +155,12 @@ export default function CreatePage() {
                 {/* 上传信息显示 */}
                 {uploadInfo && (
                   <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
-                    <h4 className="text-sm font-medium text-green-800 mb-1">
+                    <h4 className="text-sm font-medium text-green-800">
                       ✅ 文件处理成功
                     </h4>
-                    <div className="text-xs text-green-700 space-y-1">
-                      <p><strong>文件:</strong> {uploadInfo.filename}</p>
-                      <p><strong>类型:</strong> {uploadInfo.fileType}</p>
-                      {uploadInfo.contentPreview && (
-                        <p><strong>内容预览:</strong> {uploadInfo.contentPreview}</p>
-                      )}
-                    </div>
                   </div>
                 )}
 
-                {/* 清空按钮 */}
-                {(mindmapData || error) && (
-                  <div className="mt-4">
-                    <Button
-                      variant="secondary"
-                      onClick={handleClear}
-                      className="w-full"
-                    >
-                      🗑️ 清空结果
-                    </Button>
-                  </div>
-                )}
               </CardContent>
             </Card>
           </div>
@@ -295,25 +271,6 @@ export default function CreatePage() {
           </div>
         </div>
 
-        {/* 底部说明 */}
-        <div className="mt-6">
-          <Card className="bg-blue-50 border-blue-200">
-            <CardContent className="pt-6">
-              <div className="flex items-start">
-                <div className="text-blue-600 text-lg mr-3 mt-0.5">💡</div>
-                <div>
-                  <h4 className="font-medium text-blue-900 mb-1">v1.1.0 新功能</h4>
-                  <div className="text-blue-800 text-sm space-y-1">
-                    <p><strong>📁 多格式文档上传：</strong> 支持 PDF、Word、文本文件等多种格式</p>
-                    <p><strong>🧠 AI智能解析：</strong> 零信息损失，完整保留文档结构和细节</p>
-                    <p><strong>⚡ 高性能解析：</strong> 新增 PyMuPDF 库，PDF解析速度提升 3-5 倍</p>
-                    <p><strong>🎨 简洁界面：</strong> 优化的用户体验，专注核心功能</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
       </div>
 
       {/* 保存对话框 */}
