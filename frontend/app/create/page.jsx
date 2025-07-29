@@ -32,8 +32,8 @@ export default function CreatePage() {
     }
   }, [user, isLoading, router])
 
-  // 如果正在加载认证状态或未登录，显示加载页面
-  if (isLoading || !user) {
+  // 如果正在加载认证状态，显示加载页面
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-background-secondary flex items-center justify-center">
         <Card className="w-full max-w-md mx-4">

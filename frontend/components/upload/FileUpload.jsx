@@ -419,34 +419,40 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
                   </div>
                 </div>
 
-                {/* 开始生成按钮 - 关键的第二步触发按钮 */}
-                <div className="flex space-x-3">
-                  <button
-                    onClick={handleFileGenerate}
-                    disabled={!fileAnalysis.analysis?.sufficient_credits || isGenerating}
-                    className="flex-1 bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isGenerating ? (
-                      <>
-                        <div className="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
-                        正在生成思维导图...
-                      </>
-                    ) : (
-                      '🚀 开始生成思维导图'
-                    )}
-                  </button>
-                  
-                  <button
-                    onClick={() => setFileAnalysis(null)}
-                    disabled={isGenerating}
-                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
-                  >
-                    取消
-                  </button>
-                </div>
               </div>
             </div>
           )}
+
+          {/* 开始生成按钮 - 始终显示在文件上传框下方 */}
+          <div className="flex space-x-3 mt-4">
+            <button
+              onClick={handleFileGenerate}
+              disabled={isAnalyzing || isGenerating || !fileAnalysis || !fileAnalysis.analysis?.sufficient_credits}
+              className="flex-1 bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isGenerating ? (
+                <>
+                  <div className="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+                  正在生成思维导图...
+                </>
+              ) : isAnalyzing ? (
+                <>
+                  <div className="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+                  正在分析文件...
+                </>
+              ) : (
+                '🚀 开始生成思维导图'
+              )}
+            </button>
+            
+            <button
+              onClick={() => setFileAnalysis(null)}
+              disabled={isGenerating || isAnalyzing}
+              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
+            >
+              取消
+            </button>
+          </div>
         </>
       )}
 
