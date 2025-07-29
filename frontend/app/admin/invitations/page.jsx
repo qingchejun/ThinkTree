@@ -15,7 +15,6 @@ const AdminInvitations = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null); // 错误消息状态
   const [successMessage, setSuccessMessage] = useState(null); // 成功消息状态
-  const [error, setError] = useState(null);
   
   // 分页和筛选
   const [currentPage, setCurrentPage] = useState(1);

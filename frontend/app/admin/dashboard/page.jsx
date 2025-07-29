@@ -12,7 +12,6 @@ const AdminDashboard = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null); // 错误消息状态
-  const [error, setError] = useState(null);
 
   // 获取统计数据
   useEffect(() => {
