@@ -177,7 +177,9 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
       if (response.ok && result.success) {
         setFileAnalysis(result)
         console.log('文件分析成功:', result)
+        console.log('fileAnalysis state将被设置为:', result)
       } else {
+        console.error('文件分析失败:', result)
         throw new Error(getErrorMessage(result.detail, '文件分析失败'))
       }
     } catch (error) {
@@ -402,12 +404,12 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
                       </div>
                       {!fileAnalysis.analysis?.sufficient_credits && (
                         <div className="mt-2">
-                          <a 
-                            href="/settings?tab=invitations" 
-                            className="text-red-700 underline hover:text-red-900"
+                          <button 
+                            onClick={() => window.open('/pricing', '_blank')}
+                            className="text-red-700 underline hover:text-red-900 bg-transparent border-none cursor-pointer"
                           >
-                            📨 邀请好友赚取积分
-                          </a>
+                            💰 增加积分
+                          </button>
                         </div>
                       )}
                     </div>
@@ -498,12 +500,12 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
                   </div>
                   {!creditEstimate.sufficient_credits && (
                     <div className="mt-2">
-                      <a 
-                        href="/settings?tab=invitations" 
-                        className="text-red-700 underline hover:text-red-900"
+                      <button 
+                        onClick={() => window.open('/pricing', '_blank')}
+                        className="text-red-700 underline hover:text-red-900 bg-transparent border-none cursor-pointer"
                       >
-                        📨 邀请好友赚取积分
-                      </a>
+                        💰 增加积分
+                      </button>
                     </div>
                   )}
                 </div>
