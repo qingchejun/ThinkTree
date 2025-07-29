@@ -11,7 +11,7 @@ def create_test_users_sql():
     """使用直接SQL创建测试用户"""
     
     # 连接数据库
-    db_path = './database.db'  # 根据实际情况调整
+    db_path = './thinktree.db'  # 根据实际情况调整
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     
