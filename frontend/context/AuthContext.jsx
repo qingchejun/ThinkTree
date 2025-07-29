@@ -31,17 +31,7 @@ export function AuthProvider({ children }) {
   const fetchUserProfile = async (authToken, options = {}) => {
     const { skipTimeout = false, timeoutMs = 12000, requestId = 'default' } = options
     
-    // 防重复请求检查
-    const requestKey = `profile_${authToken.substring(0, 10)}_${requestId}`
-    if (pendingRequests.has(requestKey)) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('跳过重复的用户信息请求')
-      }
-      return null
-    }
-    
-    // 标记请求进行中
-    setPendingRequests(prev => new Set([...prev, requestKey]))
+    console.log(`🌐 开始获取用户信息 [${requestId}]`)
     
     let controller = null
     let timeoutId = null
@@ -81,12 +71,10 @@ export function AuthProvider({ children }) {
 
       if (response.ok) {
         const userData = await response.json()
-        if (process.env.NODE_ENV === 'development') {
-          console.log('获取用户信息成功:', userData)
-        }
+        console.log('✅ 获取用户信息成功:', userData)
         return userData
       } else {
-        console.error('获取用户信息失败:', response.status, response.statusText)
+        console.error('❌ 获取用户信息失败:', response.status, response.statusText)
         // 令牌无效，清除存储的数据
         if (response.status === 401) {
           localStorage.removeItem('access_token')
@@ -115,12 +103,7 @@ export function AuthProvider({ children }) {
       if (timeoutId) {
         clearTimeout(timeoutId)
       }
-      // 移除请求标记
-      setPendingRequests(prev => {
-        const newSet = new Set(prev)
-        newSet.delete(requestKey)
-        return newSet
-      })
+      console.log(`🏁 fetchUserProfile完成 [${requestId}]`)
     }
   }
 
@@ -189,48 +172,66 @@ export function AuthProvider({ children }) {
 
   // 组件挂载时检查持久化的登录状态
   useEffect(() => {
+    // 确保在客户端执行
+    if (typeof window === 'undefined') {
+      console.log('❌ 服务端环境，跳过初始化')
+      return
+    }
+    
+    console.log('🚀 useEffect被调用 - 开始认证检查')
+    
+    let mounted = true
+    
     const initializeAuth = async () => {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('开始初始化认证状态')
-      }
-      setIsLoading(true)
+      console.log('🔄 开始初始化认证状态')
       
-      // 检查 localStorage 中的令牌
-      const storedToken = localStorage.getItem('access_token')
-      if (process.env.NODE_ENV === 'development') {
-        console.log('存储的token:', storedToken ? '存在' : '不存在')
-      }
-      
-      if (storedToken) {
-        setToken(storedToken)
+      try {
+        // 检查 localStorage 中的令牌
+        const storedToken = localStorage.getItem('access_token')
+        console.log('🔍 存储的token:', storedToken ? '存在' : '不存在')
         
-        // 验证令牌并获取用户信息
-        const userData = await fetchUserProfile(storedToken, { 
-          requestId: `init_${Date.now()}`,
-          timeoutMs: 8000 // 初始化时使用较短超时
-        })
-        if (userData) {
-          if (process.env.NODE_ENV === 'development') {
-            console.log('初始化时设置用户数据:', userData)
+        if (storedToken && mounted) {
+          console.log('🔧 设置token到状态')
+          setToken(storedToken)
+          
+          // 验证令牌并获取用户信息
+          console.log('📞 调用fetchUserProfile')
+          const userData = await fetchUserProfile(storedToken, { 
+            requestId: `init_${Date.now()}`,
+            timeoutMs: 5000 // 缩短超时时间
+          })
+          
+          if (userData && mounted) {
+            console.log('✅ 初始化时设置用户数据:', userData)
+            setUser(userData)
+          } else if (mounted) {
+            // 令牌无效，清除所有数据
+            console.log('❌ 令牌无效，清除数据')
+            setToken(null)
+            localStorage.removeItem('access_token')
           }
-          setUser(userData)
-        } else {
-          // 令牌无效，清除所有数据
-          if (process.env.NODE_ENV === 'development') {
-            console.log('令牌无效，清除数据')
-          }
+        } else if (!storedToken) {
+          console.log('ℹ️ 没有存储的token')
+        }
+      } catch (error) {
+        console.error('💥 初始化过程中出错:', error)
+        if (mounted) {
           setToken(null)
-          localStorage.removeItem('access_token')
+          setUser(null)
+        }
+      } finally {
+        if (mounted) {
+          console.log('🏁 认证状态初始化完成 - 设置isLoading=false')
+          setIsLoading(false)
         }
       }
-      
-      if (process.env.NODE_ENV === 'development') {
-        console.log('认证状态初始化完成')
-      }
-      setIsLoading(false)
     }
 
     initializeAuth()
+    
+    return () => {
+      mounted = false
+    }
   }, [])
 
   // 提供给子组件的值

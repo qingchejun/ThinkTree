@@ -37,7 +37,10 @@ const getErrorMessage = (detail, defaultMessage = '处理失败') => {
 }
 
 export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadError, token }) {
-  const { user, refreshUser } = useAuth()
+  const { user, token: authToken, refreshUser } = useAuth()
+  
+  // 优先使用传入的token，如果没有则使用AuthContext的token
+  const activeToken = token || authToken
   const [dragActive, setDragActive] = useState(false)
   const [textInput, setTextInput] = useState('')
   const [uploadMode, setUploadMode] = useState('file') // 'file' or 'text'
@@ -66,7 +69,7 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${activeToken}`
         },
         body: JSON.stringify({ text: text.trim() })
       })
@@ -96,7 +99,7 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
     } else {
       setCreditEstimate(null)
     }
-  }, [textInput, uploadMode, token])
+  }, [textInput, uploadMode, activeToken])
 
   // 处理积分不足的友好提示
   const showInsufficientCreditsAlert = (requiredCredits, currentBalance) => {
@@ -167,7 +170,7 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
       const response = await fetch(`${API_BASE_URL}/api/upload/analyze`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${activeToken}`
         },
         body: formData,
       })
@@ -202,7 +205,7 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${activeToken}`
         },
         body: JSON.stringify({
           file_token: fileAnalysis.file_token,
@@ -252,7 +255,7 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${activeToken}`
         },
         body: JSON.stringify({
           text: textInput.trim(),
