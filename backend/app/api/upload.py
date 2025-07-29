@@ -101,7 +101,7 @@ def calculate_credit_cost(text: str) -> int:
 def calculate_file_credit_cost(text: str) -> int:
     """
     根据文件文本长度计算积分成本（用于文件上传）
-    计费规则：每500个字符消耗1个积分（向上取整）
+    计费规则：每100个字符消耗1个积分（向上取整）
     使用缓存优化重复计算
     
     Args:
@@ -466,7 +466,7 @@ async def analyze_file(
                 "estimated_cost": credit_cost,
                 "user_balance": current_balance,
                 "sufficient_credits": current_balance >= credit_cost,
-                "pricing_rule": "每500个字符消耗1积分（向上取整）",
+                "pricing_rule": "每100个字符消耗1积分（向上取整）",
                 "has_ai_preprocessing": ai_preprocessed_data is not None
             },
             "expires_in": 3600  # 1小时后过期

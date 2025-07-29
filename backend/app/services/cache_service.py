@@ -234,7 +234,7 @@ class CreditCalculationCache:
         
         # 计算成本
         text_length = len(content.strip())
-        cost = max(1, (text_length + 499) // 500)  # 每500字符1积分，向上取整
+        cost = max(1, (text_length + 99) // 100)  # 每100字符1积分，向上取整
         
         # 存入缓存
         CreditCalculationCache.set_credit_cost_cache(content, cost, 'file')

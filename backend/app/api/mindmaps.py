@@ -436,7 +436,7 @@ async def generate_from_file(
                 "credits_consumed": credit_cost,
                 "remaining_credits": remaining_balance,
                 "text_length": len(parsed_content.strip()),
-                "pricing_rule": "每500个字符消耗1积分（向上取整）"
+                "pricing_rule": "每100个字符消耗1积分（向上取整）"
             }
         })
         
