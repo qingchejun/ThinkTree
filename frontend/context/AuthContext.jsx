@@ -247,8 +247,8 @@ export function AuthProvider({ children }) {
     isAdmin: !!user && user.is_superuser
   }
 
-  // 开发环境调试日志
-  if (process.env.NODE_ENV === 'development') {
+  // 开发环境调试日志 - 只在客户端执行
+  if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
     console.log('AuthContext状态更新:', {
       hasUser: !!user,
       hasToken: !!token,

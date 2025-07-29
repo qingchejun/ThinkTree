@@ -52,6 +52,7 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
   const [fileAnalysis, setFileAnalysis] = useState(null) // 文件分析结果
   const [isAnalyzing, setIsAnalyzing] = useState(false) // 文件分析中
   const [isGenerating, setIsGenerating] = useState(false) // 思维导图生成中
+  const [generationComplete, setGenerationComplete] = useState(false) // 生成完成标志
   
   const fileInputRef = useRef(null)
 
@@ -221,7 +222,8 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
         // 成功后刷新用户积分信息
         if (refreshUser) refreshUser()
         if (onUploadSuccess) onUploadSuccess(result)
-        setFileAnalysis(null) // 清除分析结果
+        // 不清除分析结果，而是标记生成完成
+        setGenerationComplete(true)
       } else if (response.status === 402) {
         // 积分不足的特殊处理
         const errorDetail = result.detail
@@ -298,6 +300,7 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
           onClick={() => {
             setUploadMode('file')
             setFileAnalysis(null) // 切换模式时清空分析结果
+            setGenerationComplete(false) // 重置生成完成状态
           }}
           className={`px-4 py-2 font-medium ${
             uploadMode === 'file'
@@ -311,6 +314,7 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
           onClick={() => {
             setUploadMode('text')
             setFileAnalysis(null) // 切换模式时清空分析结果
+            setGenerationComplete(false) // 重置生成完成状态
           }}
           className={`px-4 py-2 font-medium ml-4 ${
             uploadMode === 'text'
@@ -346,8 +350,8 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
             
             <div className="space-y-4">
               {/* 根据状态显示不同内容 */}
-              {fileAnalysis ? (
-                // 文件分析完成后显示内容总结
+              {generationComplete && fileAnalysis ? (
+                // 生成完成后显示内容总结
                 <>
                   <div className="text-4xl">📄</div>
                   <div>
@@ -357,7 +361,20 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
                     <p className="text-sm text-gray-600 leading-relaxed">
                       {fileAnalysis.content_preview && fileAnalysis.content_preview.length > 50 
                         ? fileAnalysis.content_preview.substring(0, 50) + '...'
-                        : fileAnalysis.content_preview || '文档已成功解析，准备生成思维导图'}
+                        : fileAnalysis.content_preview || '文档已成功解析并生成思维导图'}
+                    </p>
+                  </div>
+                </>
+              ) : fileAnalysis && !generationComplete ? (
+                // 文件分析完成但未生成时的状态
+                <>
+                  <div className="text-4xl">📄</div>
+                  <div>
+                    <p className="text-lg font-medium text-gray-700 mb-2">
+                      文档已解析完成
+                    </p>
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                      点击下方按钮开始生成思维导图
                     </p>
                   </div>
                 </>
@@ -386,7 +403,7 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
               {isGenerating && (
                 <div className="text-indigo-600">
                   <div className="animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full mr-2"></div>
-                  正在生成思维导图...
+                  内容总结中...
                 </div>
               )}
             </div>
@@ -454,11 +471,14 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
             </button>
             
             <button
-              onClick={() => setFileAnalysis(null)}
+              onClick={() => {
+                setFileAnalysis(null)
+                setGenerationComplete(false)
+              }}
               disabled={isGenerating || isAnalyzing}
               className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
             >
-              取消
+              {generationComplete ? '重新上传' : '取消'}
             </button>
           </div>
         </>
