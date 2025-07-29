@@ -109,14 +109,14 @@ export default function CreatePage() {
 
       if (response.ok) {
         const savedMindmap = await response.json()
-        ToastManager.success(`思维导图"${savedMindmap.title}"已成功保存！`)
-        setShowSaveModal(false)
+        // 不再使用ToastManager，而是在模态框内显示成功状态
+        return { success: true, savedMindmap }
       } else {
         const errorData = await response.json()
         throw new Error(errorData.detail || '保存失败')
       }
     } catch (error) {
-      ToastManager.error(`保存失败: ${error.message}`)
+      return { success: false, error: error.message }
     } finally {
       setSaveLoading(false)
     }
@@ -288,14 +288,25 @@ export default function CreatePage() {
 function SaveModal({ onSave, onCancel, isLoading, defaultTitle }) {
   const [title, setTitle] = useState(defaultTitle)
   const [description, setDescription] = useState('')
+  const [saveResult, setSaveResult] = useState(null) // { success: boolean, savedMindmap?: object, error?: string }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     if (!title.trim()) {
       ToastManager.error('请输入思维导图标题')
       return
     }
-    onSave(title, description)
+    
+    const result = await onSave(title, description)
+    setSaveResult(result)
+    
+    // 如果保存成功，3秒后自动关闭模态框
+    if (result?.success) {
+      setTimeout(() => {
+        onCancel()
+        setSaveResult(null)
+      }, 2000)
+    }
   }
 
   return (
@@ -318,69 +329,111 @@ function SaveModal({ onSave, onCancel, isLoading, defaultTitle }) {
           </div>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit}>
-            <div className="mb-4">
-              <label htmlFor="title" className="block text-sm font-medium text-text-primary mb-2">
-                标题 <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                id="title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                disabled={isLoading}
-                className="w-full px-3 py-2 border border-border-primary rounded-md focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent disabled:opacity-50"
-                placeholder="请输入思维导图标题"
-                maxLength={200}
-                required
-              />
-              <p className="text-xs text-text-tertiary mt-1">{title.length}/200 字符</p>
+          {saveResult?.success ? (
+            // 保存成功状态
+            <div className="py-8 text-center">
+              <div className="text-green-500 text-5xl mb-4">✅</div>
+              <h3 className="text-lg font-semibold text-text-primary mb-2">
+                思维导图保存成功！
+              </h3>
+              <p className="text-text-secondary mb-1">
+                「{saveResult.savedMindmap?.title}」已成功保存
+              </p>
+              <p className="text-sm text-text-tertiary">
+                2秒后自动关闭...
+              </p>
             </div>
+          ) : saveResult?.error ? (
+            // 保存失败状态
+            <div className="py-6 text-center">
+              <div className="text-red-500 text-4xl mb-4">❌</div>
+              <h3 className="text-lg font-semibold text-text-primary mb-2">
+                保存失败
+              </h3>
+              <p className="text-red-600 mb-4">{saveResult.error}</p>
+              
+              <div className="flex justify-end space-x-3">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setSaveResult(null)}
+                >
+                  重试
+                </Button>
+                <Button
+                  type="button"
+                  onClick={onCancel}
+                >
+                  关闭
+                </Button>
+              </div>
+            </div>
+          ) : (
+            // 正常表单状态
+            <form onSubmit={handleSubmit}>
+              <div className="mb-4">
+                <label htmlFor="title" className="block text-sm font-medium text-text-primary mb-2">
+                  标题 <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  disabled={isLoading}
+                  className="w-full px-3 py-2 border border-border-primary rounded-md focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent disabled:opacity-50"
+                  placeholder="请输入思维导图标题"
+                  maxLength={200}
+                  required
+                />
+                <p className="text-xs text-text-tertiary mt-1">{title.length}/200 字符</p>
+              </div>
 
-            <div className="mb-6">
-              <label htmlFor="description" className="block text-sm font-medium text-text-primary mb-2">
-                描述 (可选)
-              </label>
-              <textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                disabled={isLoading}
-                rows={3}
-                className="w-full px-3 py-2 border border-border-primary rounded-md focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent disabled:opacity-50"
-                placeholder="描述这个思维导图的内容或用途..."
-                maxLength={500}
-              />
-              <p className="text-xs text-text-tertiary mt-1">{description.length}/500 字符</p>
-            </div>
+              <div className="mb-6">
+                <label htmlFor="description" className="block text-sm font-medium text-text-primary mb-2">
+                  描述 (可选)
+                </label>
+                <textarea
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  disabled={isLoading}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-border-primary rounded-md focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent disabled:opacity-50"
+                  placeholder="描述这个思维导图的内容或用途..."
+                  maxLength={500}
+                />
+                <p className="text-xs text-text-tertiary mt-1">{description.length}/500 字符</p>
+              </div>
 
-            <div className="flex justify-end space-x-3">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={onCancel}
-                disabled={isLoading}
-              >
-                取消
-              </Button>
-              <Button
-                type="submit"
-                disabled={isLoading || !title.trim()}
-              >
-                {isLoading ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    保存中...
-                  </>
-                ) : (
-                  '保存'
-                )}
-              </Button>
-            </div>
-          </form>
+              <div className="flex justify-end space-x-3">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={onCancel}
+                  disabled={isLoading}
+                >
+                  取消
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isLoading || !title.trim()}
+                >
+                  {isLoading ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      保存中...
+                    </>
+                  ) : (
+                    '保存'
+                  )}
+                </Button>
+              </div>
+            </form>
+          )}
         </CardContent>
       </Card>
     </div>

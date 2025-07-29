@@ -51,6 +51,69 @@ class GeminiProcessor:
             return {
                 "success": True,
                 "data": {
+                    "title": title,
+                    "markdown": cleaned_markdown,
+                    "format": "markdown"
+                }
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"AI生成失败: {str(e)}"
+            }
+    
+    async def generate_mindmap_with_preprocessing(self, content: str, format_type: str = "standard", 
+                                                preprocessed_data: Dict = None) -> Dict[str, Any]:
+        """
+        使用预处理数据的快速生成方法
+        利用分析阶段的预处理结果来加速生成过程
+        
+        Args:
+            content: 原始文本内容
+            format_type: 格式类型
+            preprocessed_data: 预处理数据，包含关键点等
+        
+        Returns:
+            Dict: 生成结果
+        """
+        if not self.model:
+            return {
+                "success": False,
+                "error": "Gemini API key not configured"
+            }
+        
+        # 使用预处理数据构建优化的提示
+        prompt = self._build_optimized_prompt(content, format_type, preprocessed_data)
+        
+        try:
+            response = self.model.generate_content(prompt)
+            response_text = response.text.strip()
+            
+            # 清理响应文本，提取Markdown部分
+            cleaned_markdown = self._clean_markdown_response(response_text)
+            
+            if not cleaned_markdown:
+                # 降级到标准方法
+                return await self.generate_mindmap_structure(content, format_type)
+            
+            # 提取标题
+            title = self._extract_title_from_markdown(cleaned_markdown)
+            
+            return {
+                "success": True,
+                "data": {
+                    "title": title,
+                    "markdown": cleaned_markdown,
+                    "format": "markdown",
+                    "used_preprocessing": True
+                }
+            }
+            
+        except Exception as e:
+            # 如果优化方法失败，降级到标准方法
+            print(f"预处理生成失败，降级到标准方法: {e}")
+            return await self.generate_mindmap_structure(content, format_type)
                     "markdown": cleaned_markdown,
                     "title": title
                 },
@@ -169,6 +232,47 @@ class GeminiProcessor:
 
 请直接返回完整的 Markdown 格式思维导图，确保信息无损且结构清晰："""
         return prompt
+    
+    def _build_optimized_prompt(self, content: str, format_type: str, preprocessed_data: Dict) -> str:
+        """
+        构建优化的提示，利用预处理数据
+        使用预提取的关键点来加速生成过程
+        """
+        # 限制内容长度，避免超出 token 限制
+        if len(content) > 4000:
+            content = content[:4000] + "...(内容已截断，请确保重要信息不丢失)"
+        
+        # 提取预处理数据
+        key_points = preprocessed_data.get('key_points', []) if preprocessed_data else []
+        
+        # 构建包含预处理信息的优化提示
+        key_points_text = ""
+        if key_points:
+            key_points_text = f"""
+**预提取的关键信息点:**
+{chr(10).join(f"- {point}" for point in key_points[:10])}  # 限制为前10个关键点
+
+请基于这些预提取的关键点，快速构建思维导图结构：
+"""
+        
+        optimized_prompt = f"""你是一个顶级的知识架构师。请将以下文本转换为详细的 Markdown 格式思维导图。
+
+{key_points_text}
+
+**核心要求：**
+1. 保持信息完整性，不遗漏重要内容
+2. 构建清晰的层级结构
+3. 使用Markdown语法（#、##、###、-）
+4. 确保逻辑连贯
+
+---
+原始文本内容：
+{content}
+---
+
+请直接返回完整的 Markdown 格式思维导图："""
+        
+        return optimized_prompt
 
 # 创建全局 AI 处理器实例
 ai_processor = GeminiProcessor()

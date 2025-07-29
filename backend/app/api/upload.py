@@ -6,6 +6,7 @@ import os
 import math
 import uuid
 import time
+import asyncio
 from pathlib import Path
 from fastapi import APIRouter, File, UploadFile, HTTPException, BackgroundTasks, Depends
 from fastapi.responses import JSONResponse
@@ -17,6 +18,7 @@ from app.core.ai_processor import ai_processor
 from app.core.database import get_db
 from app.models.user import User
 from app.services.credit_service import CreditService
+from app.services.cache_service import FileProcessingCache, CreditCalculationCache
 from typing import Optional, Dict
 
 router = APIRouter()
@@ -39,36 +41,39 @@ class FileGenerateRequest(BaseModel):
 # 确保上传目录存在
 os.makedirs(settings.upload_dir, exist_ok=True)
 
-# 临时文件存储 - 使用内存缓存，生产环境可考虑使用Redis
-file_cache: Dict[str, Dict] = {}
+# 使用新的高性能缓存系统
+# FileProcessingCache 和 CreditCalculationCache 已导入
 
-def store_file_data(user_id: int, filename: str, content: str, file_type: str) -> str:
+def store_file_data(user_id: int, filename: str, content: str, file_type: str, 
+                   credit_cost: int, ai_preprocessed_data: Optional[Dict] = None) -> str:
     """
     临时存储文件数据，返回文件token
+    使用新的高性能缓存系统，包含预处理数据和积分成本缓存
     
     Args:
         user_id: 用户ID
         filename: 文件名
         content: 解析后的文本内容
         file_type: 文件类型
+        credit_cost: 积分成本（已计算并缓存）
+        ai_preprocessed_data: AI预处理数据
         
     Returns:
         str: 文件token标识
     """
-    file_token = str(uuid.uuid4())
-    file_cache[file_token] = {
-        'user_id': user_id,
-        'filename': filename,
-        'content': content,
-        'file_type': file_type,
-        'timestamp': time.time(),
-        'expires_at': time.time() + 3600  # 1小时后过期
-    }
-    return file_token
+    return FileProcessingCache.store_file_analysis(
+        user_id=user_id,
+        filename=filename,
+        content=content,
+        file_type=file_type,
+        credit_cost=credit_cost,
+        ai_preprocessed_data=ai_preprocessed_data
+    )
 
 def get_file_data(file_token: str, user_id: int) -> Optional[Dict]:
     """
     根据token获取文件数据
+    使用新的高性能缓存系统
     
     Args:
         file_token: 文件token
@@ -77,36 +82,13 @@ def get_file_data(file_token: str, user_id: int) -> Optional[Dict]:
     Returns:
         Dict: 文件数据，如果不存在或已过期则返回None
     """
-    if file_token not in file_cache:
-        return None
-    
-    file_data = file_cache[file_token]
-    
-    # 检查是否过期
-    if time.time() > file_data['expires_at']:
-        del file_cache[file_token]
-        return None
-    
-    # 检查权限
-    if file_data['user_id'] != user_id:
-        return None
-    
-    return file_data
-
-def cleanup_expired_files():
-    """清理过期的文件缓存"""
-    current_time = time.time()
-    expired_tokens = [
-        token for token, data in file_cache.items() 
-        if current_time > data['expires_at']
-    ]
-    for token in expired_tokens:
-        del file_cache[token]
+    return FileProcessingCache.get_file_analysis(file_token, user_id)
 
 def calculate_credit_cost(text: str) -> int:
     """
     根据文本长度计算积分成本（用于直接文本输入）
     计费规则：每100个字符消耗1个积分（向上取整）
+    使用缓存优化重复计算
     
     Args:
         text: 输入文本
@@ -114,16 +96,13 @@ def calculate_credit_cost(text: str) -> int:
     Returns:
         int: 需要消耗的积分数量
     """
-    text_length = len(text.strip())
-    if text_length == 0:
-        return 0
-    # 每100个字符1积分，向上取整
-    return math.ceil(text_length / 100)
+    return CreditCalculationCache.calculate_text_credit_cost_cached(text)
 
 def calculate_file_credit_cost(text: str) -> int:
     """
     根据文件文本长度计算积分成本（用于文件上传）
     计费规则：每500个字符消耗1个积分（向上取整）
+    使用缓存优化重复计算
     
     Args:
         text: 从文件解析出的文本内容
@@ -131,11 +110,7 @@ def calculate_file_credit_cost(text: str) -> int:
     Returns:
         int: 需要消耗的积分数量
     """
-    text_length = len(text.strip())
-    if text_length == 0:
-        return 0
-    # 每500个字符1积分，向上取整
-    return math.ceil(text_length / 500)
+    return CreditCalculationCache.calculate_file_credit_cost_cached(text)
 
 @router.post("/upload")
 async def upload_file(
@@ -419,12 +394,14 @@ async def analyze_file(
     db: Session = Depends(get_db)
 ):
     """
-    文件分析与成本预估
-    上传文件，解析内容，计算生成思维导图所需积分，返回文件token
-    """
-    # 清理过期文件
-    cleanup_expired_files()
+    文件分析与成本预估 - 优化版本
+    上传文件，解析内容，预处理AI数据，计算积分成本，返回文件token
     
+    优化点：
+    1. 使用高性能缓存系统
+    2. 异步预处理AI数据，加速后续生成
+    3. 缓存积分计算结果
+    """
     # 验证文件类型
     file_ext = Path(file.filename).suffix.lower()
     if file_ext not in settings.allowed_file_types:
@@ -442,7 +419,7 @@ async def analyze_file(
         )
     
     try:
-        # 解析文件内容
+        # 1. 解析文件内容
         parsed_content = file_parser.parse_from_bytes(file_content, file.filename)
         
         if not parsed_content:
@@ -451,19 +428,31 @@ async def analyze_file(
                 detail="文件解析失败，请检查文件内容"
             )
         
-        # 计算积分成本（使用文件专用计费规则）
+        # 2. 计算积分成本（使用缓存优化）
         credit_cost = calculate_file_credit_cost(parsed_content)
         
-        # 获取用户当前积分余额
+        # 3. 获取用户当前积分余额
         user_credits = CreditService.get_user_credits(db, current_user.id)
         current_balance = user_credits.balance if user_credits else 0
         
-        # 存储文件数据，生成token
+        # 4. 异步预处理AI数据（关键优化：在分析阶段就准备AI需要的数据）
+        ai_preprocessed_data = None
+        try:
+            # 这个异步操作可以在后台进行，不阻塞响应
+            ai_preprocessed_data = await FileProcessingCache.preprocess_for_ai(
+                parsed_content, "standard"
+            )
+        except Exception as e:
+            print(f"AI预处理警告: {e}")  # 预处理失败不影响主流程
+        
+        # 5. 存储文件数据到高性能缓存，包含预处理结果和积分成本
         file_token = store_file_data(
             user_id=current_user.id,
             filename=file.filename,
             content=parsed_content,
-            file_type=file_ext
+            file_type=file_ext,
+            credit_cost=credit_cost,
+            ai_preprocessed_data=ai_preprocessed_data
         )
         
         return JSONResponse(content={
@@ -477,7 +466,8 @@ async def analyze_file(
                 "estimated_cost": credit_cost,
                 "user_balance": current_balance,
                 "sufficient_credits": current_balance >= credit_cost,
-                "pricing_rule": "每500个字符消耗1积分（向上取整）"
+                "pricing_rule": "每500个字符消耗1积分（向上取整）",
+                "has_ai_preprocessing": ai_preprocessed_data is not None
             },
             "expires_in": 3600  # 1小时后过期
         })
