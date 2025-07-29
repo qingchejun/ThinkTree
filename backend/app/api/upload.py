@@ -4,6 +4,8 @@
 
 import os
 import math
+import uuid
+import time
 from pathlib import Path
 from fastapi import APIRouter, File, UploadFile, HTTPException, BackgroundTasks, Depends
 from fastapi.responses import JSONResponse
@@ -15,7 +17,7 @@ from app.core.ai_processor import ai_processor
 from app.core.database import get_db
 from app.models.user import User
 from app.services.credit_service import CreditService
-from typing import Optional
+from typing import Optional, Dict
 
 router = APIRouter()
 
@@ -30,12 +32,80 @@ class TextProcessRequest(BaseModel):
 class CreditEstimateRequest(BaseModel):
     text: str
 
+class FileGenerateRequest(BaseModel):
+    file_token: str
+    format_type: Optional[str] = "standard"
+
 # 确保上传目录存在
 os.makedirs(settings.upload_dir, exist_ok=True)
 
+# 临时文件存储 - 使用内存缓存，生产环境可考虑使用Redis
+file_cache: Dict[str, Dict] = {}
+
+def store_file_data(user_id: int, filename: str, content: str, file_type: str) -> str:
+    """
+    临时存储文件数据，返回文件token
+    
+    Args:
+        user_id: 用户ID
+        filename: 文件名
+        content: 解析后的文本内容
+        file_type: 文件类型
+        
+    Returns:
+        str: 文件token标识
+    """
+    file_token = str(uuid.uuid4())
+    file_cache[file_token] = {
+        'user_id': user_id,
+        'filename': filename,
+        'content': content,
+        'file_type': file_type,
+        'timestamp': time.time(),
+        'expires_at': time.time() + 3600  # 1小时后过期
+    }
+    return file_token
+
+def get_file_data(file_token: str, user_id: int) -> Optional[Dict]:
+    """
+    根据token获取文件数据
+    
+    Args:
+        file_token: 文件token
+        user_id: 用户ID（验证权限）
+        
+    Returns:
+        Dict: 文件数据，如果不存在或已过期则返回None
+    """
+    if file_token not in file_cache:
+        return None
+    
+    file_data = file_cache[file_token]
+    
+    # 检查是否过期
+    if time.time() > file_data['expires_at']:
+        del file_cache[file_token]
+        return None
+    
+    # 检查权限
+    if file_data['user_id'] != user_id:
+        return None
+    
+    return file_data
+
+def cleanup_expired_files():
+    """清理过期的文件缓存"""
+    current_time = time.time()
+    expired_tokens = [
+        token for token, data in file_cache.items() 
+        if current_time > data['expires_at']
+    ]
+    for token in expired_tokens:
+        del file_cache[token]
+
 def calculate_credit_cost(text: str) -> int:
     """
-    根据文本长度计算积分成本
+    根据文本长度计算积分成本（用于直接文本输入）
     计费规则：每100个字符消耗1个积分（向上取整）
     
     Args:
@@ -49,6 +119,23 @@ def calculate_credit_cost(text: str) -> int:
         return 0
     # 每100个字符1积分，向上取整
     return math.ceil(text_length / 100)
+
+def calculate_file_credit_cost(text: str) -> int:
+    """
+    根据文件文本长度计算积分成本（用于文件上传）
+    计费规则：每500个字符消耗1个积分（向上取整）
+    
+    Args:
+        text: 从文件解析出的文本内容
+        
+    Returns:
+        int: 需要消耗的积分数量
+    """
+    text_length = len(text.strip())
+    if text_length == 0:
+        return 0
+    # 每500个字符1积分，向上取整
+    return math.ceil(text_length / 500)
 
 @router.post("/upload")
 async def upload_file(
@@ -324,3 +411,79 @@ async def estimate_credit_cost(
         "sufficient_credits": current_balance >= credit_cost,
         "pricing_rule": "每100个字符消耗1积分（向上取整）"
     })
+
+@router.post("/upload/analyze")
+async def analyze_file(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    文件分析与成本预估
+    上传文件，解析内容，计算生成思维导图所需积分，返回文件token
+    """
+    # 清理过期文件
+    cleanup_expired_files()
+    
+    # 验证文件类型
+    file_ext = Path(file.filename).suffix.lower()
+    if file_ext not in settings.allowed_file_types:
+        raise HTTPException(
+            status_code=400,
+            detail=f"不支持的文件类型: {file_ext}。支持的类型: {', '.join(settings.allowed_file_types)}"
+        )
+    
+    # 验证文件大小
+    file_content = await file.read()
+    if len(file_content) > settings.max_file_size:
+        raise HTTPException(
+            status_code=400,
+            detail=f"文件过大。最大支持 {settings.max_file_size // (1024*1024)} MB"
+        )
+    
+    try:
+        # 解析文件内容
+        parsed_content = file_parser.parse_from_bytes(file_content, file.filename)
+        
+        if not parsed_content:
+            raise HTTPException(
+                status_code=400,
+                detail="文件解析失败，请检查文件内容"
+            )
+        
+        # 计算积分成本（使用文件专用计费规则）
+        credit_cost = calculate_file_credit_cost(parsed_content)
+        
+        # 获取用户当前积分余额
+        user_credits = CreditService.get_user_credits(db, current_user.id)
+        current_balance = user_credits.balance if user_credits else 0
+        
+        # 存储文件数据，生成token
+        file_token = store_file_data(
+            user_id=current_user.id,
+            filename=file.filename,
+            content=parsed_content,
+            file_type=file_ext
+        )
+        
+        return JSONResponse(content={
+            "success": True,
+            "file_token": file_token,
+            "filename": file.filename,
+            "file_type": file_ext,
+            "content_preview": parsed_content[:200] + "..." if len(parsed_content) > 200 else parsed_content,
+            "analysis": {
+                "text_length": len(parsed_content.strip()),
+                "estimated_cost": credit_cost,
+                "user_balance": current_balance,
+                "sufficient_credits": current_balance >= credit_cost,
+                "pricing_rule": "每500个字符消耗1积分（向上取整）"
+            },
+            "expires_in": 3600  # 1小时后过期
+        })
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"文件分析失败: {str(e)}"
+        )

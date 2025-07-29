@@ -4,6 +4,7 @@
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 from pydantic import BaseModel, validator
@@ -11,8 +12,10 @@ from typing import List, Optional
 from uuid import UUID
 
 from ..core.database import get_db
+from ..core.ai_processor import ai_processor
 from ..models.mindmap import Mindmap
 from ..models.user import User
+from ..services.credit_service import CreditService
 from ..api.auth import get_current_user
 
 router = APIRouter()
@@ -313,6 +316,131 @@ async def delete_mindmap(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"数据库删除失败: {str(e)}"
+        )
+
+
+# 新的请求模型
+class FileGenerateRequest(BaseModel):
+    """从文件生成思维导图的请求模型"""
+    file_token: str
+    format_type: Optional[str] = "standard"
+
+
+@router.post("/generate-from-file")
+async def generate_from_file(
+    request: FileGenerateRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    接口B: 执行生成与扣费
+    根据文件token生成思维导图，执行完整的积分扣费流程
+    """
+    # 导入文件缓存函数
+    from .upload import get_file_data, calculate_file_credit_cost
+    
+    # 获取文件数据
+    file_data = get_file_data(request.file_token, current_user.id)
+    if not file_data:
+        raise HTTPException(
+            status_code=404,
+            detail="文件token无效、已过期或无权访问"
+        )
+    
+    parsed_content = file_data['content']
+    filename = file_data['filename']
+    file_type = file_data['file_type']
+    
+    # 1. 重新计算积分成本进行验证
+    credit_cost = calculate_file_credit_cost(parsed_content)
+    
+    # 2. 检查用户积分是否充足
+    user_credits = CreditService.get_user_credits(db, current_user.id)
+    if not user_credits or user_credits.balance < credit_cost:
+        current_balance = user_credits.balance if user_credits else 0
+        raise HTTPException(
+            status_code=402,  # Payment Required
+            detail={
+                "message": "积分不足",
+                "required_credits": credit_cost,
+                "current_balance": current_balance,
+                "text_length": len(parsed_content.strip()),
+                "filename": filename
+            }
+        )
+    
+    # 3. 扣除积分
+    deduct_success, deduct_error, remaining_balance = CreditService.deduct_credits(
+        db, 
+        current_user.id, 
+        credit_cost, 
+        f"文件生成思维导图 - 文件: {filename}, 文本长度: {len(parsed_content.strip())} 字符"
+    )
+    
+    if not deduct_success:
+        raise HTTPException(
+            status_code=500,
+            detail=f"积分扣除失败: {deduct_error}"
+        )
+    
+    # 4. 调用AI服务生成思维导图（使用try-except处理失败情况）
+    try:
+        mindmap_result = await ai_processor.generate_mindmap_structure(
+            parsed_content, 
+            request.format_type
+        )
+        
+        if not mindmap_result["success"]:
+            # AI生成失败，退还积分
+            refund_success, refund_error, new_balance = CreditService.refund_credits(
+                db,
+                current_user.id,
+                credit_cost,
+                f"文件AI生成失败退款 - 文件: {filename}, 原因: {mindmap_result.get('error', 'Unknown error')}"
+            )
+            
+            if not refund_success:
+                print(f"严重错误: 用户 {current_user.id} 的积分退款失败: {refund_error}")
+            
+            raise HTTPException(
+                status_code=500,
+                detail=f"思维导图生成失败: {mindmap_result.get('error', 'Unknown error')}"
+            )
+        
+        # 5. 成功生成，返回结果
+        return JSONResponse(content={
+            "success": True,
+            "filename": filename,
+            "file_type": file_type,
+            "content_preview": parsed_content[:200] + "..." if len(parsed_content) > 200 else parsed_content,
+            "data": mindmap_result["data"],
+            "format": "markdown",
+            "cost_info": {
+                "credits_consumed": credit_cost,
+                "remaining_credits": remaining_balance,
+                "text_length": len(parsed_content.strip()),
+                "pricing_rule": "每500个字符消耗1积分（向上取整）"
+            }
+        })
+        
+    except HTTPException:
+        # 重新抛出HTTP异常
+        raise
+    except Exception as ai_error:
+        # AI处理异常，退还积分
+        refund_success, refund_error, new_balance = CreditService.refund_credits(
+            db,
+            current_user.id,
+            credit_cost,
+            f"文件AI处理异常退款 - 文件: {filename}, 错误: {str(ai_error)}"
+        )
+        
+        if not refund_success:
+            print(f"严重错误: 用户 {current_user.id} 的积分退款失败: {refund_error}")
+        
+        raise HTTPException(
+            status_code=500,
+            detail=f"AI处理失败: {str(ai_error)}"
         )
     except Exception as e:
         db.rollback()
