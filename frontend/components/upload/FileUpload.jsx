@@ -161,7 +161,7 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
       validateFile(file)
       setIsAnalyzing(true)
       setFileAnalysis(null)
-      if (onUploadStart) onUploadStart()
+      // 注意：这里不调用onUploadStart，只在实际生成时才调用
 
       const formData = new FormData()
       formData.append('file', file)
@@ -199,6 +199,8 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
 
     try {
       setIsGenerating(true)
+      // 在用户点击生成按钮时才调用onUploadStart
+      if (onUploadStart) onUploadStart()
 
       const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
       const response = await fetch(`${API_BASE_URL}/api/mindmaps/generate-from-file`, {
@@ -367,58 +369,41 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
             </div>
           </div>
 
-          {/* 文件分析结果显示 - 关键的两步流程UI */}
+          {/* 积分成本信息 - 仅在文件分析完成后显示 */}
           {fileAnalysis && (
-            <div className="mt-4">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h4 className="text-sm font-medium text-blue-800 mb-2">
-                  📊 文件分析完成
-                </h4>
-                
-                {/* 文件信息 */}
-                <div className="text-xs text-blue-700 space-y-1 mb-3">
-                  <p><strong>文件:</strong> {fileAnalysis.filename}</p>
-                  <p><strong>类型:</strong> {fileAnalysis.file_type}</p>
-                  <p><strong>内容预览:</strong> {fileAnalysis.content_preview}</p>
-                </div>
-
-                {/* 积分成本信息 */}
-                <div className={`p-3 rounded-md text-sm mb-3 ${
-                  fileAnalysis.analysis?.sufficient_credits
-                    ? 'bg-green-50 border border-green-200 text-green-800'
-                    : 'bg-red-50 border border-red-200 text-red-800'
-                }`}>
-                  <div className="flex items-center">
-                    <span className="mr-2">
-                      {fileAnalysis.analysis?.sufficient_credits ? '✅' : '⚠️'}
-                    </span>
-                    <div>
-                      <div className="font-medium">
-                        预计消耗 {fileAnalysis.analysis?.estimated_cost || 0} 积分
-                        {fileAnalysis.analysis?.sufficient_credits 
-                          ? ' - 积分充足，可以生成' 
-                          : ' - 积分不足，无法生成'
-                        }
-                      </div>
-                      <div className="mt-1 text-xs opacity-75">
-                        当前余额: {fileAnalysis.analysis?.user_balance || 0} 积分 | 
-                        文本长度: {fileAnalysis.analysis?.text_length || 0} 字符 | 
-                        {fileAnalysis.analysis?.pricing_rule || '每500个字符消耗1积分'}
-                      </div>
-                      {!fileAnalysis.analysis?.sufficient_credits && (
-                        <div className="mt-2">
-                          <button 
-                            onClick={() => window.open('/pricing', '_blank')}
-                            className="text-red-700 underline hover:text-red-900 bg-transparent border-none cursor-pointer"
-                          >
-                            💰 增加积分
-                          </button>
-                        </div>
-                      )}
-                    </div>
+            <div className={`mt-4 p-3 rounded-md text-sm ${
+              fileAnalysis.analysis?.sufficient_credits
+                ? 'bg-green-50 border border-green-200 text-green-800'
+                : 'bg-red-50 border border-red-200 text-red-800'
+            }`}>
+              <div className="flex items-center">
+                <span className="mr-2">
+                  {fileAnalysis.analysis?.sufficient_credits ? '✅' : '⚠️'}
+                </span>
+                <div>
+                  <div className="font-medium">
+                    预计消耗 {fileAnalysis.analysis?.estimated_cost || 0} 积分
+                    {fileAnalysis.analysis?.sufficient_credits 
+                      ? ' - 积分充足，可以生成' 
+                      : ' - 积分不足，无法生成'
+                    }
                   </div>
+                  <div className="mt-1 text-xs opacity-75">
+                    当前余额: {fileAnalysis.analysis?.user_balance || 0} 积分 | 
+                    文本长度: {fileAnalysis.analysis?.text_length || 0} 字符 | 
+                    {fileAnalysis.analysis?.pricing_rule || '每500个字符消耗1积分'}
+                  </div>
+                  {!fileAnalysis.analysis?.sufficient_credits && (
+                    <div className="mt-2">
+                      <button 
+                        onClick={() => window.open('/pricing', '_blank')}
+                        className="text-red-700 underline hover:text-red-900 bg-transparent border-none cursor-pointer"
+                      >
+                        💰 增加积分
+                      </button>
+                    </div>
+                  )}
                 </div>
-
               </div>
             </div>
           )}
@@ -441,7 +426,7 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
                   正在分析文件...
                 </>
               ) : (
-                '🚀 开始生成思维导图'
+                '🚀 生成思维导图'
               )}
             </button>
             
