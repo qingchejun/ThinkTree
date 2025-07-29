@@ -345,15 +345,38 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
             />
             
             <div className="space-y-4">
-              <div className="text-4xl">📎</div>
-              <div>
-                <p className="text-lg font-medium text-gray-700">
-                  {dragActive ? '释放文件以上传' : '拖拽文件到这里或点击选择'}
-                </p>
-                <p className="text-sm text-gray-500 mt-2">
-                  支持 TXT, MD, DOCX, PDF, SRT 格式，最大 10MB
-                </p>
-              </div>
+              {/* 根据状态显示不同内容 */}
+              {fileAnalysis ? (
+                // 文件分析完成后显示内容总结
+                <>
+                  <div className="text-4xl">📄</div>
+                  <div>
+                    <p className="text-lg font-medium text-gray-700 mb-2">
+                      文档内容总结
+                    </p>
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                      {fileAnalysis.content_preview && fileAnalysis.content_preview.length > 50 
+                        ? fileAnalysis.content_preview.substring(0, 50) + '...'
+                        : fileAnalysis.content_preview || '文档已成功解析，准备生成思维导图'}
+                    </p>
+                  </div>
+                </>
+              ) : (
+                // 默认上传状态
+                <>
+                  <div className="text-4xl">📎</div>
+                  <div>
+                    <p className="text-lg font-medium text-gray-700">
+                      {dragActive ? '释放文件以上传' : '拖拽文件到这里或点击选择'}
+                    </p>
+                    <p className="text-sm text-gray-500 mt-2">
+                      支持 TXT, MD, DOCX, PDF, SRT 格式，最大 10MB
+                    </p>
+                  </div>
+                </>
+              )}
+              
+              {/* 状态指示器 */}
               {isAnalyzing && (
                 <div className="text-indigo-600">
                   <div className="animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full mr-2"></div>
@@ -369,6 +392,44 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
             </div>
           </div>
 
+          {/* 积分成本信息 - 仅在文件分析完成后显示 */}
+          {fileAnalysis && (
+            <div className={`mt-4 p-3 rounded-md text-sm ${
+              fileAnalysis.analysis?.sufficient_credits
+                ? 'bg-green-50 border border-green-200 text-green-800'
+                : 'bg-red-50 border border-red-200 text-red-800'
+            }`}>
+              <div className="flex items-center">
+                <span className="mr-2">
+                  {fileAnalysis.analysis?.sufficient_credits ? '✅' : '⚠️'}
+                </span>
+                <div>
+                  <div className="font-medium">
+                    预计消耗 {fileAnalysis.analysis?.estimated_cost || 0} 积分
+                    {fileAnalysis.analysis?.sufficient_credits 
+                      ? ' - 积分充足，可以生成' 
+                      : ' - 积分不足，无法生成'
+                    }
+                  </div>
+                  <div className="mt-1 text-xs opacity-75">
+                    当前余额: {fileAnalysis.analysis?.user_balance || 0} 积分 | 
+                    文本长度: {fileAnalysis.analysis?.text_length || 0} 字符 | 
+                    {fileAnalysis.analysis?.pricing_rule || '每500个字符消耗1积分'}
+                  </div>
+                  {!fileAnalysis.analysis?.sufficient_credits && (
+                    <div className="mt-2">
+                      <button 
+                        onClick={() => window.open('/pricing', '_blank')}
+                        className="text-red-700 underline hover:text-red-900 bg-transparent border-none cursor-pointer"
+                      >
+                        💰 增加积分
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* 开始生成按钮 - 始终显示在文件上传框下方 */}
           <div className="flex space-x-3 mt-4">
