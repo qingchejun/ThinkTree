@@ -114,17 +114,6 @@ class GeminiProcessor:
             # 如果优化方法失败，降级到标准方法
             print(f"预处理生成失败，降级到标准方法: {e}")
             return await self.generate_mindmap_structure(content, format_type)
-                    "markdown": cleaned_markdown,
-                    "title": title
-                },
-                "format": "markdown"
-            }
-            
-        except Exception as e:
-            return {
-                "success": False,
-                "error": f"AI处理错误: {str(e)}"
-            }
     
     def _clean_markdown_response(self, text: str) -> str:
         """清理AI响应，提取Markdown内容"""
