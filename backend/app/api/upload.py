@@ -36,7 +36,7 @@ os.makedirs(settings.upload_dir, exist_ok=True)
 def calculate_credit_cost(text: str) -> int:
     """
     根据文本长度计算积分成本
-    计费规则：每10个字符消耗1个积分（向上取整）
+    计费规则：每100个字符消耗1个积分（向上取整）
     
     Args:
         text: 输入文本
@@ -47,8 +47,8 @@ def calculate_credit_cost(text: str) -> int:
     text_length = len(text.strip())
     if text_length == 0:
         return 0
-    # 每10个字符1积分，向上取整
-    return math.ceil(text_length / 10)
+    # 每100个字符1积分，向上取整
+    return math.ceil(text_length / 100)
 
 @router.post("/upload")
 async def upload_file(
@@ -322,5 +322,5 @@ async def estimate_credit_cost(
         "estimated_cost": credit_cost,
         "user_balance": current_balance,
         "sufficient_credits": current_balance >= credit_cost,
-        "pricing_rule": "每10个字符消耗1积分（向上取整）"
+        "pricing_rule": "每100个字符消耗1积分（向上取整）"
     })
