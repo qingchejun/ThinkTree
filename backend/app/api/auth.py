@@ -404,6 +404,16 @@ async def login(request: Request, credentials: UserLogin, db: Session = Depends(
     # 生成访问令牌
     access_token = create_access_token(data={"sub": str(user.id)})
     
+    # 获取用户积分余额（安全方式，避免关联查询超时）
+    try:
+        from app.services.credit_service import CreditService
+        user_credits_record = CreditService.get_user_credits(db, user.id)
+        credits_balance = user_credits_record.balance if user_credits_record else 0
+    except Exception as e:
+        # 如果积分查询失败，使用默认值0，不影响登录
+        print(f"登录时获取用户 {user.id} 积分失败: {e}")
+        credits_balance = 0
+    
     # 构造响应
     user_response = UserResponse(
         id=user.id,
@@ -413,7 +423,7 @@ async def login(request: Request, credentials: UserLogin, db: Session = Depends(
         is_verified=user.is_verified,
         is_superuser=user.is_superuser,
         created_at=user.created_at.isoformat(),
-        credits=user.credits.balance if user.credits else 0,
+        credits=credits_balance,
         invitation_quota=user.invitation_quota
     )
     
@@ -457,6 +467,16 @@ async def get_profile(current_user: User = Depends(get_current_user), db: Sessio
     # 计算剩余邀请配额
     invitation_remaining = max(0, current_user.invitation_quota - invitation_used)
     
+    # 获取用户积分余额（安全方式，避免关联查询超时）
+    try:
+        from app.services.credit_service import CreditService
+        user_credits_record = CreditService.get_user_credits(db, current_user.id)
+        credits_balance = user_credits_record.balance if user_credits_record else 0
+    except Exception as e:
+        # 如果积分查询失败，使用默认值0，不影响用户信息获取
+        print(f"获取用户 {current_user.id} 积分失败: {e}")
+        credits_balance = 0
+    
     return UserProfileResponse(
         id=current_user.id,
         email=current_user.email,
@@ -465,7 +485,7 @@ async def get_profile(current_user: User = Depends(get_current_user), db: Sessio
         is_verified=current_user.is_verified,
         is_superuser=current_user.is_superuser,
         created_at=current_user.created_at.isoformat(),
-        credits=current_user.credits.balance if current_user.credits else 0,
+        credits=credits_balance,
         invitation_quota=current_user.invitation_quota,
         invitation_used=invitation_used,
         invitation_remaining=invitation_remaining
