@@ -24,10 +24,11 @@
  * 
  * ⚠️ 注意：
  * - 这是一个纯展示组件，没有业务逻辑
- * - 所有CTA按钮都是占位符，需要配合路由实现跳转
+ * - CTA按钮已连接到相应的路由（登录/注册页面）
  * - 内容和文案需要根据产品发展进行更新
  */
 import React from 'react';
+import Link from 'next/link';
 import { Sparkles, Cpu, FileStack, Users, BrainCircuit, FileOutput, Infinity, UploadCloud, Eye, PlusCircle } from 'lucide-react';
 
 const LandingPage = () => {
@@ -49,8 +50,8 @@ const LandingPage = () => {
           
           {/* 右侧：登录和注册按钮 */}
           <div className="flex items-center space-x-4">
-            <a href="#" className="text-gray-800 font-semibold hover:text-black">登录</a>
-            <a href="#" className="bg-black text-white px-5 py-2 rounded-lg font-semibold shadow-md hover:bg-gray-800 transition-colors">免费注册</a>
+            <Link href="/login" className="text-gray-800 font-semibold hover:text-black">登录</Link>
+            <Link href="/register" className="bg-black text-white px-5 py-2 rounded-lg font-semibold shadow-md hover:bg-gray-800 transition-colors">免费注册</Link>
           </div>
         </div>
       </header>
@@ -76,9 +77,9 @@ const LandingPage = () => {
         
         {/* 主要CTA按钮 - 引导用户开始使用产品 */}
         <div className="mt-8 flex justify-center">
-          <a href="#" className="bg-gray-800 text-white px-12 py-4 rounded-lg font-bold text-xl shadow-lg hover:bg-black transition-all transform hover:scale-105">
+          <Link href="/register" className="bg-gray-800 text-white px-12 py-4 rounded-lg font-bold text-xl shadow-lg hover:bg-black transition-all transform hover:scale-105">
             免费生成思维导图
-          </a>
+          </Link>
         </div>
 
         {/* 福利横幅 - 吸引用户注册的限时优惠信息 */}
@@ -234,9 +235,9 @@ const LandingPage = () => {
       <section className="py-20 bg-gray-900 text-white">
         <div className="container mx-auto px-6 text-center">
           <h2 className="text-4xl font-bold">ThinkSo，让思维更灵动。</h2>
-          <a href="#" className="mt-8 inline-block bg-white text-black px-8 py-4 rounded-lg font-bold text-lg shadow-lg hover:bg-gray-200 transition-all transform hover:scale-105">
+          <Link href="/register" className="mt-8 inline-block bg-white text-black px-8 py-4 rounded-lg font-bold text-lg shadow-lg hover:bg-gray-200 transition-all transform hover:scale-105">
             立即免费试用
-          </a>
+          </Link>
         </div>
       </section>
 
