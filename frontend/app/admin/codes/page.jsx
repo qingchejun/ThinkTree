@@ -1,5 +1,5 @@
 'use client';
-import { useState, useContext } from 'react';
+import React, { useState, useContext } from 'react';
 import AuthContext from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/common/Header';
@@ -23,10 +23,62 @@ const AdminCodesPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [generatedCodes, setGeneratedCodes] = useState([]);
   const [toast, setToast] = useState(null);
+  
+  // 兑换码列表状态
+  const [codesList, setCodesList] = useState([]);
+  const [listLoading, setListLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalCodes, setTotalCodes] = useState(0);
+  const [statusFilter, setStatusFilter] = useState('ALL');
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 5000);
+  };
+
+  // 加载兑换码列表
+  const loadCodesList = async (page = 1, filter = statusFilter) => {
+    if (!token) return;
+    
+    setListLoading(true);
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/redemption-codes?page=${page}&per_page=20&status_filter=${filter}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setCodesList(data.codes);
+        setCurrentPage(data.page);
+        setTotalPages(data.total_pages);
+        setTotalCodes(data.total);
+      } else {
+        showToast(data.detail || '加载兑换码列表失败', 'error');
+      }
+    } catch (error) {
+      console.error('加载兑换码列表失败:', error);
+      showToast('网络错误，请稍后重试', 'error');
+    } finally {
+      setListLoading(false);
+    }
+  };
+
+  // 页面加载时获取兑换码列表
+  React.useEffect(() => {
+    if (user && user.is_superuser && token) {
+      loadCodesList();
+    }
+  }, [user, token]);
+
+  // 状态筛选改变时重新加载
+  const handleStatusFilterChange = (newFilter) => {
+    setStatusFilter(newFilter);
+    setCurrentPage(1);
+    loadCodesList(1, newFilter);
   };
 
   // 权限检查
@@ -118,6 +170,9 @@ const AdminCodesPage = () => {
           credits_amount: 1000,
           expires_in_days: 30
         });
+        
+        // 刷新兑换码列表
+        loadCodesList(currentPage, statusFilter);
       } else {
         showToast(data.detail || data.message || '生成兑换码失败', 'error');
       }
@@ -290,6 +345,159 @@ const AdminCodesPage = () => {
                       💡 提示：兑换码已生成并保存到数据库，用户可以在设置页面的「用量与计费」中使用这些兑换码获取积分。
                     </p>
                   </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* 兑换码管理列表 */}
+        <div className="mt-8">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center">
+                  <span className="mr-2">🗂️</span>
+                  兑换码管理
+                </CardTitle>
+                <div className="flex items-center space-x-2">
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => handleStatusFilterChange(e.target.value)}
+                    className="px-3 py-1 border border-border-primary rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                  >
+                    <option value="ALL">全部状态</option>
+                    <option value="ACTIVE">可用</option>
+                    <option value="REDEEMED">已使用</option>
+                    <option value="EXPIRED">已过期</option>
+                  </select>
+                  <Button
+                    onClick={() => loadCodesList(currentPage, statusFilter)}
+                    variant="outline"
+                    size="sm"
+                    disabled={listLoading}
+                  >
+                    {listLoading ? '刷新中...' : '刷新'}
+                  </Button>
+                </div>
+              </div>
+              <p className="text-text-secondary text-sm mt-2">
+                共 {totalCodes} 个兑换码
+              </p>
+            </CardHeader>
+            <CardContent>
+              {listLoading ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-4 border-brand-primary border-t-transparent mx-auto mb-4"></div>
+                  <p className="text-text-secondary">加载中...</p>
+                </div>
+              ) : codesList.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="text-4xl mb-4">📝</div>
+                  <p className="text-text-secondary text-lg mb-2">暂无兑换码</p>
+                  <p className="text-text-tertiary text-sm">
+                    还没有生成任何兑换码，使用上方表单开始创建
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  {/* 兑换码列表 */}
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-border-primary">
+                          <th className="text-left py-3 px-4 text-sm font-medium text-text-secondary">兑换码</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-text-secondary">面额</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-text-secondary">状态</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-text-secondary">创建时间</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-text-secondary">过期时间</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-text-secondary">兑换用户</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-text-secondary">兑换时间</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {codesList.map((code) => (
+                          <tr key={code.id} className="border-b border-border-secondary hover:bg-background-secondary">
+                            <td className="py-3 px-4">
+                              <div className="flex items-center space-x-2">
+                                <span className="font-mono text-sm font-medium text-text-primary">
+                                  {code.code}
+                                </span>
+                                <Button
+                                  onClick={() => copyToClipboard(code.code)}
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-xs px-2 py-1"
+                                >
+                                  复制
+                                </Button>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 text-sm text-text-primary">
+                              {code.credits_amount.toLocaleString()} 积分
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                code.status === 'ACTIVE' ? 'bg-green-100 text-green-800' :
+                                code.status === 'REDEEMED' ? 'bg-gray-100 text-gray-800' :
+                                'bg-red-100 text-red-800'
+                              }`}>
+                                {code.status === 'ACTIVE' ? '可用' :
+                                 code.status === 'REDEEMED' ? '已使用' : '已过期'}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-sm text-text-secondary">
+                              {new Date(code.created_at).toLocaleString('zh-CN')}
+                            </td>
+                            <td className="py-3 px-4 text-sm text-text-secondary">
+                              {new Date(code.expires_at).toLocaleString('zh-CN')}
+                            </td>
+                            <td className="py-3 px-4 text-sm text-text-secondary">
+                              {code.redeemed_by_email || '-'}
+                            </td>
+                            <td className="py-3 px-4 text-sm text-text-secondary">
+                              {code.redeemed_at ? new Date(code.redeemed_at).toLocaleString('zh-CN') : '-'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* 分页 */}
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-between mt-6">
+                      <div className="text-sm text-text-secondary">
+                        第 {currentPage} 页，共 {totalPages} 页
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          onClick={() => {
+                            const newPage = currentPage - 1;
+                            setCurrentPage(newPage);
+                            loadCodesList(newPage, statusFilter);
+                          }}
+                          disabled={currentPage <= 1 || listLoading}
+                          variant="outline"
+                          size="sm"
+                        >
+                          上一页
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            const newPage = currentPage + 1;
+                            setCurrentPage(newPage);
+                            loadCodesList(newPage, statusFilter);
+                          }}
+                          disabled={currentPage >= totalPages || listLoading}
+                          variant="outline"
+                          size="sm"
+                        >
+                          下一页
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>

@@ -84,7 +84,7 @@ class RedemptionService:
                 user_id=user_id,
                 type=TransactionType.INITIAL_GRANT,  # 临时使用初始发放类型
                 amount=credits_amount,
-                description=f"兑换码充值: {code}"
+                description=f"兑换码兑换: {code}"
             )
             db.add(transaction)
             

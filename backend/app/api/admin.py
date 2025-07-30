@@ -824,6 +824,27 @@ class RedemptionCodeCreateResponse(BaseModel):
     expires_at: datetime = Field(..., description="过期时间")
 
 
+class RedemptionCodeListItem(BaseModel):
+    """兑换码列表项模型"""
+    id: int = Field(..., description="兑换码ID")
+    code: str = Field(..., description="兑换码")
+    credits_amount: int = Field(..., description="积分面额")
+    status: str = Field(..., description="状态：ACTIVE/REDEEMED/EXPIRED")
+    created_at: datetime = Field(..., description="创建时间")
+    expires_at: datetime = Field(..., description="过期时间")
+    redeemed_at: Optional[datetime] = Field(None, description="兑换时间")
+    redeemed_by_email: Optional[str] = Field(None, description="兑换用户邮箱")
+
+
+class RedemptionCodeListResponse(BaseModel):
+    """兑换码列表响应模型"""
+    codes: List[RedemptionCodeListItem] = Field(..., description="兑换码列表")
+    total: int = Field(..., description="总数量")
+    page: int = Field(..., description="当前页码")
+    per_page: int = Field(..., description="每页数量")
+    total_pages: int = Field(..., description="总页数")
+
+
 def generate_redemption_code() -> str:
     """生成一个8位兑换码"""
     # 使用大写字母和数字，避免容易混淆的字符
@@ -908,4 +929,93 @@ async def create_redemption_codes(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="生成兑换码失败，请稍后重试"
+        )
+
+
+@router.get("/redemption-codes", response_model=RedemptionCodeListResponse)
+async def get_redemption_codes_list(
+    admin_user: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+    page: int = Query(1, ge=1, description="页码"),
+    per_page: int = Query(20, ge=1, le=100, description="每页数量"),
+    status_filter: Optional[str] = Query(None, description="状态筛选: ACTIVE, REDEEMED, EXPIRED, ALL")
+):
+    """
+    获取兑换码列表
+    
+    管理员可以查看所有兑换码的详细信息，包括状态、面额、过期时间、被谁兑换等
+    权限要求：仅管理员（is_superuser=True）可访问
+    """
+    try:
+        logger.info(f"管理员 {admin_user.email} 查看兑换码列表，页码={page}，状态筛选={status_filter}")
+        
+        # 构建查询
+        query = db.query(RedemptionCode)
+        
+        # 状态筛选
+        if status_filter and status_filter != "ALL":
+            if status_filter in ["ACTIVE", "REDEEMED", "EXPIRED"]:
+                query = query.filter(RedemptionCode.status == RedemptionCodeStatus(status_filter))
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="无效的状态筛选值，支持: ACTIVE, REDEEMED, EXPIRED, ALL"
+                )
+        
+        # 获取总数
+        total = query.count()
+        
+        # 分页查询
+        offset = (page - 1) * per_page
+        codes = query.order_by(desc(RedemptionCode.created_at)).offset(offset).limit(per_page).all()
+        
+        # 构建兑换码列表
+        code_list = []
+        for code in codes:
+            # 获取兑换用户信息
+            redeemed_by_email = None
+            if code.redeemed_by_user_id:
+                redeemed_user = db.query(User).filter(User.id == code.redeemed_by_user_id).first()
+                if redeemed_user:
+                    redeemed_by_email = redeemed_user.email
+            
+            code_list.append(RedemptionCodeListItem(
+                id=code.id,
+                code=code.code,
+                credits_amount=code.credits_amount,
+                status=code.status.value,
+                created_at=code.created_at,
+                expires_at=code.expires_at,
+                redeemed_at=code.redeemed_at,
+                redeemed_by_email=redeemed_by_email
+            ))
+        
+        # 计算总页数
+        total_pages = (total + per_page - 1) // per_page
+        
+        # 记录管理员操作
+        log_admin_action(
+            admin_user,
+            "view_redemption_codes",
+            f"page={page},status_filter={status_filter}",
+            f"查看兑换码列表，共{total}个兑换码"
+        )
+        
+        logger.info(f"管理员 {admin_user.email} 成功获取兑换码列表，共{total}条记录")
+        
+        return RedemptionCodeListResponse(
+            codes=code_list,
+            total=total,
+            page=page,
+            per_page=per_page,
+            total_pages=total_pages
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"获取兑换码列表失败: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="获取兑换码列表失败，请稍后重试"
         )
