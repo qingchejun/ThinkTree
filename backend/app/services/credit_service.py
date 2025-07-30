@@ -38,7 +38,8 @@ class CreditService:
             # 创建用户积分记录
             user_credits = UserCredits(
                 user_id=user.id,
-                balance=balance
+                balance=balance,
+                last_daily_reward_date=None  # 明确设置为None，表示从未领取过每日奖励
             )
             db.add(user_credits)
             
@@ -233,8 +234,10 @@ class CreditService:
             
             # 检查今天是否已经领取过奖励（带容错处理）
             try:
-                # 检查 last_daily_reward_date 字段是否存在
-                if hasattr(user_credits, 'last_daily_reward_date') and user_credits.last_daily_reward_date == today:
+                # 检查 last_daily_reward_date 字段是否存在和有值
+                if (hasattr(user_credits, 'last_daily_reward_date') and 
+                    user_credits.last_daily_reward_date is not None and 
+                    user_credits.last_daily_reward_date == today):
                     # 今天已经领取过，不重复发放
                     return True, None, user_credits.balance, False
             except Exception as field_error:
