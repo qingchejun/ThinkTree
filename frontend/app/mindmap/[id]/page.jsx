@@ -121,7 +121,7 @@ export default function ViewMindmapPage() {
 
       if (response.ok) {
         setSuccessMessage(`思维导图"${mindmap.title}"已成功删除`)
-        router.push('/dashboard')
+        router.push('/mindmaps')
       } else {
         const errorData = await response.json()
         throw new Error(errorData.detail || '删除失败')
@@ -286,7 +286,7 @@ export default function ViewMindmapPage() {
             <p className="text-red-700 mb-6">{error}</p>
             <div className="flex items-center justify-center space-x-4">
               <button
-                onClick={() => router.push('/dashboard')}
+                onClick={() => router.push('/mindmaps')}
                 className="bg-gray-600 text-white px-6 py-3 rounded-md font-medium hover:bg-gray-700"
               >
                 ← 返回控制台
@@ -314,7 +314,7 @@ export default function ViewMindmapPage() {
             <h2 className="text-2xl font-bold text-gray-900 mb-4">思维导图不存在</h2>
             <p className="text-gray-600 mb-6">您要查看的思维导图可能已被删除或您没有访问权限</p>
             <button
-              onClick={() => router.push('/dashboard')}
+              onClick={() => router.push('/mindmaps')}
               className="bg-indigo-600 text-white px-6 py-3 rounded-md font-medium hover:bg-indigo-700"
             >
               ← 返回控制台
@@ -334,7 +334,7 @@ export default function ViewMindmapPage() {
             <div className="flex-1">
               <div className="flex items-center space-x-4">
                 <button
-                  onClick={() => router.push('/dashboard')}
+                  onClick={() => router.push('/mindmaps')}
                   className="text-indigo-600 hover:text-indigo-500 text-sm font-medium"
                 >
                   ← 返回控制台

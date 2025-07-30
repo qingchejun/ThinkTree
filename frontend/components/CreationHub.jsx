@@ -5,7 +5,7 @@
  * 这是用户登录后看到的主界面，提供思维导图创建和管理功能
  * 
  * 🔧 主要功能：
- * 1. 用户导航栏 - 显示用户信息、积分余额、下拉菜单
+ * 1. 用户导航栏 - 显示真实用户信息、积分余额、下拉菜单
  * 2. 创作面板 - 支持多种输入方式（文本、文档上传、未来支持音视频等）
  * 3. 项目展示 - 显示用户最近创建的思维导图项目
  * 
@@ -20,14 +20,98 @@
  * - 管理已有项目的dashboard
  * 
  * ⚠️ 注意：
- * - 这是一个纯展示组件，没有实际的业务逻辑
+ * - 集成了真实的用户数据和API调用
  * - YouTube、播客、音频等功能标记为"开发中"
- * - 需要配合路由和状态管理来实现完整功能
+ * - 包含完整的路由和状态管理功能
  */
-import React from 'react';
-import { Gift, Database, LayoutDashboard, CreditCard, Settings, LogOut, FileText, FileUp, Youtube, Podcast, FileAudio, Link, Sparkles, UploadCloud, PlusCircle } from 'lucide-react';
+'use client';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { useAuth } from '../context/AuthContext';
+import { Gift, Database, LayoutDashboard, CreditCard, Settings, LogOut, FileText, FileUp, Youtube, Podcast, FileAudio, Link as LinkIcon, Sparkles, UploadCloud, PlusCircle } from 'lucide-react';
 
 const CreationHub = () => {
+  const { user, token, logout, isLoading } = useAuth();
+  const router = useRouter();
+  
+  // 状态管理
+  const [mindmaps, setMindmaps] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('text');
+  const [textInput, setTextInput] = useState('');
+  const [userCredits, setUserCredits] = useState(0);
+
+  // 路由保护
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.push('/login');
+      return;
+    }
+  }, [user, isLoading, router]);
+
+  // 获取用户思维导图和积分信息
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!token || !user) return;
+
+      try {
+        // 获取思维导图列表
+        const mindmapsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/mindmaps/`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (mindmapsResponse.ok) {
+          const mindmapsData = await mindmapsResponse.json();
+          setMindmaps(mindmapsData?.slice(0, 5) || []); // 只显示最近5个
+        }
+
+        // 获取用户积分
+        const creditsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/credits`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (creditsResponse.ok) {
+          const creditsData = await creditsResponse.json();
+          setUserCredits(creditsData.balance || 0);
+        }
+      } catch (error) {
+        console.error('获取用户数据失败:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, [token, user]);
+
+  // 处理文本生成
+  const handleTextGenerate = async () => {
+    if (!textInput.trim()) {
+      alert('请输入内容');
+      return;
+    }
+    
+    // 跳转到创建页面并传递文本
+    router.push(`/create?text=${encodeURIComponent(textInput)}`);
+  };
+
+  // 处理登出
+  const handleLogout = () => {
+    logout();
+    router.push('/login');
+  };
+
+  if (isLoading || loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-900 border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  if (!user) return null;
+
   return (
     <div id="loggedInView">
       <div className="h-screen flex flex-col bg-gray-50">
@@ -48,10 +132,10 @@ const CreationHub = () => {
             {/* 右侧：邀请好友 + 用户菜单 */}
             <div className="flex items-center space-x-6">
               {/* 邀请好友按钮 - 用户获取奖励的入口 */}
-              <a href="#" className="bg-gray-100 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-200 transition-colors flex items-center space-x-2 text-sm">
+              <Link href="/settings" className="bg-gray-100 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-200 transition-colors flex items-center space-x-2 text-sm">
                 <Gift className="w-4 h-4 text-orange-500" />
                 <span>邀请好友</span>
-              </a>
+              </Link>
               
               {/* 用户菜单 - 显示头像、积分余额和下拉菜单 */}
               <div className="relative" id="userMenuButton">
@@ -61,7 +145,7 @@ const CreationHub = () => {
                   {/* 积分余额显示 */}
                   <div className="flex items-center space-x-1 text-gray-800 font-semibold">
                     <Database className="w-4 h-4 text-gray-500" />
-                    <span>1000</span>
+                    <span>{userCredits}</span>
                   </div>
                 </button>
                 
@@ -69,23 +153,23 @@ const CreationHub = () => {
                 <div id="userMenu" className="hidden absolute right-0 mt-3 w-56 bg-white rounded-lg shadow-lg py-2 z-50 border">
                   {/* 用户信息展示 */}
                   <div className="px-4 py-2 border-b">
-                    <p className="font-semibold text-gray-800">houj0927</p>
-                    <p className="text-sm text-gray-500">houj0927@gmail.com</p>
+                    <p className="font-semibold text-gray-800">{user.display_name || user.email}</p>
+                    <p className="text-sm text-gray-500">{user.email}</p>
                   </div>
                   {/* 功能菜单项 */}
-                  <a href="#" className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                  <Link href="/mindmaps" className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                     <LayoutDashboard className="w-4 h-4" /><span>我的思维导图</span>
-                  </a>
-                  <a href="#" className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                  </Link>
+                  <Link href="/settings" className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                     <CreditCard className="w-4 h-4" /><span>用量与计费</span>
-                  </a>
-                  <a href="#" className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                  </Link>
+                  <Link href="/settings" className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                     <Settings className="w-4 h-4" /><span>账户设置</span>
-                  </a>
+                  </Link>
                   <div className="border-t my-1"></div>
-                  <a href="#" className="flex items-center space-x-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                  <button onClick={handleLogout} className="flex items-center space-x-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left">
                     <LogOut className="w-4 h-4" /><span>退出登录</span>
-                  </a>
+                  </button>
                 </div>
               </div>
             </div>
@@ -110,38 +194,48 @@ const CreationHub = () => {
               */}
               <div className="flex justify-center border-b p-2 space-x-1">
                 {/* 长文本输入标签 - 默认选中 */}
-                <button className="creation-tab-button creation-tab-active flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm" data-tab="text">
+                <button 
+                  onClick={() => setActiveTab('text')}
+                  className={`flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm ${
+                    activeTab === 'text' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
                   <FileText className="w-4 h-4 text-blue-500" />
                   <span>长文本</span>
                 </button>
                 
                 {/* 文档上传标签 */}
-                <button className="creation-tab-button creation-tab-inactive flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm" data-tab="upload">
+                <button 
+                  onClick={() => setActiveTab('upload')}
+                  className={`flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm ${
+                    activeTab === 'upload' ? 'bg-green-100 text-green-700' : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
                   <FileUp className="w-4 h-4 text-green-500" />
                   <span>文档上传</span>
                 </button>
                 
                 {/* 以下功能标记为开发中，暂时禁用 */}
-                <button className="creation-tab-button creation-tab-inactive flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm opacity-50 cursor-not-allowed" disabled>
-                  <Youtube className="w-4 h-4 text-red-500" />
+                <button className="flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm opacity-50 cursor-not-allowed" disabled>
+                  <FileAudio className="w-4 h-4 text-red-500" />
                   <span>YouTube</span>
                   <span className="text-red-500 text-xs ml-1">(开发中)</span>
                 </button>
                 
-                <button className="creation-tab-button creation-tab-inactive flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm opacity-50 cursor-not-allowed" disabled>
+                <button className="flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm opacity-50 cursor-not-allowed" disabled>
                   <Podcast className="w-4 h-4 text-purple-500" />
                   <span>播客</span>
                   <span className="text-red-500 text-xs ml-1">(开发中)</span>
                 </button>
                 
-                <button className="creation-tab-button creation-tab-inactive flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm opacity-50 cursor-not-allowed" disabled>
+                <button className="flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm opacity-50 cursor-not-allowed" disabled>
                   <FileAudio className="w-4 h-4 text-orange-500" />
                   <span>音频文件</span>
                   <span className="text-red-500 text-xs ml-1">(开发中)</span>
                 </button>
                 
-                <button className="creation-tab-button creation-tab-inactive flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm opacity-50 cursor-not-allowed" disabled>
-                  <Link className="w-4 h-4 text-sky-500" />
+                <button className="flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm opacity-50 cursor-not-allowed" disabled>
+                  <LinkIcon className="w-4 h-4 text-sky-500" />
                   <span>网页链接</span>
                   <span className="text-red-500 text-xs ml-1">(开发中)</span>
                 </button>
@@ -149,33 +243,45 @@ const CreationHub = () => {
               
               {/* 标签内容区域 */}
               <div className="p-4">
-                {/* 长文本输入内容区 - 默认显示 */}
-                <div id="tab-content-text" className="tab-content">
-                  <textarea 
-                    className="w-full h-40 p-4 border rounded-lg focus:ring-2 focus:ring-black focus:border-black transition text-base" 
-                    placeholder="在此处输入你的想法、粘贴长文本或链接..."
-                  ></textarea>
-                  <div className="text-right mt-4">
-                    <button className="bg-black text-white px-5 py-2 rounded-lg font-semibold shadow-md hover:bg-gray-800 transition-colors flex items-center space-x-2 ml-auto">
-                      <Sparkles className="w-4 h-4" />
-                      <span>生成</span>
-                    </button>
+                {/* 长文本输入内容区 */}
+                {activeTab === 'text' && (
+                  <div className="tab-content">
+                    <textarea 
+                      value={textInput}
+                      onChange={(e) => setTextInput(e.target.value)}
+                      className="w-full h-40 p-4 border rounded-lg focus:ring-2 focus:ring-black focus:border-black transition text-base" 
+                      placeholder="在此处输入你的想法、粘贴长文本或链接..."
+                    />
+                    <div className="text-right mt-4">
+                      <button 
+                        onClick={handleTextGenerate}
+                        className="bg-black text-white px-5 py-2 rounded-lg font-semibold shadow-md hover:bg-gray-800 transition-colors flex items-center space-x-2 ml-auto"
+                      >
+                        <Sparkles className="w-4 h-4" />
+                        <span>生成</span>
+                      </button>
+                    </div>
                   </div>
-                </div>
+                )}
                 
-                {/* 文档上传内容区 - 默认隐藏 */}
-                <div id="tab-content-upload" className="tab-content hidden">
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg h-40 flex flex-col items-center justify-center text-center p-4">
-                    <UploadCloud className="w-10 h-10 text-gray-400 mb-2" />
-                    <p className="font-semibold text-gray-700">将文件拖拽到此处或点击上传</p>
+                {/* 文档上传内容区 */}
+                {activeTab === 'upload' && (
+                  <div className="tab-content">
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg h-40 flex flex-col items-center justify-center text-center p-4">
+                      <UploadCloud className="w-10 h-10 text-gray-400 mb-2" />
+                      <p className="font-semibold text-gray-700">将文件拖拽到此处或点击上传</p>
+                    </div>
+                    <div className="text-right mt-4">
+                      <button 
+                        onClick={() => router.push('/create')}
+                        className="bg-black text-white px-5 py-2 rounded-lg font-semibold shadow-md hover:bg-gray-800 transition-colors flex items-center space-x-2 ml-auto"
+                      >
+                        <Sparkles className="w-4 h-4" />
+                        <span>生成</span>
+                      </button>
+                    </div>
                   </div>
-                  <div className="text-right mt-4">
-                    <button className="bg-black text-white px-5 py-2 rounded-lg font-semibold shadow-md hover:bg-gray-800 transition-colors flex items-center space-x-2 ml-auto">
-                      <Sparkles className="w-4 h-4" />
-                      <span>生成</span>
-                    </button>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
@@ -188,62 +294,51 @@ const CreationHub = () => {
             {/* 区域标题和查看全部链接 */}
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-gray-800">最近的项目</h2>
-              <a href="#" className="text-sm font-semibold text-gray-600 hover:text-black">查看全部 &rarr;</a>
+              <Link href="/mindmaps" className="text-sm font-semibold text-gray-600 hover:text-black">查看全部 &rarr;</Link>
             </div>
             
             {/* 项目卡片网格布局 - 响应式设计，支持不同屏幕尺寸 */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
               {/* 创建新项目卡片 - 虚线边框的快捷入口 */}
-              <div className="border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center p-8 text-center h-full min-h-[196px] hover:bg-gray-100 transition-colors cursor-pointer">
+              <div 
+                onClick={() => router.push('/create')}
+                className="border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center p-8 text-center h-full min-h-[196px] hover:bg-gray-100 transition-colors cursor-pointer"
+              >
                 <PlusCircle className="w-12 h-12 text-gray-400 mb-2" />
                 <h3 className="font-semibold text-gray-600">创建新项目</h3>
               </div>
               
-              {/* 以下是示例项目卡片 - 实际使用时应该通过API获取用户的真实项目数据 */}
+              {/* 用户的真实项目数据 */}
+              {mindmaps.map((mindmap) => (
+                <div 
+                  key={mindmap.id}
+                  onClick={() => router.push(`/mindmap/${mindmap.id}`)}
+                  className="bg-white rounded-xl border overflow-hidden group hover:shadow-lg transition-shadow cursor-pointer"
+                >
+                  <div className="bg-gray-200 h-32 flex items-center justify-center">
+                    <img 
+                      src="https://placehold.co/300x160/e5e7eb/111827?text=思维导图" 
+                      alt="思维导图预览图" 
+                      className="w-full h-full object-cover" 
+                    />
+                  </div>
+                  <div className="p-4">
+                    <h3 className="font-semibold text-gray-800 truncate" title={mindmap.title}>
+                      {mindmap.title}
+                    </h3>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {new Date(mindmap.updated_at).toLocaleDateString('zh-CN')} 更新
+                    </p>
+                  </div>
+                </div>
+              ))}
               
-              {/* 项目卡片 1 */}
-              <div className="bg-white rounded-xl border overflow-hidden group hover:shadow-lg transition-shadow cursor-pointer">
-                <div className="bg-gray-200 h-32 flex items-center justify-center">
-                  <img src="https://placehold.co/300x160/e5e7eb/111827?text=预览图" alt="思维导图预览图" className="w-full h-full object-cover" />
+              {/* 如果项目少于4个，显示空白占位卡片 */}
+              {mindmaps.length < 4 && Array.from({ length: 4 - mindmaps.length }).map((_, index) => (
+                <div key={`empty-${index}`} className="bg-gray-50 rounded-xl border-2 border-dashed border-gray-300 h-[196px] flex items-center justify-center">
+                  <p className="text-gray-400 text-sm">等待创建...</p>
                 </div>
-                <div className="p-4">
-                  <h3 className="font-semibold text-gray-800 truncate">第一季度产品规划</h3>
-                  <p className="text-sm text-gray-500 mt-1">昨天 15:30 更新</p>
-                </div>
-              </div>
-              
-              {/* 项目卡片 2 */}
-              <div className="bg-white rounded-xl border overflow-hidden group hover:shadow-lg transition-shadow cursor-pointer">
-                <div className="bg-gray-200 h-32 flex items-center justify-center">
-                  <img src="https://placehold.co/300x160/d1d5db/111827?text=预览图" alt="思维导图预览图" className="w-full h-full object-cover" />
-                </div>
-                <div className="p-4">
-                  <h3 className="font-semibold text-gray-800 truncate">个人知识管理体系 (PKM)</h3>
-                  <p className="text-sm text-gray-500 mt-1">3天前 更新</p>
-                </div>
-              </div>
-              
-              {/* 项目卡片 3 */}
-              <div className="bg-white rounded-xl border overflow-hidden group hover:shadow-lg transition-shadow cursor-pointer">
-                <div className="bg-gray-200 h-32 flex items-center justify-center">
-                  <img src="https://placehold.co/300x160/e0e7ff/111827?text=预览图" alt="思维导图预览图" className="w-full h-full object-cover" />
-                </div>
-                <div className="p-4">
-                  <h3 className="font-semibold text-gray-800 truncate">市场营销活动复盘</h3>
-                  <p className="text-sm text-gray-500 mt-1">5天前 更新</p>
-                </div>
-              </div>
-              
-              {/* 项目卡片 4 */}
-              <div className="bg-white rounded-xl border overflow-hidden group hover:shadow-lg transition-shadow cursor-pointer">
-                <div className="bg-gray-200 h-32 flex items-center justify-center">
-                  <img src="https://placehold.co/300x160/fce7f3/111827?text=预览图" alt="思维导图预览图" className="w-full h-full object-cover" />
-                </div>
-                <div className="p-4">
-                  <h3 className="font-semibold text-gray-800 truncate">新功能头脑风暴</h3>
-                  <p className="text-sm text-gray-500 mt-1">上周 更新</p>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         </main>
