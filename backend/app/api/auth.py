@@ -370,18 +370,16 @@ async def register(request: Request, user_data: UserRegister, db: Session = Depe
             # 积分创建失败不影响用户注册，但要记录日志
             print(f"为用户 {new_user.email} 创建初始积分失败: {credit_error}")
         
-        # 为新用户发放首次每日登录奖励
+        # 为新用户发放首次每日奖励
         daily_reward_granted = False
         try:
-            reward_success, reward_error, credits_balance, reward_granted = CreditService.grant_daily_reward_if_eligible(db, new_user.id)
-            if reward_success and reward_granted:
-                daily_reward_granted = True
-                print(f"新用户 {new_user.email} 获得首次每日登录奖励10积分")
-            elif not reward_success:
-                print(f"新用户 {new_user.email} 每日奖励发放失败: {reward_error}")
+            daily_reward_granted = CreditService.grant_daily_reward_if_eligible(db, new_user.id)
+            if daily_reward_granted:
+                print(f"新用户 {new_user.email} 获得首次每日奖励10积分")
         except Exception as reward_error:
             # 奖励发放失败不影响用户注册，但要记录日志
             print(f"为新用户 {new_user.email} 发放每日奖励失败: {reward_error}")
+            daily_reward_granted = False
         
         # 标记邀请码为已使用
         use_invitation_code(db, user_data.invitation_code, new_user.id)
@@ -456,23 +454,17 @@ async def login(request: Request, credentials: UserLogin, db: Session = Depends(
     # 生成访问令牌
     access_token = create_access_token(data={"sub": str(user.id)})
     
-    # 尝试发放每日登录奖励并获取积分余额
+    # 检查并发放每日奖励
     daily_reward_granted = False
     try:
         from app.services.credit_service import CreditService
         
-        # 发放每日登录奖励
-        reward_success, reward_error, credits_balance, is_first_login_today = CreditService.grant_daily_reward_if_eligible(db, user.id)
+        # 检查并发放每日奖励
+        daily_reward_granted = CreditService.grant_daily_reward_if_eligible(db, user.id)
         
-        if reward_success:
-            daily_reward_granted = is_first_login_today
-            if is_first_login_today:
-                print(f"用户 {user.id} 获得每日登录奖励10积分，当前余额: {credits_balance}")
-        else:
-            print(f"用户 {user.id} 每日奖励发放失败: {reward_error}")
-            # 如果奖励发放失败，尝试获取当前积分余额
-            user_credits_record = CreditService.get_user_credits(db, user.id)
-            credits_balance = user_credits_record.balance if user_credits_record else 0
+        # 获取当前积分余额
+        user_credits_record = CreditService.get_user_credits(db, user.id)
+        credits_balance = user_credits_record.balance if user_credits_record else 0
         
     except Exception as e:
         # 如果每日奖励或积分查询失败，使用默认值0，不影响登录
@@ -514,6 +506,7 @@ class UserProfileResponse(BaseModel):
     invitation_quota: int = 10  # 邀请码配额
     invitation_used: int = 0  # 已使用的邀请码数量
     invitation_remaining: int = 10  # 剩余邀请码配额
+    daily_reward_granted: Optional[bool] = False  # 是否发放了每日奖励
 
 
 @router.get("/profile", response_model=UserProfileResponse)
@@ -534,15 +527,21 @@ async def get_profile(current_user: User = Depends(get_current_user), db: Sessio
     # 计算剩余邀请配额
     invitation_remaining = max(0, current_user.invitation_quota - invitation_used)
     
-    # 获取用户积分余额（安全方式，避免关联查询超时）
+    # 【关键】检查并发放每日奖励 - 确保用户任何活动都能触发
+    daily_reward_granted = False
     try:
         from app.services.credit_service import CreditService
+        # 检查并发放每日奖励
+        daily_reward_granted = CreditService.grant_daily_reward_if_eligible(db, current_user.id)
+        
+        # 获取用户积分余额
         user_credits_record = CreditService.get_user_credits(db, current_user.id)
         credits_balance = user_credits_record.balance if user_credits_record else 0
     except Exception as e:
         # 如果积分查询失败，使用默认值0，不影响用户信息获取
-        print(f"获取用户 {current_user.id} 积分失败: {e}")
+        print(f"获取用户 {current_user.id} 积分或处理每日奖励失败: {e}")
         credits_balance = 0
+        daily_reward_granted = False
     
     return UserProfileResponse(
         id=current_user.id,
@@ -555,7 +554,8 @@ async def get_profile(current_user: User = Depends(get_current_user), db: Sessio
         credits=credits_balance,
         invitation_quota=current_user.invitation_quota,
         invitation_used=invitation_used,
-        invitation_remaining=invitation_remaining
+        invitation_remaining=invitation_remaining,
+        daily_reward_granted=daily_reward_granted
     )
 
 

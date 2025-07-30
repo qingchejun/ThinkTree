@@ -210,52 +210,51 @@ class CreditService:
             return False, f"退还积分失败: {str(e)}", 0
     
     @staticmethod
-    def grant_daily_reward_if_eligible(db: Session, user_id: int) -> tuple:
+    def grant_daily_reward_if_eligible(db: Session, user_id: int) -> bool:
         """
-        检查并发放每日登录奖励积分（独立的、可重用的函数）
+        检查用户今日是否已领取奖励，如未领取则发放每日奖励
+        
+        核心逻辑：
+        1. 获取当前UTC日期
+        2. 检查用户的 last_daily_reward_date
+        3. 如果为空或小于今天，则发放奖励并更新日期
+        4. 返回是否成功发放了奖励
         
         Args:
             db: 数据库会话
             user_id: 用户ID
             
         Returns:
-            tuple: (是否成功, 错误信息或None, 当前积分, 是否发放了奖励)
+            bool: True=成功发放了奖励, False=今天已领取或发放失败
         """
         try:
-            today = date.today()
+            # 获取当前UTC日期
+            current_date = date.today()
             
-            # 获取用户积分记录（加锁）
+            # 获取用户积分记录（加锁确保原子性）
             user_credits = db.query(UserCredits).filter(
                 UserCredits.user_id == user_id
             ).with_for_update().first()
             
             if not user_credits:
-                return False, "用户积分记录不存在", 0, False
+                print(f"⚠️ 用户 {user_id} 的积分记录不存在")
+                return False
             
-            # 检查今天是否已经领取过奖励（带容错处理）
-            try:
-                # 检查 last_daily_reward_date 字段是否存在和有值
-                if (hasattr(user_credits, 'last_daily_reward_date') and 
-                    user_credits.last_daily_reward_date is not None and 
-                    user_credits.last_daily_reward_date == today):
-                    # 今天已经领取过，不重复发放
-                    return True, None, user_credits.balance, False
-            except Exception as field_error:
-                # 如果字段不存在或访问失败，记录错误但继续执行
-                print(f"⚠️ 检查每日奖励字段时出错: {field_error}")
-                # 继续执行，相当于从未领取过奖励
+            # 检查用户今天是否已经领取过奖励
+            if (hasattr(user_credits, 'last_daily_reward_date') and 
+                user_credits.last_daily_reward_date is not None and 
+                user_credits.last_daily_reward_date >= current_date):
+                # 今天已经领取过，不重复发放
+                return False
             
-            # 发放每日奖励：10积分
+            # 执行奖励发放事务
             daily_reward_amount = 10
+            
+            # 增加积分
             user_credits.balance += daily_reward_amount
             
-            # 尝试设置每日奖励日期（带容错处理）
-            try:
-                if hasattr(user_credits, 'last_daily_reward_date'):
-                    user_credits.last_daily_reward_date = today
-            except Exception as field_error:
-                # 如果设置字段失败，记录错误但不影响积分发放
-                print(f"⚠️ 设置每日奖励日期时出错: {field_error}")
+            # 更新最后奖励日期
+            user_credits.last_daily_reward_date = current_date
             
             # 创建交易记录
             transaction = CreditTransaction(
@@ -270,8 +269,10 @@ class CreditService:
             db.commit()
             db.refresh(user_credits)
             
-            return True, None, user_credits.balance, True
+            print(f"✅ 用户 {user_id} 获得每日奖励 {daily_reward_amount} 积分，当前余额: {user_credits.balance}")
+            return True
             
         except Exception as e:
             db.rollback()
-            return False, f"发放每日奖励失败: {str(e)}", 0, False
+            print(f"❌ 为用户 {user_id} 发放每日奖励失败: {str(e)}")
+            return False

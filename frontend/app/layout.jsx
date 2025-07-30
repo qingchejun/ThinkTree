@@ -1,6 +1,7 @@
 import '../styles/globals.css'
 import { AuthProvider } from '../context/AuthContext'
 import { ToastContainer } from '../components/common/Toast'
+import { DailyRewardToast } from '../components/common/DailyRewardToast'
 import { Inter } from 'next/font/google'
 
 // 初始化 Inter 字体
@@ -27,6 +28,7 @@ export default function RootLayout({ children }) {
             {children}
           </div>
           <ToastContainer />
+          <DailyRewardToast />
         </AuthProvider>
       </body>
     </html>

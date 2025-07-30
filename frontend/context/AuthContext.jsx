@@ -14,7 +14,8 @@ const AuthContext = createContext({
   isLoading: true,
   login: async (token) => {},
   logout: () => {},
-  refreshUser: async () => {}
+  refreshUser: async () => {},
+  showDailyRewardToast: null
 })
 
 // 认证提供者组件
@@ -22,6 +23,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [token, setToken] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [showDailyRewardToast, setShowDailyRewardToast] = useState(null)
   const router = useRouter()
 
   // 防止重复请求的标志
@@ -72,6 +74,15 @@ export function AuthProvider({ children }) {
       if (response.ok) {
         const userData = await response.json()
         console.log('✅ 获取用户信息成功:', userData)
+        
+        // 检查是否发放了每日奖励
+        if (userData.daily_reward_granted) {
+          console.log('🎉 检测到每日奖励发放')
+          setShowDailyRewardToast(true)
+          // 3秒后自动隐藏提示
+          setTimeout(() => setShowDailyRewardToast(false), 3000)
+        }
+        
         return userData
       } else {
         console.error('❌ 获取用户信息失败:', response.status, response.statusText)
@@ -242,6 +253,8 @@ export function AuthProvider({ children }) {
     login,
     logout,
     refreshUser,
+    showDailyRewardToast,
+    setShowDailyRewardToast,
     // 辅助状态
     isAuthenticated: !!user && !!token,
     isAdmin: !!user && user.is_superuser
