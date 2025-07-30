@@ -210,16 +210,16 @@ class CreditService:
             return False, f"退还积分失败: {str(e)}", 0
     
     @staticmethod
-    def grant_daily_reward(db: Session, user_id: int) -> tuple:
+    def grant_daily_reward_if_eligible(db: Session, user_id: int) -> tuple:
         """
-        发放每日登录奖励积分
+        检查并发放每日登录奖励积分（独立的、可重用的函数）
         
         Args:
             db: 数据库会话
             user_id: 用户ID
             
         Returns:
-            tuple: (是否发放, 错误信息或None, 当前积分, 是否是今天第一次登录)
+            tuple: (是否成功, 错误信息或None, 当前积分, 是否发放了奖励)
         """
         try:
             today = date.today()

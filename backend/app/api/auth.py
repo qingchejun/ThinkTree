@@ -296,6 +296,7 @@ class RegisterResponse(BaseModel):
     message: str
     user_id: Optional[int] = None
     email: str
+    daily_reward_granted: Optional[bool] = False  # 是否发放了每日奖励
 
 
 @router.post("/register", response_model=RegisterResponse)
@@ -369,6 +370,19 @@ async def register(request: Request, user_data: UserRegister, db: Session = Depe
             # 积分创建失败不影响用户注册，但要记录日志
             print(f"为用户 {new_user.email} 创建初始积分失败: {credit_error}")
         
+        # 为新用户发放首次每日登录奖励
+        daily_reward_granted = False
+        try:
+            reward_success, reward_error, credits_balance, reward_granted = CreditService.grant_daily_reward_if_eligible(db, new_user.id)
+            if reward_success and reward_granted:
+                daily_reward_granted = True
+                print(f"新用户 {new_user.email} 获得首次每日登录奖励10积分")
+            elif not reward_success:
+                print(f"新用户 {new_user.email} 每日奖励发放失败: {reward_error}")
+        except Exception as reward_error:
+            # 奖励发放失败不影响用户注册，但要记录日志
+            print(f"为新用户 {new_user.email} 发放每日奖励失败: {reward_error}")
+        
         # 标记邀请码为已使用
         use_invitation_code(db, user_data.invitation_code, new_user.id)
         
@@ -380,18 +394,27 @@ async def register(request: Request, user_data: UserRegister, db: Session = Depe
         
         if not email_sent:
             # 邮件发送失败，但用户已创建，给出提示
+            message = "注册成功，但验证邮件发送失败。请联系客服获取帮助。"
+            if daily_reward_granted:
+                message += " 每日登录奖励 +10 积分！🎉"
             return RegisterResponse(
                 success=True,
-                message="注册成功，但验证邮件发送失败。请联系客服获取帮助。",
+                message=message,
                 user_id=new_user.id,
-                email=new_user.email
+                email=new_user.email,
+                daily_reward_granted=daily_reward_granted
             )
+        
+        message = "注册成功！请检查邮箱并点击验证链接完成账户激活。"
+        if daily_reward_granted:
+            message += " 每日登录奖励 +10 积分！🎉"
         
         return RegisterResponse(
             success=True,
-            message="注册成功！请检查邮箱并点击验证链接完成账户激活。",
+            message=message,
             user_id=new_user.id,
-            email=new_user.email
+            email=new_user.email,
+            daily_reward_granted=daily_reward_granted
         )
         
     except Exception as e:
@@ -439,7 +462,7 @@ async def login(request: Request, credentials: UserLogin, db: Session = Depends(
         from app.services.credit_service import CreditService
         
         # 发放每日登录奖励
-        reward_success, reward_error, credits_balance, is_first_login_today = CreditService.grant_daily_reward(db, user.id)
+        reward_success, reward_error, credits_balance, is_first_login_today = CreditService.grant_daily_reward_if_eligible(db, user.id)
         
         if reward_success:
             daily_reward_granted = is_first_login_today

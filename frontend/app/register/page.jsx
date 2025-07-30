@@ -165,12 +165,17 @@ function RegisterForm() {
       const data = await response.json()
 
       if (response.ok && data.success) {
-        setSuccess('注册成功！验证邮件已发送，正在跳转...')
+        // 检查是否获得了每日奖励
+        let successMessage = '注册成功！验证邮件已发送，正在跳转...'
+        if (data.daily_reward_granted) {
+          successMessage = '注册成功！每日登录奖励 +10 积分！🎉 验证邮件已发送，正在跳转...'
+        }
+        setSuccess(successMessage)
         
         // 跳转到邮箱验证提示页面
         setTimeout(() => {
           router.push(`/verify-email-sent?email=${encodeURIComponent(formData.email)}`)
-        }, 2000)
+        }, data.daily_reward_granted ? 3000 : 2000) // 如果有奖励，延长显示时间
       } else {
         setError(data.detail || data.message || '注册失败，请稍后重试')
       }
