@@ -208,3 +208,17 @@ export async function getUserInvitations(token) {
     }
   })
 }
+
+// 积分相关 API
+export async function getCreditHistory(token, page = 1, limit = 20) {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString()
+  });
+  
+  return await apiCall(`/api/auth/credits/history?${params}`, {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  })
+}

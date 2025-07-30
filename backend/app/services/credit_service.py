@@ -75,23 +75,38 @@ class CreditService:
         return db.query(UserCredits).filter(UserCredits.user_id == user_id).first()
     
     @staticmethod
-    def get_user_transactions(db: Session, user_id: int, limit: int = 20) -> list:
+    def get_user_transactions(db: Session, user_id: int, page: int = 1, limit: int = 20) -> tuple:
         """
-        获取用户的积分交易记录
+        获取用户的积分交易记录（支持分页）
         
         Args:
             db: 数据库会话
             user_id: 用户ID
-            limit: 返回记录数限制
+            page: 页码（从1开始）
+            limit: 每页记录数限制
             
         Returns:
-            list: 交易记录列表
+            tuple: (交易记录列表, 总记录数, 总页数)
         """
-        return db.query(CreditTransaction).filter(
+        # 计算偏移量
+        offset = (page - 1) * limit
+        
+        # 查询总记录数
+        total_count = db.query(CreditTransaction).filter(
+            CreditTransaction.user_id == user_id
+        ).count()
+        
+        # 计算总页数
+        total_pages = (total_count + limit - 1) // limit
+        
+        # 查询当前页的记录
+        transactions = db.query(CreditTransaction).filter(
             CreditTransaction.user_id == user_id
         ).order_by(
             CreditTransaction.created_at.desc()
-        ).limit(limit).all()
+        ).offset(offset).limit(limit).all()
+        
+        return transactions, total_count, total_pages
     
     @staticmethod
     def deduct_credits(db: Session, user_id: int, amount: int, description: str) -> tuple:

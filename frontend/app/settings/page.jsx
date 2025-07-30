@@ -3,7 +3,7 @@ import { useState, useContext, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AuthContext from '@/context/AuthContext';
 import Header from '@/components/common/Header';
-import { getProfile, updateProfile, generateInvitationCode, getUserInvitations, updatePassword } from '@/lib/api';
+import { getProfile, updateProfile, generateInvitationCode, getUserInvitations, updatePassword, getCreditHistory } from '@/lib/api';
 import Toast from '@/components/common/Toast';
 import PasswordInput from '@/components/common/PasswordInput';
 import { Button } from '../../components/ui/Button';
@@ -54,9 +54,61 @@ const SettingsContent = () => {
     confirmPassword: ''
   });
   
+  // 积分历史相关状态
+  const [creditHistory, setCreditHistory] = useState([]);
+  const [creditLoading, setCreditLoading] = useState(false);
+  const [creditPagination, setCreditPagination] = useState({
+    current_page: 1,
+    total_pages: 1,
+    total_count: 0,
+    has_next: false,
+    has_prev: false
+  });
+  const [currentBalance, setCurrentBalance] = useState(0);
+  
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
+  };
+  
+  // 格式化交易类型显示文本
+  const formatTransactionType = (type) => {
+    const typeMap = {
+      'INITIAL_GRANT': '初始赠送',
+      'MANUAL_GRANT': '手动发放',
+      'DEDUCTION': '消费扣除',
+      'REFUND': '失败退款'
+    };
+    return typeMap[type] || type;
+  };
+  
+  // 格式化日期显示
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleString('zh-CN');
+  };
+  
+  // 获取交易金额的显示样式
+  const getAmountStyle = (type) => {
+    switch (type) {
+      case 'DEDUCTION':
+        return 'text-red-600 font-medium';
+      case 'INITIAL_GRANT':
+      case 'MANUAL_GRANT':
+      case 'REFUND':
+        return 'text-green-600 font-medium';
+      default:
+        return 'text-text-primary font-medium';
+    }
+  };
+  
+  // 获取交易金额的显示文本（带正负号）
+  const getAmountText = (type, amount) => {
+    if (type === 'DEDUCTION') {
+      return `-${amount}`;
+    } else {
+      return `+${amount}`;
+    }
   };
 
   // 加载用户详细资料
@@ -89,6 +141,33 @@ const SettingsContent = () => {
       setInvitations([]);
     }
   };
+  
+  // 加载积分历史数据
+  const loadCreditHistory = async (page = 1, loadMore = false) => {
+    if (!token) return;
+    
+    try {
+      setCreditLoading(true);
+      const response = await getCreditHistory(token, page, 20);
+      
+      if (response.success) {
+        if (loadMore) {
+          // 加载更多：追加到现有数据
+          setCreditHistory(prev => [...prev, ...response.data]);
+        } else {
+          // 初始加载：替换所有数据
+          setCreditHistory(response.data);
+        }
+        setCreditPagination(response.pagination);
+        setCurrentBalance(response.current_balance);
+      }
+    } catch (error) {
+      console.error('加载积分历史失败:', error);
+      showToast('加载积分历史失败', 'error');
+    } finally {
+      setCreditLoading(false);
+    }
+  };
 
   // 处理 URL 参数中的 tab
   useEffect(() => {
@@ -104,6 +183,7 @@ const SettingsContent = () => {
     } else if (user && token) {
       loadProfileData();
       loadInvitations();
+      loadCreditHistory(); // 加载积分历史
     }
   }, [user, token, loading, router]);
 
@@ -307,13 +387,16 @@ const SettingsContent = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
-                <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">积分系统</h3>
-                  <p className="text-lg text-gray-600">
-                    积分系统正在重新设计中...
+                {/* 当前积分余额显示 */}
+                <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
+                  <h3 className="text-lg font-medium text-blue-900 mb-2">当前积分余额</h3>
+                  <p className="text-3xl font-bold text-blue-600">
+                    {currentBalance}
                   </p>
-                  <p className="text-sm text-gray-500 mt-1">敬请期待新版本</p>
+                  <p className="text-sm text-blue-700 mt-1">积分 (每100字符消耗1积分)</p>
                 </div>
+
+                {/* 使用统计 */}
                 <div>
                   <h3 className="text-lg font-medium text-text-primary mb-4">使用统计</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -328,14 +411,75 @@ const SettingsContent = () => {
                     </Card>
                     <Card className="bg-background-secondary">
                       <CardContent className="pt-6">
-                        <p className="text-sm text-text-secondary">用户类型</p>
+                        <p className="text-sm text-text-secondary">交易记录</p>
                         <p className="text-2xl font-bold text-text-primary">
-                          {profileData && profileData.is_superuser ? '管理员' : '普通用户'}
+                          {creditPagination.total_count || 0}
                         </p>
-                        <p className="text-sm text-text-tertiary">权限级别</p>
+                        <p className="text-sm text-text-tertiary">总交易数</p>
                       </CardContent>
                     </Card>
                   </div>
+                </div>
+
+                {/* 积分历史记录 */}
+                <div>
+                  <h3 className="text-lg font-medium text-text-primary mb-4">积分历史记录</h3>
+                  
+                  {creditLoading && creditHistory.length === 0 ? (
+                    /* 加载状态 */
+                    <div className="text-center py-12">
+                      <div className="animate-spin rounded-full h-8 w-8 border-4 border-brand-primary border-t-transparent mx-auto mb-4"></div>
+                      <p className="text-text-secondary">加载中...</p>
+                    </div>
+                  ) : creditHistory.length === 0 ? (
+                    /* 空状态 */
+                    <div className="text-center py-12 bg-background-secondary rounded-lg">
+                      <div className="text-4xl mb-4">📊</div>
+                      <p className="text-text-secondary text-lg mb-2">暂无积分记录</p>
+                      <p className="text-text-tertiary text-sm">开始使用思维导图功能后，积分交易记录将显示在这里</p>
+                    </div>
+                  ) : (
+                    /* 积分历史列表 */
+                    <div className="space-y-3">
+                      {creditHistory.map((transaction) => (
+                        <Card key={transaction.id} className="border border-border-secondary">
+                          <CardContent className="py-4">
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-sm font-medium text-text-primary">
+                                    {formatTransactionType(transaction.type)}
+                                  </span>
+                                  <span className={`text-sm ${getAmountStyle(transaction.type)}`}>
+                                    {getAmountText(transaction.type, transaction.amount)}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-text-secondary mb-1">
+                                  {transaction.description}
+                                </p>
+                                <p className="text-xs text-text-tertiary">
+                                  {formatDate(transaction.created_at)}
+                                </p>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                      
+                      {/* 加载更多按钮 */}
+                      {creditPagination.has_next && (
+                        <div className="text-center pt-4">
+                          <Button
+                            onClick={() => loadCreditHistory(creditPagination.current_page + 1, true)}
+                            disabled={creditLoading}
+                            variant="outline"
+                          >
+                            {creditLoading ? '加载中...' : '加载更多'}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </CardContent>

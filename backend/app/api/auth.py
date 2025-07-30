@@ -200,6 +200,34 @@ class PasswordStrengthResponse(BaseModel):
     strength_level: str
 
 
+class CreditTransactionResponse(BaseModel):
+    """积分交易记录响应模型"""
+    id: int
+    type: str
+    amount: int
+    description: str
+    created_at: str
+    
+    @classmethod
+    def from_transaction(cls, transaction):
+        """从CreditTransaction对象创建响应模型"""
+        return cls(
+            id=transaction.id,
+            type=transaction.type.value,
+            amount=transaction.amount,
+            description=transaction.description,
+            created_at=transaction.created_at.isoformat()
+        )
+
+
+class CreditHistoryResponse(BaseModel):
+    """积分历史响应模型"""
+    success: bool
+    data: List[CreditTransactionResponse]
+    pagination: dict
+    current_balance: int
+
+
 class PasswordUpdateRequest(BaseModel):
     """密码更新请求模型"""
     current_password: str
@@ -1010,6 +1038,80 @@ async def update_password(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"密码更新失败: {str(e)}"
+        )
+
+
+@router.get("/credits/history", response_model=CreditHistoryResponse)
+async def get_credits_history(
+    page: int = 1,
+    limit: int = 20,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    获取用户积分交易历史记录（支持分页）
+    
+    Args:
+        page: 页码（从1开始，默认第1页）
+        limit: 每页记录数（默认20条，最大100条）
+        current_user: 当前登录用户
+        db: 数据库会话
+    
+    Returns:
+        CreditHistoryResponse: 包含交易记录、分页信息和当前余额的响应
+    """
+    try:
+        # 参数验证
+        if page < 1:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="页码必须大于0"
+            )
+        
+        if limit < 1 or limit > 100:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="每页记录数必须在1-100之间"
+            )
+        
+        # 获取用户当前积分余额
+        user_credits = CreditService.get_user_credits(db, current_user.id)
+        current_balance = user_credits.balance if user_credits else 0
+        
+        # 获取分页的交易记录
+        transactions, total_count, total_pages = CreditService.get_user_transactions(
+            db, current_user.id, page, limit
+        )
+        
+        # 转换为响应模型
+        transaction_responses = [
+            CreditTransactionResponse.from_transaction(trans) 
+            for trans in transactions
+        ]
+        
+        # 构建分页信息
+        pagination = {
+            "current_page": page,
+            "total_pages": total_pages,
+            "total_count": total_count,
+            "page_size": limit,
+            "has_next": page < total_pages,
+            "has_prev": page > 1
+        }
+        
+        return CreditHistoryResponse(
+            success=True,
+            data=transaction_responses,
+            pagination=pagination,
+            current_balance=current_balance
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"获取积分历史失败: {str(e)}"
         )
 
 
