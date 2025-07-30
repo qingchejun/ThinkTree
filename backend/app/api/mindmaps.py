@@ -323,7 +323,6 @@ async def delete_mindmap(
 class FileGenerateRequest(BaseModel):
     """从文件生成思维导图的请求模型"""
     file_token: str
-    format_type: Optional[str] = "standard"
 
 
 @router.post("/generate-from-file")
@@ -333,13 +332,12 @@ async def generate_from_file(
     db: Session = Depends(get_db)
 ):
     """
-    接口B: 执行生成与扣费
     根据文件token生成思维导图，执行完整的积分扣费流程
     """
-    # 导入优化后的文件缓存函数
+    # 导入文件缓存函数
     from .upload import get_file_data
     
-    # 获取文件数据（包含预处理结果和积分成本）
+    # 获取文件数据
     file_data = get_file_data(request.file_token, current_user.id)
     if not file_data:
         raise HTTPException(
@@ -351,10 +349,10 @@ async def generate_from_file(
     filename = file_data['filename']
     file_type = file_data['file_type']
     
-    # 1. 使用缓存的积分成本（避免重复计算）
+    # 1. 使用缓存的积分成本
     credit_cost = file_data.get('credit_cost')
     if credit_cost is None:
-        # 降级方案：如果缓存中没有积分成本，重新计算
+        # 如果缓存中没有积分成本，重新计算
         from .upload import calculate_file_credit_cost
         credit_cost = calculate_file_credit_cost(parsed_content)
     
@@ -387,25 +385,12 @@ async def generate_from_file(
             detail=f"积分扣除失败: {deduct_error}"
         )
     
-    # 4. 调用AI服务生成思维导图（优化版本，使用预处理数据）
+    # 4. 调用AI服务生成思维导图
     try:
-        # 获取预处理数据以加速生成
-        ai_preprocessed_data = file_data.get('ai_preprocessed')
-        
-        # 使用优化的AI生成方法
-        if ai_preprocessed_data:
-            # 如果有预处理数据，使用快速生成模式
-            mindmap_result = await ai_processor.generate_mindmap_with_preprocessing(
-                parsed_content, 
-                request.format_type,
-                ai_preprocessed_data
-            )
-        else:
-            # 降级到标准生成模式
-            mindmap_result = await ai_processor.generate_mindmap_structure(
-                parsed_content, 
-                request.format_type
-            )
+        # 使用统一的AI生成方法
+        mindmap_result = await ai_processor.generate_mindmap_structure(
+            parsed_content
+        )
         
         if not mindmap_result["success"]:
             # AI生成失败，退还积分

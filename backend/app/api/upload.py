@@ -45,10 +45,10 @@ os.makedirs(settings.upload_dir, exist_ok=True)
 # FileProcessingCache 和 CreditCalculationCache 已导入
 
 def store_file_data(user_id: int, filename: str, content: str, file_type: str, 
-                   credit_cost: int, ai_preprocessed_data: Optional[Dict] = None) -> str:
+                   credit_cost: int) -> str:
     """
     临时存储文件数据，返回文件token
-    使用新的高性能缓存系统，包含预处理数据和积分成本缓存
+    使用高性能缓存系统存储文件分析结果
     
     Args:
         user_id: 用户ID
@@ -56,7 +56,6 @@ def store_file_data(user_id: int, filename: str, content: str, file_type: str,
         content: 解析后的文本内容
         file_type: 文件类型
         credit_cost: 积分成本（已计算并缓存）
-        ai_preprocessed_data: AI预处理数据
         
     Returns:
         str: 文件token标识
@@ -66,8 +65,7 @@ def store_file_data(user_id: int, filename: str, content: str, file_type: str,
         filename=filename,
         content=content,
         file_type=file_type,
-        credit_cost=credit_cost,
-        ai_preprocessed_data=ai_preprocessed_data
+        credit_cost=credit_cost
     )
 
 def get_file_data(file_token: str, user_id: int) -> Optional[Dict]:
@@ -185,8 +183,7 @@ async def upload_file(
         # 4. 调用AI服务生成思维导图（使用try-except处理失败情况）
         try:
             mindmap_result = await ai_processor.generate_mindmap_structure(
-                parsed_content, 
-                format_type
+                parsed_content
             )
             
             if not mindmap_result["success"]:
@@ -300,8 +297,7 @@ async def process_text(
     # 4. 调用AI服务生成思维导图（使用try-except处理失败情况）
     try:
         mindmap_result = await ai_processor.generate_mindmap_structure(
-            request.text, 
-            request.format_type
+            request.text
         )
         
         if not mindmap_result["success"]:
@@ -394,13 +390,8 @@ async def analyze_file(
     db: Session = Depends(get_db)
 ):
     """
-    文件分析与成本预估 - 优化版本
-    上传文件，解析内容，预处理AI数据，计算积分成本，返回文件token
-    
-    优化点：
-    1. 使用高性能缓存系统
-    2. 异步预处理AI数据，加速后续生成
-    3. 缓存积分计算结果
+    文件分析与成本预估
+    上传文件，解析内容，计算积分成本，返回文件token
     """
     # 验证文件类型
     file_ext = Path(file.filename).suffix.lower()
@@ -435,24 +426,13 @@ async def analyze_file(
         user_credits = CreditService.get_user_credits(db, current_user.id)
         current_balance = user_credits.balance if user_credits else 0
         
-        # 4. 异步预处理AI数据（关键优化：在分析阶段就准备AI需要的数据）
-        ai_preprocessed_data = None
-        try:
-            # 这个异步操作可以在后台进行，不阻塞响应
-            ai_preprocessed_data = await FileProcessingCache.preprocess_for_ai(
-                parsed_content, "standard"
-            )
-        except Exception as e:
-            print(f"AI预处理警告: {e}")  # 预处理失败不影响主流程
-        
-        # 5. 存储文件数据到高性能缓存，包含预处理结果和积分成本
+        # 4. 存储文件数据到高性能缓存
         file_token = store_file_data(
             user_id=current_user.id,
             filename=file.filename,
             content=parsed_content,
             file_type=file_ext,
-            credit_cost=credit_cost,
-            ai_preprocessed_data=ai_preprocessed_data
+            credit_cost=credit_cost
         )
         
         return JSONResponse(content={
@@ -466,8 +446,7 @@ async def analyze_file(
                 "estimated_cost": credit_cost,
                 "user_balance": current_balance,
                 "sufficient_credits": current_balance >= credit_cost,
-                "pricing_rule": "每100个字符消耗1积分（向上取整）",
-                "has_ai_preprocessing": ai_preprocessed_data is not None
+                "pricing_rule": "每100个字符消耗1积分（向上取整）"
             },
             "expires_in": 3600  # 1小时后过期
         })

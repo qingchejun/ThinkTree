@@ -211,8 +211,7 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
           'Authorization': `Bearer ${activeToken}`
         },
         body: JSON.stringify({
-          file_token: fileAnalysis.file_token,
-          format_type: 'standard'
+          file_token: fileAnalysis.file_token
         })
       })
 
@@ -262,8 +261,7 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
           'Authorization': `Bearer ${activeToken}`
         },
         body: JSON.stringify({
-          text: textInput.trim(),
-          format_type: 'standard'
+          text: textInput.trim()
         })
       })
 

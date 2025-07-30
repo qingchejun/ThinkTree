@@ -18,10 +18,10 @@ class GeminiProcessor:
         else:
             self.model = None
     
-    async def generate_mindmap_structure(self, content: str, format_type: str = "standard") -> Dict[str, Any]:
+    async def generate_mindmap_structure(self, content: str) -> Dict[str, Any]:
         """
         核心功能：将文本内容转换为思维导图结构
-        确保关键信息不丢失，支持多种格式输出
+        统一的AI生成方法，确保关键信息不丢失
         """
         if not self.model:
             return {
@@ -29,7 +29,7 @@ class GeminiProcessor:
                 "error": "Gemini API key not configured"
             }
         
-        prompt = self._build_mindmap_prompt(content, format_type)
+        prompt = self._build_mindmap_prompt(content)
         
         try:
             response = self.model.generate_content(prompt)
@@ -62,58 +62,6 @@ class GeminiProcessor:
                 "success": False,
                 "error": f"AI生成失败: {str(e)}"
             }
-    
-    async def generate_mindmap_with_preprocessing(self, content: str, format_type: str = "standard", 
-                                                preprocessed_data: Dict = None) -> Dict[str, Any]:
-        """
-        使用预处理数据的快速生成方法
-        利用分析阶段的预处理结果来加速生成过程
-        
-        Args:
-            content: 原始文本内容
-            format_type: 格式类型
-            preprocessed_data: 预处理数据，包含关键点等
-        
-        Returns:
-            Dict: 生成结果
-        """
-        if not self.model:
-            return {
-                "success": False,
-                "error": "Gemini API key not configured"
-            }
-        
-        # 使用预处理数据构建优化的提示
-        prompt = self._build_optimized_prompt(content, format_type, preprocessed_data)
-        
-        try:
-            response = self.model.generate_content(prompt)
-            response_text = response.text.strip()
-            
-            # 清理响应文本，提取Markdown部分
-            cleaned_markdown = self._clean_markdown_response(response_text)
-            
-            if not cleaned_markdown:
-                # 降级到标准方法
-                return await self.generate_mindmap_structure(content, format_type)
-            
-            # 提取标题
-            title = self._extract_title_from_markdown(cleaned_markdown)
-            
-            return {
-                "success": True,
-                "data": {
-                    "title": title,
-                    "markdown": cleaned_markdown,
-                    "format": "markdown",
-                    "used_preprocessing": True
-                }
-            }
-            
-        except Exception as e:
-            # 如果优化方法失败，降级到标准方法
-            print(f"预处理生成失败，降级到标准方法: {e}")
-            return await self.generate_mindmap_structure(content, format_type)
     
     def _clean_markdown_response(self, text: str) -> str:
         """清理AI响应，提取Markdown内容"""
@@ -159,33 +107,8 @@ class GeminiProcessor:
         
         return True
     
-    async def extract_key_points(self, content: str) -> List[str]:
-        """提取关键信息点"""
-        if not self.model:
-            return []
-            
-        prompt = f"""
-        请从以下内容中提取关键信息点，确保不遗漏重要内容：
-
-        内容：
-        {content}
-
-        要求：
-        1. 提取所有重要观点和概念
-        2. 保持信息的层次结构
-        3. 返回JSON格式的列表
-
-        返回格式：
-        ["关键点1", "关键点2", "关键点3", ...]
-        """
-
-        try:
-            response = self.model.generate_content(prompt)
-            return json.loads(response.text.strip())
-        except Exception:
-            return []
     
-    def _build_mindmap_prompt(self, content: str, format_type: str) -> str:
+    def _build_mindmap_prompt(self, content: str) -> str:
         """构建思维导图生成提示"""
         
         # 限制内容长度，避免超出 token 限制
@@ -241,15 +164,6 @@ class GeminiProcessor:
 ---
 请严格遵循以上所有规则，开始生成详细的思维导图。"""
         return prompt
-    
-    def _build_optimized_prompt(self, content: str, format_type: str, preprocessed_data: Dict) -> str:
-        """
-        构建优化的提示 - 现在统一使用标准处理方式
-        """
-        # 统一使用标准处理方式，忽略预处理数据以保持一致性
-        # preprocessed_data 参数保留以维持接口兼容性，但不再使用
-        _ = preprocessed_data  # 明确标记为未使用但保留的参数
-        return self._build_mindmap_prompt(content, format_type)
 
 # 创建全局 AI 处理器实例
 ai_processor = GeminiProcessor()

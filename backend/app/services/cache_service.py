@@ -1,6 +1,6 @@
 """
 高效缓存服务 - 优化思维导图生成性能
-集成文件缓存、积分计算缓存和预处理数据缓存
+集成文件缓存和积分计算缓存
 """
 
 import time
@@ -11,7 +11,6 @@ from threading import Lock
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
-from ..core.ai_processor import ai_processor
 
 
 @dataclass
@@ -126,18 +125,16 @@ class FileProcessingCache:
     
     @staticmethod
     def store_file_analysis(user_id: int, filename: str, content: str, 
-                          file_type: str, credit_cost: int, 
-                          ai_preprocessed_data: Optional[Dict] = None) -> str:
+                          file_type: str, credit_cost: int) -> str:
         """
-        存储文件分析结果，包含预处理的AI数据
+        存储文件分析结果
         
         Args:
             user_id: 用户ID
             filename: 文件名
             content: 解析内容
             file_type: 文件类型
-            credit_cost: 积分成本（缓存计算结果）
-            ai_preprocessed_data: 预处理的AI数据
+            credit_cost: 积分成本
         
         Returns:
             str: 文件token
@@ -148,10 +145,9 @@ class FileProcessingCache:
             'filename': filename,
             'content': content,
             'file_type': file_type,
-            'credit_cost': credit_cost,  # 缓存积分计算结果
+            'credit_cost': credit_cost,
             'content_preview': content[:200] + "..." if len(content) > 200 else content,
-            'text_length': len(content.strip()),
-            'ai_preprocessed': ai_preprocessed_data  # 预处理数据
+            'text_length': len(content.strip())
         }
         
         cache_manager.set(file_token, cache_data, user_id, ttl=3600)
@@ -162,31 +158,6 @@ class FileProcessingCache:
         """获取文件分析结果"""
         return cache_manager.get(file_token, user_id)
     
-    @staticmethod
-    async def preprocess_for_ai(content: str, format_type: str = "standard") -> Dict:
-        """
-        预处理AI需要的数据，包括提取关键点等
-        这个步骤可以在分析阶段就完成，避免生成时重复处理
-        """
-        try:
-            # 并行执行多项预处理任务
-            tasks = [
-                ai_processor.extract_key_points(content),
-                # 可以添加更多预处理任务
-            ]
-            
-            results = await asyncio.gather(*tasks, return_exceptions=True)
-            key_points = results[0] if not isinstance(results[0], Exception) else []
-            
-            return {
-                'key_points': key_points,
-                'content_length': len(content),
-                'format_type': format_type,
-                'preprocessed_at': time.time()
-            }
-        except Exception as e:
-            print(f"AI预处理失败: {e}")
-            return {}
 
 
 class CreditCalculationCache:

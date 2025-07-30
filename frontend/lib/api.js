@@ -32,12 +32,12 @@ async function apiCall(endpoint, options = {}) {
 }
 
 // 文件上传
-export async function uploadFile(file, token, format = 'tree') {
+export async function uploadFile(file, token) {
   const formData = new FormData()
   formData.append('file', file)
   
   try {
-    const response = await fetch(`${API_BASE_URL}/api/upload?format_type=${format}`, {
+    const response = await fetch(`${API_BASE_URL}/api/upload`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`
@@ -59,7 +59,7 @@ export async function uploadFile(file, token, format = 'tree') {
 }
 
 // 处理文本
-export async function processText(text, token, format = 'tree') {
+export async function processText(text, token) {
   if (!text || !text.trim()) {
     throw new Error('文本内容不能为空')
   }
@@ -71,8 +71,7 @@ export async function processText(text, token, format = 'tree') {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      text: text.trim(),
-      format_type: format
+      text: text.trim()
     })
   })
 }
