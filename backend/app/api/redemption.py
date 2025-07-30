@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 from typing import List
 
 from ..core.database import get_db
-from ..core.auth import get_current_user
+from .auth import get_current_user
 from ..models.user import User
 from ..services.redemption_service import RedemptionService
 
