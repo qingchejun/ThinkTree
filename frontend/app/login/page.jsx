@@ -112,7 +112,7 @@ function LoginForm() {
       
       if (loginResult.success) {
         // 登录成功，检查是否有重定向参数
-        const redirectUrl = searchParams.get('redirect') || '/'
+        const redirectUrl = searchParams.get('redirect') || '/dashboard'
         setTimeout(() => {
           router.push(redirectUrl)
         }, data.daily_reward_granted ? 2500 : 1500)  // 如果有奖励，延长显示时间
