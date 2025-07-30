@@ -112,12 +112,21 @@ class DatabaseBootstrapper:
             print("🔍 检查数据库列完整性...")
             
             with self.engine.connect() as conn:
-                # 检查 user_credits 表的 last_daily_reward_date 字段
-                try:
-                    # 尝试查询该字段，如果不存在会抛出异常
-                    conn.execute(text("SELECT last_daily_reward_date FROM user_credits LIMIT 1"))
+                # 使用PostgreSQL的信息模式检查字段是否存在
+                check_column_query = text("""
+                    SELECT COUNT(*) 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'user_credits' 
+                    AND column_name = 'last_daily_reward_date'
+                """)
+                
+                result = conn.execute(check_column_query)
+                column_exists = result.scalar() > 0
+                
+                if column_exists:
                     print("✅ user_credits.last_daily_reward_date 字段已存在")
-                except Exception:
+                    return True
+                else:
                     print("🆕 添加 user_credits.last_daily_reward_date 字段")
                     try:
                         conn.execute(text("ALTER TABLE user_credits ADD COLUMN last_daily_reward_date DATE"))
@@ -125,10 +134,8 @@ class DatabaseBootstrapper:
                         print("✅ 成功添加 user_credits.last_daily_reward_date 字段")
                     except Exception as e:
                         print(f"❌ 添加字段失败: {e}")
+                        conn.rollback()
                         return False
-                
-                # 可以在这里添加其他字段的检查
-                # 例如检查其他可能缺失的字段
                 
             return True
             
