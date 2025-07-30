@@ -20,6 +20,7 @@ from app.models.user import User
 from app.services.credit_service import CreditService
 from app.services.cache_service import FileProcessingCache, CreditCalculationCache
 from typing import Optional, Dict
+from functools import lru_cache
 
 router = APIRouter()
 
@@ -43,6 +44,52 @@ os.makedirs(settings.upload_dir, exist_ok=True)
 
 # 使用新的高性能缓存系统
 # FileProcessingCache 和 CreditCalculationCache 已导入
+
+class FileValidationService:
+    """统一的文件验证服务，消除重复验证逻辑"""
+    
+    @staticmethod
+    async def validate_upload_file(file: UploadFile) -> tuple[str, bytes]:
+        """
+        统一的文件验证逻辑
+        
+        Returns:
+            tuple[str, bytes]: (file_extension, file_content)
+        """
+        # 验证文件类型
+        file_ext = Path(file.filename).suffix.lower()
+        if file_ext not in settings.allowed_file_types:
+            raise HTTPException(
+                status_code=400,
+                detail=f"不支持的文件类型: {file_ext}。支持的类型: {', '.join(settings.allowed_file_types)}"
+            )
+        
+        # 验证文件大小
+        file_content = await file.read()
+        if len(file_content) > settings.max_file_size:
+            raise HTTPException(
+                status_code=400,
+                detail=f"文件过大。最大支持 {settings.max_file_size // (1024*1024)} MB"
+            )
+        
+        return file_ext, file_content
+
+class RequestCacheService:
+    """请求级缓存服务，减少重复数据库查询"""
+    
+    def __init__(self):
+        self._cache = {}
+    
+    def get_user_credits_cached(self, db: Session, user_id: int):
+        """获取用户积分信息（请求级缓存）"""
+        cache_key = f"user_credits_{user_id}"
+        if cache_key not in self._cache:
+            self._cache[cache_key] = CreditService.get_user_credits(db, user_id)
+        return self._cache[cache_key]
+    
+    def clear_cache(self):
+        """清理缓存"""
+        self._cache.clear()
 
 def store_file_data(user_id: int, filename: str, content: str, file_type: str, 
                    credit_cost: int) -> str:
@@ -84,31 +131,17 @@ def get_file_data(file_token: str, user_id: int) -> Optional[Dict]:
 
 def calculate_credit_cost(text: str) -> int:
     """
-    根据文本长度计算积分成本（用于直接文本输入）
+    统一的积分成本计算方法
     计费规则：每100个字符消耗1个积分（向上取整）
     使用缓存优化重复计算
     
     Args:
-        text: 输入文本
+        text: 输入文本内容
         
     Returns:
         int: 需要消耗的积分数量
     """
-    return CreditCalculationCache.calculate_text_credit_cost_cached(text)
-
-def calculate_file_credit_cost(text: str) -> int:
-    """
-    根据文件文本长度计算积分成本（用于文件上传）
-    计费规则：每100个字符消耗1个积分（向上取整）
-    使用缓存优化重复计算
-    
-    Args:
-        text: 从文件解析出的文本内容
-        
-    Returns:
-        int: 需要消耗的积分数量
-    """
-    return CreditCalculationCache.calculate_file_credit_cost_cached(text)
+    return CreditCalculationCache.calculate_credit_cost_cached(text)
 
 @router.post("/upload")
 async def upload_file(
@@ -122,21 +155,8 @@ async def upload_file(
     文件上传和处理API
     支持的格式: txt, md, docx, pdf, srt
     """
-    # 验证文件类型
-    file_ext = Path(file.filename).suffix.lower()
-    if file_ext not in settings.allowed_file_types:
-        raise HTTPException(
-            status_code=400,
-            detail=f"不支持的文件类型: {file_ext}。支持的类型: {', '.join(settings.allowed_file_types)}"
-        )
-    
-    # 验证文件大小
-    file_content = await file.read()
-    if len(file_content) > settings.max_file_size:
-        raise HTTPException(
-            status_code=400,
-            detail=f"文件过大。最大支持 {settings.max_file_size // (1024*1024)} MB"
-        )
+    # 使用统一的文件验证服务
+    file_ext, file_content = await FileValidationService.validate_upload_file(file)
     
     try:
         # 解析文件内容
@@ -393,23 +413,13 @@ async def analyze_file(
     文件分析与成本预估
     上传文件，解析内容，计算积分成本，返回文件token
     """
-    # 验证文件类型
-    file_ext = Path(file.filename).suffix.lower()
-    if file_ext not in settings.allowed_file_types:
-        raise HTTPException(
-            status_code=400,
-            detail=f"不支持的文件类型: {file_ext}。支持的类型: {', '.join(settings.allowed_file_types)}"
-        )
-    
-    # 验证文件大小
-    file_content = await file.read()
-    if len(file_content) > settings.max_file_size:
-        raise HTTPException(
-            status_code=400,
-            detail=f"文件过大。最大支持 {settings.max_file_size // (1024*1024)} MB"
-        )
+    # 创建请求级缓存
+    request_cache = RequestCacheService()
     
     try:
+        # 使用统一的文件验证服务
+        file_ext, file_content = await FileValidationService.validate_upload_file(file)
+        
         # 1. 解析文件内容
         parsed_content = file_parser.parse_from_bytes(file_content, file.filename)
         
@@ -420,10 +430,10 @@ async def analyze_file(
             )
         
         # 2. 计算积分成本（使用缓存优化）
-        credit_cost = calculate_file_credit_cost(parsed_content)
+        credit_cost = calculate_credit_cost(parsed_content)
         
-        # 3. 获取用户当前积分余额
-        user_credits = CreditService.get_user_credits(db, current_user.id)
+        # 3. 获取用户当前积分余额（使用请求级缓存）
+        user_credits = request_cache.get_user_credits_cached(db, current_user.id)
         current_balance = user_credits.balance if user_credits else 0
         
         # 4. 存储文件数据到高性能缓存

@@ -306,7 +306,7 @@ class FileParser:
     
     def parse_from_bytes(self, file_bytes: bytes, filename: str) -> Optional[str]:
         """
-        从字节流解析文件内容
+        从字节流解析文件内容（优化版本，避免临时文件IO）
         Args:
             file_bytes: 文件字节内容
             filename: 文件名
@@ -315,10 +315,133 @@ class FileParser:
         """
         file_ext = Path(filename).suffix.lower()
         
-        # 创建临时文件
-        temp_path = f"/tmp/{filename}"
-        with open(temp_path, 'wb') as temp_file:
+        if file_ext not in self.supported_formats:
+            raise ValueError(f"不支持的文件格式: {file_ext}")
+        
+        try:
+            if file_ext == '.txt':
+                return self._parse_txt_from_bytes(file_bytes)
+            elif file_ext == '.md':
+                return self._parse_md_from_bytes(file_bytes)
+            elif file_ext == '.docx':
+                return self._parse_docx_from_bytes(file_bytes, filename)
+            elif file_ext == '.pdf':
+                return self._parse_pdf_from_bytes(file_bytes, filename)
+            elif file_ext == '.srt':
+                return self._parse_srt_from_bytes(file_bytes)
+        except Exception as e:
+            raise Exception(f"文件解析失败: {str(e)}")
+        
+        return None
+    
+    def _parse_txt_from_bytes(self, file_bytes: bytes) -> str:
+        """从字节流解析纯文本文件"""
+        # 尝试多种编码
+        encodings = ['utf-8', 'gbk', 'gb2312', 'big5']
+        for encoding in encodings:
+            try:
+                return file_bytes.decode(encoding)
+            except UnicodeDecodeError:
+                continue
+        # 如果所有编码都失败，使用utf-8并忽略错误
+        return file_bytes.decode('utf-8', errors='ignore')
+    
+    def _parse_md_from_bytes(self, file_bytes: bytes) -> str:
+        """从字节流解析Markdown文件"""
+        # 先解码为文本
+        content = self._parse_txt_from_bytes(file_bytes)
+        # 处理Markdown结构
+        return self._process_markdown_content(content)
+    
+    def _parse_docx_from_bytes(self, file_bytes: bytes, filename: str) -> str:
+        """从字节流解析DOCX文件"""
+        try:
+            from io import BytesIO
+            from docx import Document
+            
+            # 使用BytesIO避免临时文件
+            doc_stream = BytesIO(file_bytes)
+            doc = Document(doc_stream)
+            
+            text_content = []
+            for paragraph in doc.paragraphs:
+                if paragraph.text.strip():
+                    text_content.append(paragraph.text.strip())
+            
+            # 解析表格内容
+            for table in doc.tables:
+                for row in table.rows:
+                    row_text = []
+                    for cell in row.cells:
+                        if cell.text.strip():
+                            row_text.append(cell.text.strip())
+                    if row_text:
+                        text_content.append(" | ".join(row_text))
+            
+            return "\n".join(text_content)
+            
+        except Exception as e:
+            # 如果内存解析失败，降级到临时文件方式
+            return self._fallback_to_temp_file(file_bytes, filename, '.docx')
+    
+    def _parse_pdf_from_bytes(self, file_bytes: bytes, filename: str) -> str:
+        """从字节流解析PDF文件"""
+        try:
+            from io import BytesIO
+            import pdfplumber
+            
+            # 使用BytesIO避免临时文件
+            pdf_stream = BytesIO(file_bytes)
+            
+            with pdfplumber.open(pdf_stream) as pdf:
+                text_content = []
+                for page in pdf.pages:
+                    page_text = page.extract_text()
+                    if page_text:
+                        # 清理文本
+                        cleaned_text = self._clean_pdf_text(page_text)
+                        if cleaned_text.strip():
+                            text_content.append(cleaned_text)
+                
+                return "\n".join(text_content)
+                
+        except Exception as e:
+            try:
+                # 降级到PyPDF2
+                from io import BytesIO
+                import PyPDF2
+                
+                pdf_stream = BytesIO(file_bytes)
+                pdf_reader = PyPDF2.PdfReader(pdf_stream)
+                
+                text_content = []
+                for page in pdf_reader.pages:
+                    page_text = page.extract_text()
+                    if page_text:
+                        cleaned_text = self._clean_pdf_text(page_text)
+                        if cleaned_text.strip():
+                            text_content.append(cleaned_text)
+                
+                return "\n".join(text_content)
+                
+            except Exception as e2:
+                # 如果内存解析都失败，降级到临时文件方式
+                return self._fallback_to_temp_file(file_bytes, filename, '.pdf')
+    
+    def _parse_srt_from_bytes(self, file_bytes: bytes) -> str:
+        """从字节流解析SRT字幕文件"""
+        # 先解码为文本
+        content = self._parse_txt_from_bytes(file_bytes)
+        # 处理SRT格式
+        return self._process_srt_content(content)
+    
+    def _fallback_to_temp_file(self, file_bytes: bytes, filename: str, file_ext: str) -> str:
+        """降级到临时文件方式（仅在内存解析失败时使用）"""
+        import tempfile
+        
+        with tempfile.NamedTemporaryFile(suffix=file_ext, delete=False) as temp_file:
             temp_file.write(file_bytes)
+            temp_path = temp_file.name
         
         try:
             result = self.parse_file(temp_path, file_ext)

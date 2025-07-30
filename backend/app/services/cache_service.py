@@ -6,6 +6,7 @@
 import time
 import uuid
 import asyncio
+import hashlib
 from typing import Dict, Optional, Any, Union
 from threading import Lock
 from concurrent.futures import ThreadPoolExecutor
@@ -169,7 +170,7 @@ class CreditCalculationCache:
     @staticmethod
     def get_cached_credit_cost(content: str, calculation_type: str = 'file') -> Optional[int]:
         """获取缓存的积分成本"""
-        cache_key = f"{calculation_type}:{hash(content)}"
+        cache_key = f"{calculation_type}:{hashlib.md5(content.encode()).hexdigest()}"
         
         with CreditCalculationCache._cache_lock:
             if cache_key in CreditCalculationCache._credit_cache:
@@ -187,7 +188,7 @@ class CreditCalculationCache:
     @staticmethod
     def set_credit_cost_cache(content: str, cost: int, calculation_type: str = 'file'):
         """设置积分成本缓存"""
-        cache_key = f"{calculation_type}:{hash(content)}"
+        cache_key = f"{calculation_type}:{hashlib.md5(content.encode()).hexdigest()}"
         
         with CreditCalculationCache._cache_lock:
             CreditCalculationCache._credit_cache[cache_key] = {
@@ -196,10 +197,13 @@ class CreditCalculationCache:
             }
     
     @staticmethod
-    def calculate_file_credit_cost_cached(content: str) -> int:
-        """计算文件积分成本（带缓存）"""
+    def calculate_credit_cost_cached(content: str) -> int:
+        """
+        统一的积分成本计算方法（带缓存）
+        计费规则：每100个字符消耗1个积分（向上取整）
+        """
         # 先尝试从缓存获取
-        cached_cost = CreditCalculationCache.get_cached_credit_cost(content, 'file')
+        cached_cost = CreditCalculationCache.get_cached_credit_cost(content, 'unified')
         if cached_cost is not None:
             return cached_cost
         
@@ -208,23 +212,7 @@ class CreditCalculationCache:
         cost = max(1, (text_length + 99) // 100)  # 每100字符1积分，向上取整
         
         # 存入缓存
-        CreditCalculationCache.set_credit_cost_cache(content, cost, 'file')
-        return cost
-    
-    @staticmethod
-    def calculate_text_credit_cost_cached(content: str) -> int:
-        """计算文本积分成本（带缓存）"""
-        # 先尝试从缓存获取
-        cached_cost = CreditCalculationCache.get_cached_credit_cost(content, 'text')
-        if cached_cost is not None:
-            return cached_cost
-        
-        # 计算成本
-        text_length = len(content.strip())
-        cost = max(1, (text_length + 99) // 100)  # 每100字符1积分，向上取整
-        
-        # 存入缓存
-        CreditCalculationCache.set_credit_cost_cache(content, cost, 'text')
+        CreditCalculationCache.set_credit_cost_cache(content, cost, 'unified')
         return cost
 
 

@@ -353,8 +353,8 @@ async def generate_from_file(
     credit_cost = file_data.get('credit_cost')
     if credit_cost is None:
         # 如果缓存中没有积分成本，重新计算
-        from .upload import calculate_file_credit_cost
-        credit_cost = calculate_file_credit_cost(parsed_content)
+        from .upload import calculate_credit_cost
+        credit_cost = calculate_credit_cost(parsed_content)
     
     # 2. 检查用户积分是否充足
     user_credits = CreditService.get_user_credits(db, current_user.id)

@@ -351,7 +351,7 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
               {generationComplete && fileAnalysis ? (
                 // 生成完成后显示内容总结
                 <div>
-                  <p className="text-lg font-medium text-gray-700 mb-2">
+                  <p className="text-lg font-small text-gray-700 mb-2">
                     文档内容总结
                   </p>
                   <p className="text-sm text-gray-600 leading-relaxed">
