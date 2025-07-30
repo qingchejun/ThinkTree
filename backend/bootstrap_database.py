@@ -106,6 +106,70 @@ class DatabaseBootstrapper:
             print(f"❌ 获取现有表信息失败: {e}")
             return set()
     
+    def check_and_update_transaction_type_enum(self) -> bool:
+        """检查并更新TransactionType枚举，添加缺失的枚举值"""
+        try:
+            print("🔍 检查TransactionType枚举完整性...")
+            
+            with self.engine.connect() as conn:
+                # 检查DAILY_REWARD是否已存在于transactiontype枚举中
+                check_enum_query = text("""
+                    SELECT 1 
+                    FROM pg_enum e 
+                    JOIN pg_type t ON e.enumtypid = t.oid 
+                    WHERE t.typname = 'transactiontype' 
+                    AND e.enumlabel = 'DAILY_REWARD'
+                """)
+                
+                result = conn.execute(check_enum_query)
+                daily_reward_exists = result.scalar() is not None
+                
+                if daily_reward_exists:
+                    print("✅ TransactionType枚举中DAILY_REWARD已存在")
+                else:
+                    print("🆕 添加DAILY_REWARD到TransactionType枚举")
+                    try:
+                        # 添加DAILY_REWARD枚举值
+                        conn.execute(text("ALTER TYPE transactiontype ADD VALUE 'DAILY_REWARD'"))
+                        conn.commit()
+                        print("✅ 成功添加DAILY_REWARD到TransactionType枚举")
+                    except Exception as e:
+                        print(f"❌ 添加枚举值失败: {e}")
+                        conn.rollback()
+                        return False
+                
+                # 检查MANUAL_GRANT是否已存在
+                check_manual_grant_query = text("""
+                    SELECT 1 
+                    FROM pg_enum e 
+                    JOIN pg_type t ON e.enumtypid = t.oid 
+                    WHERE t.typname = 'transactiontype' 
+                    AND e.enumlabel = 'MANUAL_GRANT'
+                """)
+                
+                result = conn.execute(check_manual_grant_query)
+                manual_grant_exists = result.scalar() is not None
+                
+                if manual_grant_exists:
+                    print("✅ TransactionType枚举中MANUAL_GRANT已存在")
+                else:
+                    print("🆕 添加MANUAL_GRANT到TransactionType枚举")
+                    try:
+                        # 添加MANUAL_GRANT枚举值
+                        conn.execute(text("ALTER TYPE transactiontype ADD VALUE 'MANUAL_GRANT'"))
+                        conn.commit()
+                        print("✅ 成功添加MANUAL_GRANT到TransactionType枚举")
+                    except Exception as e:
+                        print(f"❌ 添加枚举值失败: {e}")
+                        conn.rollback()
+                        return False
+                
+            return True
+            
+        except Exception as e:
+            print(f"❌ 检查TransactionType枚举失败: {e}")
+            return False
+
     def check_and_add_missing_columns(self) -> bool:
         """检查并添加缺失的列"""
         try:
@@ -162,7 +226,11 @@ class DatabaseBootstrapper:
             else:
                 print("✅ 所有表都已存在，无需创建新表")
             
-            # 在创建表之前，检查并添加缺失的列
+            # 在创建表之前，先检查并更新枚举类型
+            if not self.check_and_update_transaction_type_enum():
+                return False
+                
+            # 然后检查并添加缺失的列
             if not self.check_and_add_missing_columns():
                 return False
             
