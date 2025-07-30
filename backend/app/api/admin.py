@@ -6,20 +6,21 @@
 import logging
 import secrets
 import string
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc, and_
+from pydantic import BaseModel, Field
 
 from app.core.database import get_db
 from app.models.user import User
 from app.models.mindmap import Mindmap
 from app.models.invitation import InvitationCode
+from app.models.redemption_code import RedemptionCode, RedemptionCodeStatus
 from app.utils.admin_auth import get_current_admin, log_admin_action
 from app.utils.invitation_utils import create_invitation_code
 from app.utils.security import get_password_hash, validate_password
-from pydantic import BaseModel
 
 # 配置日志
 logger = logging.getLogger(__name__)
@@ -795,4 +796,116 @@ async def send_password_reset_email(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="发送重置邮件失败"
+        )
+
+
+# ===== 兑换码管理功能 =====
+
+class RedemptionCodeCreateRequest(BaseModel):
+    """管理员创建兑换码请求模型"""
+    quantity: int = Field(..., gt=0, le=100, description="生成数量，1-100之间")
+    credits_amount: int = Field(..., gt=0, le=10000, description="积分面额，1-10000之间")
+    expires_in_days: int = Field(..., gt=0, le=365, description="有效期天数，1-365之间")
+
+
+class RedemptionCodeItem(BaseModel):
+    """兑换码项模型"""
+    code: str = Field(..., description="兑换码")
+    credits_amount: int = Field(..., description="积分面额")
+    expires_at: datetime = Field(..., description="过期时间")
+
+
+class RedemptionCodeCreateResponse(BaseModel):
+    """兑换码创建响应模型"""
+    success: bool = Field(..., description="是否创建成功")
+    message: str = Field(..., description="响应消息")
+    codes: List[str] = Field(..., description="生成的兑换码列表")
+    total_generated: int = Field(..., description="生成的总数量")
+    expires_at: datetime = Field(..., description="过期时间")
+
+
+def generate_redemption_code() -> str:
+    """生成一个8位兑换码"""
+    # 使用大写字母和数字，避免容易混淆的字符
+    chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'  # 移除 0,O,1,I 等容易混淆的字符
+    return ''.join(secrets.choice(chars) for _ in range(8))
+
+
+@router.post("/redemption-codes", response_model=RedemptionCodeCreateResponse)
+async def create_redemption_codes(
+    request: RedemptionCodeCreateRequest,
+    admin_user: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    管理员批量生成兑换码
+    
+    权限要求：仅管理员（is_superuser=True）可访问
+    """
+    try:
+        logger.info(f"管理员 {admin_user.email} 开始生成兑换码：数量={request.quantity}, 面额={request.credits_amount}, 有效期={request.expires_in_days}天")
+        
+        # 计算过期时间
+        expires_at = datetime.now(timezone.utc) + timedelta(days=request.expires_in_days)
+        
+        generated_codes = []
+        
+        # 批量生成兑换码
+        for i in range(request.quantity):
+            # 生成唯一兑换码
+            attempts = 0
+            while attempts < 50:  # 最多尝试50次
+                code = generate_redemption_code()
+                existing = db.query(RedemptionCode).filter(RedemptionCode.code == code).first()
+                if not existing:
+                    break
+                attempts += 1
+            
+            if attempts >= 50:
+                logger.error(f"无法为第{i+1}个兑换码生成唯一代码")
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"生成第{i+1}个兑换码时失败，请重试"
+                )
+            
+            # 创建兑换码记录
+            redemption_code = RedemptionCode(
+                code=code,
+                credits_amount=request.credits_amount,
+                status=RedemptionCodeStatus.ACTIVE,
+                expires_at=expires_at
+            )
+            
+            db.add(redemption_code)
+            generated_codes.append(code)
+        
+        # 提交到数据库
+        db.commit()
+        
+        # 记录管理员操作
+        log_admin_action(
+            admin_user,
+            "create_redemption_codes",
+            f"quantity={request.quantity},credits={request.credits_amount},days={request.expires_in_days}",
+            f"批量生成{request.quantity}个兑换码，面额{request.credits_amount}积分，有效期{request.expires_in_days}天"
+        )
+        
+        logger.info(f"管理员 {admin_user.email} 成功生成{len(generated_codes)}个兑换码")
+        
+        return RedemptionCodeCreateResponse(
+            success=True,
+            message=f"成功生成{len(generated_codes)}个兑换码",
+            codes=generated_codes,
+            total_generated=len(generated_codes),
+            expires_at=expires_at
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.error(f"生成兑换码失败: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="生成兑换码失败，请稍后重试"
         )

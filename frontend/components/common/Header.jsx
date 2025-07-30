@@ -216,6 +216,13 @@ const Header = ({ title, subtitle, showCreateButton = false }) => {
                             <span className="mr-3">🛡️</span>
                             管理员后台
                           </button>
+                          <button
+                            onClick={() => navigateTo('/admin/codes')}
+                            className="w-full text-left px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50 flex items-center"
+                          >
+                            <span className="mr-3">💎</span>
+                            兑换码管理
+                          </button>
                         </>
                       )}
 
