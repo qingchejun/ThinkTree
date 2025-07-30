@@ -1,14 +1,15 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
+import AuthContext from '@/context/AuthContext';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
 
 const RedemptionHistory = () => {
+  const { token } = useContext(AuthContext);
   const [history, setHistory] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const loadRedemptionHistory = async () => {
     try {
-      const token = localStorage.getItem('token');
       if (!token) return;
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/codes/history`, {
@@ -30,8 +31,13 @@ const RedemptionHistory = () => {
   };
 
   useEffect(() => {
-    loadRedemptionHistory();
-  }, []);
+    if (token) {
+      loadRedemptionHistory();
+    } else {
+      setHistory([]);
+      setIsLoading(false);
+    }
+  }, [token]);
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);

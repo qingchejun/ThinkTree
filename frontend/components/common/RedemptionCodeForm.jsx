@@ -1,10 +1,12 @@
 'use client';
-import { useState } from 'react';
+import { useState, useContext } from 'react';
+import AuthContext from '@/context/AuthContext';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
 
 const RedemptionCodeForm = ({ onRedemptionSuccess, onRedemptionError }) => {
+  const { token } = useContext(AuthContext);
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -19,7 +21,6 @@ const RedemptionCodeForm = ({ onRedemptionSuccess, onRedemptionError }) => {
     setIsLoading(true);
     
     try {
-      const token = localStorage.getItem('token');
       if (!token) {
         onRedemptionError('请先登录');
         return;
