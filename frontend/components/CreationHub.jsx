@@ -41,6 +41,13 @@ const CreationHub = () => {
   const [activeTab, setActiveTab] = useState('text');
   const [textInput, setTextInput] = useState('');
   const [userCredits, setUserCredits] = useState(0);
+  
+  // 文件上传相关状态
+  const [dragActive, setDragActive] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [fileAnalysis, setFileAnalysis] = useState(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // 路由保护
   useEffect(() => {
@@ -92,14 +99,166 @@ const CreationHub = () => {
       return;
     }
     
-    // 跳转到创建页面并传递文本
-    router.push(`/create?text=${encodeURIComponent(textInput)}`);
+    try {
+      setLoading(true);
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/process-text`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          text: textInput.trim()
+        })
+      });
+
+      const result = await response.json();
+      
+      if (response.ok && result.success) {
+        // 成功生成思维导图，跳转到详情页面
+        router.push(`/mindmap/${result.data.mindmap_id}`);
+      } else if (response.status === 402) {
+        // 积分不足
+        const errorDetail = result.detail;
+        if (typeof errorDetail === 'object' && errorDetail.message === '积分不足') {
+          const shortfall = errorDetail.required_credits - errorDetail.current_balance;
+          alert(`积分不足！需要 ${errorDetail.required_credits} 积分，当前余额 ${errorDetail.current_balance} 积分，还差 ${shortfall} 积分。`);
+        } else {
+          alert('积分不足，无法生成思维导图');
+        }
+      } else {
+        throw new Error(result.detail || '生成失败');
+      }
+    } catch (error) {
+      console.error('文本处理错误:', error);
+      alert(error.message || '生成思维导图时出现错误，请稍后重试');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // 处理登出
   const handleLogout = () => {
     logout();
     router.push('/login');
+  };
+
+  // 文件上传相关函数
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setDragActive(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setDragActive(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragActive(false);
+    
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+      handleFileAnalysis(files[0]);
+    }
+  };
+
+  const handleFileSelect = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+      handleFileAnalysis(files[0]);
+    }
+  };
+
+  const validateFile = (file) => {
+    const supportedFormats = ['.txt', '.md', '.docx', '.pdf', '.srt'];
+    const fileExt = '.' + file.name.split('.').pop().toLowerCase();
+    
+    if (!supportedFormats.includes(fileExt)) {
+      throw new Error(`不支持的文件格式: ${fileExt}`);
+    }
+    
+    if (file.size > 10 * 1024 * 1024) { // 10MB
+      throw new Error('文件大小超过10MB限制');
+    }
+    
+    return true;
+  };
+
+  const handleFileAnalysis = async (file) => {
+    try {
+      validateFile(file);
+      setIsAnalyzing(true);
+      setFileAnalysis(null);
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/upload/analyze`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData,
+      });
+
+      const result = await response.json();
+      
+      if (response.ok && result.success) {
+        setFileAnalysis(result);
+      } else {
+        throw new Error(result.detail || '文件分析失败');
+      }
+    } catch (error) {
+      console.error('文件分析错误:', error);
+      alert(error.message);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleFileGenerate = async () => {
+    if (!fileAnalysis?.file_token) return;
+
+    try {
+      setIsGenerating(true);
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/mindmaps/generate-from-file`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          file_token: fileAnalysis.file_token
+        })
+      });
+
+      const result = await response.json();
+      
+      if (response.ok && result.success) {
+        // 成功生成思维导图，跳转到详情页面
+        router.push(`/mindmap/${result.data.mindmap_id}`);
+      } else if (response.status === 402) {
+        // 积分不足
+        const errorDetail = result.detail;
+        if (typeof errorDetail === 'object' && errorDetail.message === '积分不足') {
+          const shortfall = errorDetail.required_credits - errorDetail.current_balance;
+          alert(`积分不足！需要 ${errorDetail.required_credits} 积分，当前余额 ${errorDetail.current_balance} 积分，还差 ${shortfall} 积分。`);
+        } else {
+          alert('积分不足，无法生成思维导图');
+        }
+      } else {
+        throw new Error(result.detail || '生成失败');
+      }
+    } catch (error) {
+      console.error('思维导图生成错误:', error);
+      alert(error.message || '生成思维导图时出现错误，请稍后重试');
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   if (isLoading || loading) {
@@ -255,10 +414,11 @@ const CreationHub = () => {
                     <div className="text-right mt-4">
                       <button 
                         onClick={handleTextGenerate}
-                        className="bg-black text-white px-5 py-2 rounded-lg font-semibold shadow-md hover:bg-gray-800 transition-colors flex items-center space-x-2 ml-auto"
+                        disabled={!textInput.trim() || loading}
+                        className="bg-black text-white px-5 py-2 rounded-lg font-semibold shadow-md hover:bg-gray-800 transition-colors flex items-center space-x-2 ml-auto disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Sparkles className="w-4 h-4" />
-                        <span>生成</span>
+                        <span>{loading ? '生成中...' : '生成'}</span>
                       </button>
                     </div>
                   </div>
@@ -267,17 +427,100 @@ const CreationHub = () => {
                 {/* 文档上传内容区 */}
                 {activeTab === 'upload' && (
                   <div className="tab-content">
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg h-40 flex flex-col items-center justify-center text-center p-4">
-                      <UploadCloud className="w-10 h-10 text-gray-400 mb-2" />
-                      <p className="font-semibold text-gray-700">将文件拖拽到此处或点击上传</p>
+                    <div
+                      className={`relative border-2 border-dashed rounded-lg h-40 flex flex-col items-center justify-center text-center p-4 transition-colors ${
+                        dragActive
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-300 hover:border-gray-400'
+                      } ${isAnalyzing || isGenerating ? 'opacity-50 pointer-events-none' : ''}`}
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                    >
+                      <input
+                        type="file"
+                        accept=".txt,.md,.docx,.pdf,.srt"
+                        onChange={handleFileSelect}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        disabled={isAnalyzing || isGenerating}
+                      />
+                      
+                      {fileAnalysis ? (
+                        // 文件分析完成后显示文件信息
+                        <div>
+                          <div className="text-green-500 text-2xl mb-2">📄</div>
+                          <p className="font-semibold text-gray-700">文档已解析完成</p>
+                          <p className="text-sm text-gray-600 mt-1">
+                            {fileAnalysis.analysis?.text_length || 0} 字符 | 
+                            预计消耗 {fileAnalysis.analysis?.estimated_cost || 0} 积分
+                          </p>
+                        </div>
+                      ) : isAnalyzing ? (
+                        // 分析中状态
+                        <div>
+                          <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-2"></div>
+                          <p className="font-semibold text-blue-700">正在分析文件...</p>
+                        </div>
+                      ) : isGenerating ? (
+                        // 生成中状态
+                        <div>
+                          <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-2"></div>
+                          <p className="font-semibold text-blue-700">正在生成思维导图...</p>
+                        </div>
+                      ) : (
+                        // 默认上传状态
+                        <div>
+                          <UploadCloud className="w-10 h-10 text-gray-400 mb-2" />
+                          <p className="font-semibold text-gray-700">
+                            {dragActive ? '释放文件以上传' : '将文件拖拽到此处或点击上传'}
+                          </p>
+                          <p className="text-sm text-gray-500 mt-2">
+                            支持 TXT, MD, DOCX, PDF, SRT 格式，最大 10MB
+                          </p>
+                        </div>
+                      )}
                     </div>
+
+                    {/* 积分成本信息 */}
+                    {fileAnalysis && (
+                      <div className={`mt-4 p-3 rounded-lg text-sm ${
+                        fileAnalysis.analysis?.sufficient_credits
+                          ? 'bg-green-50 border border-green-200 text-green-800'
+                          : 'bg-red-50 border border-red-200 text-red-800'
+                      }`}>
+                        <div className="flex items-center">
+                          <span className="mr-2">
+                            {fileAnalysis.analysis?.sufficient_credits ? '✅' : '⚠️'}
+                          </span>
+                          <div>
+                            <div className="font-medium">
+                              预计消耗 {fileAnalysis.analysis?.estimated_cost || 0} 积分
+                              {fileAnalysis.analysis?.sufficient_credits 
+                                ? ' - 积分充足，可以生成' 
+                                : ' - 积分不足，无法生成'
+                              }
+                            </div>
+                            <div className="mt-1 text-xs opacity-75">
+                              当前余额: {fileAnalysis.analysis?.user_balance || 0} 积分 | 
+                              文本长度: {fileAnalysis.analysis?.text_length || 0} 字符
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="text-right mt-4">
                       <button 
-                        onClick={() => router.push('/create')}
-                        className="bg-black text-white px-5 py-2 rounded-lg font-semibold shadow-md hover:bg-gray-800 transition-colors flex items-center space-x-2 ml-auto"
+                        onClick={fileAnalysis ? handleFileGenerate : () => document.querySelector('input[type="file"]').click()}
+                        disabled={isAnalyzing || isGenerating || (fileAnalysis && !fileAnalysis.analysis?.sufficient_credits)}
+                        className="bg-black text-white px-5 py-2 rounded-lg font-semibold shadow-md hover:bg-gray-800 transition-colors flex items-center space-x-2 ml-auto disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Sparkles className="w-4 h-4" />
-                        <span>生成</span>
+                        <span>
+                          {isGenerating ? '生成中...' : 
+                           isAnalyzing ? '分析中...' : 
+                           fileAnalysis ? '生成' : '选择文件'}
+                        </span>
                       </button>
                     </div>
                   </div>
