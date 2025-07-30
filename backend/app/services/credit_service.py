@@ -73,7 +73,12 @@ class CreditService:
         Returns:
             UserCredits: 用户积分记录，如果不存在则返回None
         """
-        return db.query(UserCredits).filter(UserCredits.user_id == user_id).first()
+        try:
+            return db.query(UserCredits).filter(UserCredits.user_id == user_id).first()
+        except Exception as e:
+            # 如果查询失败（例如字段缺失），记录错误但返回None
+            print(f"⚠️ 获取用户积分时出错: {e}")
+            return None
     
     @staticmethod
     def get_user_transactions(db: Session, user_id: int, page: int = 1, limit: int = 20) -> tuple:
@@ -226,15 +231,28 @@ class CreditService:
             if not user_credits:
                 return False, "用户积分记录不存在", 0, False
             
-            # 检查今天是否已经领取过奖励
-            if user_credits.last_daily_reward_date == today:
-                # 今天已经领取过，不重复发放
-                return True, None, user_credits.balance, False
+            # 检查今天是否已经领取过奖励（带容错处理）
+            try:
+                # 检查 last_daily_reward_date 字段是否存在
+                if hasattr(user_credits, 'last_daily_reward_date') and user_credits.last_daily_reward_date == today:
+                    # 今天已经领取过，不重复发放
+                    return True, None, user_credits.balance, False
+            except Exception as field_error:
+                # 如果字段不存在或访问失败，记录错误但继续执行
+                print(f"⚠️ 检查每日奖励字段时出错: {field_error}")
+                # 继续执行，相当于从未领取过奖励
             
             # 发放每日奖励：10积分
             daily_reward_amount = 10
             user_credits.balance += daily_reward_amount
-            user_credits.last_daily_reward_date = today
+            
+            # 尝试设置每日奖励日期（带容错处理）
+            try:
+                if hasattr(user_credits, 'last_daily_reward_date'):
+                    user_credits.last_daily_reward_date = today
+            except Exception as field_error:
+                # 如果设置字段失败，记录错误但不影响积分发放
+                print(f"⚠️ 设置每日奖励日期时出错: {field_error}")
             
             # 创建交易记录
             transaction = CreditTransaction(

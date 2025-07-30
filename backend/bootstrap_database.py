@@ -106,6 +106,36 @@ class DatabaseBootstrapper:
             print(f"❌ 获取现有表信息失败: {e}")
             return set()
     
+    def check_and_add_missing_columns(self) -> bool:
+        """检查并添加缺失的列"""
+        try:
+            print("🔍 检查数据库列完整性...")
+            
+            with self.engine.connect() as conn:
+                # 检查 user_credits 表的 last_daily_reward_date 字段
+                try:
+                    # 尝试查询该字段，如果不存在会抛出异常
+                    conn.execute(text("SELECT last_daily_reward_date FROM user_credits LIMIT 1"))
+                    print("✅ user_credits.last_daily_reward_date 字段已存在")
+                except Exception:
+                    print("🆕 添加 user_credits.last_daily_reward_date 字段")
+                    try:
+                        conn.execute(text("ALTER TABLE user_credits ADD COLUMN last_daily_reward_date DATE"))
+                        conn.commit()
+                        print("✅ 成功添加 user_credits.last_daily_reward_date 字段")
+                    except Exception as e:
+                        print(f"❌ 添加字段失败: {e}")
+                        return False
+                
+                # 可以在这里添加其他字段的检查
+                # 例如检查其他可能缺失的字段
+                
+            return True
+            
+        except Exception as e:
+            print(f"❌ 检查列完整性失败: {e}")
+            return False
+
     def create_missing_tables(self) -> bool:
         """创建缺失的数据库表"""
         try:
@@ -124,6 +154,10 @@ class DatabaseBootstrapper:
                 print(f"🆕 需要创建的表: {sorted(missing_tables)}")
             else:
                 print("✅ 所有表都已存在，无需创建新表")
+            
+            # 在创建表之前，检查并添加缺失的列
+            if not self.check_and_add_missing_columns():
+                return False
             
             # 创建所有表（仅创建不存在的）
             Base.metadata.create_all(bind=self.engine)
