@@ -4,6 +4,7 @@ const CreationHub = () => {
   return (
     <div id="loggedInView">
       <div className="h-screen flex flex-col bg-gray-50">
+        {/* 顶部 Header */}
         <header className="bg-white/95 backdrop-blur-lg sticky top-0 z-40 border-b border-gray-200 flex-shrink-0">
           <div className="container mx-auto px-6 py-3 flex justify-between items-center">
             <div className="flex items-center space-x-2">
@@ -37,13 +38,20 @@ const CreationHub = () => {
             </div>
           </div>
         </header>
+
+        {/* 主体内容 */}
         <main className="flex-1 container mx-auto px-6 py-8">
+          {/* 创建区域 */}
           <div id="creationView" className="w-full max-w-5xl mx-auto">
             <h1 className="text-2xl font-bold text-center text-gray-800 mb-2">今天我们创造些什么？</h1>
             <div className="bg-white rounded-2xl shadow-lg border mt-6">
               <div className="flex justify-center border-b p-2 space-x-1">
                 <button className="creation-tab-button creation-tab-active flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm" data-tab="text"><i data-lucide="file-text" className="w-4 h-4 text-blue-500"></i><span>长文本</span></button>
                 <button className="creation-tab-button creation-tab-inactive flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm" data-tab="upload"><i data-lucide="file-up" className="w-4 h-4 text-green-500"></i><span>文档上传</span></button>
+                <button className="creation-tab-button creation-tab-inactive flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm opacity-50 cursor-not-allowed" disabled><i data-lucide="youtube" className="w-4 h-4 text-red-500"></i><span>YouTube</span><span className="text-red-500 text-xs ml-1">(开发中)</span></button>
+                <button className="creation-tab-button creation-tab-inactive flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm opacity-50 cursor-not-allowed" disabled><i data-lucide="podcast" className="w-4 h-4 text-purple-500"></i><span>播客</span><span className="text-red-500 text-xs ml-1">(开发中)</span></button>
+                <button className="creation-tab-button creation-tab-inactive flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm opacity-50 cursor-not-allowed" disabled><i data-lucide="file-audio" className="w-4 h-4 text-orange-500"></i><span>音频文件</span><span className="text-red-500 text-xs ml-1">(开发中)</span></button>
+                <button className="creation-tab-button creation-tab-inactive flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm opacity-50 cursor-not-allowed" disabled><i data-lucide="link" className="w-4 h-4 text-sky-500"></i><span>网页链接</span><span className="text-red-500 text-xs ml-1">(开发中)</span></button>
               </div>
               <div className="p-4">
                 <div id="tab-content-text" className="tab-content">
@@ -64,6 +72,8 @@ const CreationHub = () => {
               </div>
             </div>
           </div>
+
+          {/* 最近的项目 */}
           <div id="dashboardView" className="w-full max-w-6xl mx-auto mt-12">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-gray-800">最近的项目</h2>
@@ -72,6 +82,9 @@ const CreationHub = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
               <div className="border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center p-8 text-center h-full min-h-[196px] hover:bg-gray-100 transition-colors cursor-pointer"><i data-lucide="plus-circle" className="w-12 h-12 text-gray-400 mb-2"></i><h3 className="font-semibold text-gray-600">创建新项目</h3></div>
               <div className="bg-white rounded-xl border overflow-hidden group hover:shadow-lg transition-shadow cursor-pointer"><div className="bg-gray-200 h-32 flex items-center justify-center"><img src="https://placehold.co/300x160/e5e7eb/111827?text=预览图" alt="思维导图预览图" className="w-full h-full object-cover" /></div><div className="p-4"><h3 className="font-semibold text-gray-800 truncate">第一季度产品规划</h3><p className="text-sm text-gray-500 mt-1">昨天 15:30 更新</p></div></div>
+              <div className="bg-white rounded-xl border overflow-hidden group hover:shadow-lg transition-shadow cursor-pointer"><div className="bg-gray-200 h-32 flex items-center justify-center"><img src="https://placehold.co/300x160/d1d5db/111827?text=预览图" alt="思维导图预览图" className="w-full h-full object-cover" /></div><div className="p-4"><h3 className="font-semibold text-gray-800 truncate">个人知识管理体系 (PKM)</h3><p className="text-sm text-gray-500 mt-1">3天前 更新</p></div></div>
+              <div className="bg-white rounded-xl border overflow-hidden group hover:shadow-lg transition-shadow cursor-pointer"><div className="bg-gray-200 h-32 flex items-center justify-center"><img src="https://placehold.co/300x160/e0e7ff/111827?text=预览图" alt="思维导图预览图" className="w-full h-full object-cover" /></div><div className="p-4"><h3 className="font-semibold text-gray-800 truncate">市场营销活动复盘</h3><p className="text-sm text-gray-500 mt-1">5天前 更新</p></div></div>
+              <div className="bg-white rounded-xl border overflow-hidden group hover:shadow-lg transition-shadow cursor-pointer"><div className="bg-gray-200 h-32 flex items-center justify-center"><img src="https://placehold.co/300x160/fce7f3/111827?text=预览图" alt="思维导图预览图" className="w-full h-full object-cover" /></div><div className="p-4"><h3 className="font-semibold text-gray-800 truncate">新功能头脑风暴</h3><p className="text-sm text-gray-500 mt-1">上周 更新</p></div></div>
             </div>
           </div>
         </main>
