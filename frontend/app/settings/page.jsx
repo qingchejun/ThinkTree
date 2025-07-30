@@ -6,6 +6,8 @@ import Header from '@/components/common/Header';
 import { getProfile, updateProfile, generateInvitationCode, getUserInvitations, updatePassword, getCreditHistory } from '@/lib/api';
 import Toast from '@/components/common/Toast';
 import PasswordInput from '@/components/common/PasswordInput';
+import RedemptionCodeForm from '@/components/common/RedemptionCodeForm';
+import RedemptionHistory from '@/components/common/RedemptionHistory';
 import { Button } from '../../components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
@@ -69,6 +71,19 @@ const SettingsContent = () => {
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
+  };
+  
+  // 兑换码成功处理
+  const handleRedemptionSuccess = (message, creditsGained, newBalance) => {
+    showToast(message, 'success');
+    setCurrentBalance(newBalance);
+    // 重新加载积分历史以显示新的兑换记录
+    loadCreditHistory();
+  };
+  
+  // 兑换码失败处理
+  const handleRedemptionError = (message) => {
+    showToast(message, 'error');
   };
   
   // 格式化交易类型显示文本
@@ -396,6 +411,15 @@ const SettingsContent = () => {
                     {currentBalance}
                   </p>
                   <p className="text-sm text-blue-700 mt-1">积分 (每100字符消耗1积分)</p>
+                </div>
+
+                {/* 兑换码功能 */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <RedemptionCodeForm 
+                    onRedemptionSuccess={handleRedemptionSuccess}
+                    onRedemptionError={handleRedemptionError}
+                  />
+                  <RedemptionHistory />
                 </div>
 
                 {/* 使用统计 */}
