@@ -34,7 +34,7 @@ try:
     from app.core.config import settings
     from app.core.database import Base
     # 导入所有模型以确保它们被注册到Base.metadata中
-    from app.models import User, Mindmap, InvitationCode, UserCredits, CreditTransaction
+    from app.models import User, Mindmap, InvitationCode, UserCredits, CreditTransaction, RedemptionCode
     
 except ImportError as e:
     print(f"❌ 导入错误: {e}")
@@ -111,7 +111,13 @@ class DatabaseBootstrapper:
         try:
             print("🔍 检查TransactionType枚举完整性...")
             
+            # 检查数据库类型
+            if "sqlite" in settings.database_url.lower():
+                print("🔍 检测到SQLite数据库，跳过枚举检查（SQLite使用字符串存储枚举值）")
+                return True
+            
             with self.engine.connect() as conn:
+                # PostgreSQL枚举检查逻辑
                 # 检查DAILY_REWARD是否已存在于transactiontype枚举中
                 check_enum_query = text("""
                     SELECT 1 
@@ -176,16 +182,23 @@ class DatabaseBootstrapper:
             print("🔍 检查数据库列完整性...")
             
             with self.engine.connect() as conn:
-                # 使用PostgreSQL的信息模式检查字段是否存在
-                check_column_query = text("""
-                    SELECT COUNT(*) 
-                    FROM information_schema.columns 
-                    WHERE table_name = 'user_credits' 
-                    AND column_name = 'last_daily_reward_date'
-                """)
-                
-                result = conn.execute(check_column_query)
-                column_exists = result.scalar() > 0
+                # 检查数据库类型并使用适当的查询
+                if "sqlite" in settings.database_url.lower():
+                    # SQLite的列检查方式
+                    check_column_query = text("PRAGMA table_info(user_credits)")
+                    result = conn.execute(check_column_query)
+                    columns = [row[1] for row in result.fetchall()]  # 第2列是列名
+                    column_exists = 'last_daily_reward_date' in columns
+                else:
+                    # PostgreSQL的信息模式检查字段是否存在
+                    check_column_query = text("""
+                        SELECT COUNT(*) 
+                        FROM information_schema.columns 
+                        WHERE table_name = 'user_credits' 
+                        AND column_name = 'last_daily_reward_date'
+                    """)
+                    result = conn.execute(check_column_query)
+                    column_exists = result.scalar() > 0
                 
                 if column_exists:
                     print("✅ user_credits.last_daily_reward_date 字段已存在")

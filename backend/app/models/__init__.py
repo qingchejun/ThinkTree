@@ -8,6 +8,7 @@ from .mindmap import Mindmap
 from .invitation import InvitationCode
 from .user_credits import UserCredits
 from .credit_transaction import CreditTransaction, TransactionType
+from .redemption_code import RedemptionCode, RedemptionCodeStatus
 
 __all__ = [
     "User",
@@ -15,5 +16,7 @@ __all__ = [
     "InvitationCode",
     "UserCredits",
     "CreditTransaction",
-    "TransactionType"
+    "TransactionType",
+    "RedemptionCode",
+    "RedemptionCodeStatus"
 ]
