@@ -3,6 +3,7 @@
 """
 
 from sqlalchemy.orm import Session
+from datetime import date, datetime
 from app.models import User, UserCredits, CreditTransaction, TransactionType
 
 
@@ -201,3 +202,55 @@ class CreditService:
         except Exception as e:
             db.rollback()
             return False, f"退还积分失败: {str(e)}", 0
+    
+    @staticmethod
+    def grant_daily_reward(db: Session, user_id: int) -> tuple:
+        """
+        发放每日登录奖励积分
+        
+        Args:
+            db: 数据库会话
+            user_id: 用户ID
+            
+        Returns:
+            tuple: (是否发放, 错误信息或None, 当前积分, 是否是今天第一次登录)
+        """
+        try:
+            today = date.today()
+            
+            # 获取用户积分记录（加锁）
+            user_credits = db.query(UserCredits).filter(
+                UserCredits.user_id == user_id
+            ).with_for_update().first()
+            
+            if not user_credits:
+                return False, "用户积分记录不存在", 0, False
+            
+            # 检查今天是否已经领取过奖励
+            if user_credits.last_daily_reward_date == today:
+                # 今天已经领取过，不重复发放
+                return True, None, user_credits.balance, False
+            
+            # 发放每日奖励：10积分
+            daily_reward_amount = 10
+            user_credits.balance += daily_reward_amount
+            user_credits.last_daily_reward_date = today
+            
+            # 创建交易记录
+            transaction = CreditTransaction(
+                user_id=user_id,
+                type=TransactionType.DAILY_REWARD,
+                amount=daily_reward_amount,
+                description="每日登录奖励"
+            )
+            db.add(transaction)
+            
+            # 提交事务
+            db.commit()
+            db.refresh(user_credits)
+            
+            return True, None, user_credits.balance, True
+            
+        except Exception as e:
+            db.rollback()
+            return False, f"发放每日奖励失败: {str(e)}", 0, False

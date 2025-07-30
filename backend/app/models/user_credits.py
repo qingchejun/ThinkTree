@@ -2,7 +2,7 @@
 用户积分数据模型
 """
 
-from sqlalchemy import Column, Integer, ForeignKey, DateTime
+from sqlalchemy import Column, Integer, ForeignKey, DateTime, Date
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 
@@ -20,6 +20,9 @@ class UserCredits(Base):
     
     # 积分余额
     balance = Column(Integer, default=0, nullable=False)
+    
+    # 最后一次每日奖励日期 (用于判断是否已领取当日奖励)
+    last_daily_reward_date = Column(Date, nullable=True)  
     
     # 时间戳
     created_at = Column(
@@ -47,6 +50,7 @@ class UserCredits(Base):
         return {
             "user_id": self.user_id,
             "balance": self.balance,
+            "last_daily_reward_date": self.last_daily_reward_date.isoformat() if self.last_daily_reward_date else None,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None
         }

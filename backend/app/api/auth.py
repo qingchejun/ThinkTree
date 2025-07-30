@@ -153,6 +153,7 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str
     user: UserResponse
+    daily_reward_granted: Optional[bool] = False  # 是否发放了每日奖励
 
 
 class VerifyEmailRequest(BaseModel):
@@ -432,15 +433,29 @@ async def login(request: Request, credentials: UserLogin, db: Session = Depends(
     # 生成访问令牌
     access_token = create_access_token(data={"sub": str(user.id)})
     
-    # 获取用户积分余额（安全方式，避免关联查询超时）
+    # 尝试发放每日登录奖励并获取积分余额
+    daily_reward_granted = False
     try:
         from app.services.credit_service import CreditService
-        user_credits_record = CreditService.get_user_credits(db, user.id)
-        credits_balance = user_credits_record.balance if user_credits_record else 0
+        
+        # 发放每日登录奖励
+        reward_success, reward_error, credits_balance, is_first_login_today = CreditService.grant_daily_reward(db, user.id)
+        
+        if reward_success:
+            daily_reward_granted = is_first_login_today
+            if is_first_login_today:
+                print(f"用户 {user.id} 获得每日登录奖励10积分，当前余额: {credits_balance}")
+        else:
+            print(f"用户 {user.id} 每日奖励发放失败: {reward_error}")
+            # 如果奖励发放失败，尝试获取当前积分余额
+            user_credits_record = CreditService.get_user_credits(db, user.id)
+            credits_balance = user_credits_record.balance if user_credits_record else 0
+        
     except Exception as e:
-        # 如果积分查询失败，使用默认值0，不影响登录
-        print(f"登录时获取用户 {user.id} 积分失败: {e}")
+        # 如果每日奖励或积分查询失败，使用默认值0，不影响登录
+        print(f"登录时处理每日奖励失败: {str(e)}")
         credits_balance = 0
+        daily_reward_granted = False
     
     # 构造响应
     user_response = UserResponse(
@@ -458,7 +473,8 @@ async def login(request: Request, credentials: UserLogin, db: Session = Depends(
     return TokenResponse(
         access_token=access_token,
         token_type="bearer",
-        user=user_response
+        user=user_response,
+        daily_reward_granted=daily_reward_granted
     )
 
 

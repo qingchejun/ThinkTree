@@ -18,6 +18,7 @@ class TransactionType(enum.Enum):
     MANUAL_GRANT = "MANUAL_GRANT"    # 手动发放
     DEDUCTION = "DEDUCTION"          # 使用扣除  
     REFUND = "REFUND"                # 失败退款
+    DAILY_REWARD = "DAILY_REWARD"    # 每日登录奖励
 
 
 class CreditTransaction(Base):

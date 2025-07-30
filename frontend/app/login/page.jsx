@@ -100,7 +100,12 @@ function LoginForm() {
 
       const data = await response.json()
 
-      setSuccess('登录成功！正在跳转...')
+      // 检查是否获得了每日奖励
+      if (data.daily_reward_granted) {
+        setSuccess('登录成功！每日登录奖励 +10 积分！🎉 正在跳转...')
+      } else {
+        setSuccess('登录成功！正在跳转...')
+      }
       
       // 使用全局AuthContext的login函数 - 不使用AbortController避免冲突
       const loginResult = await login(data.access_token)
@@ -110,7 +115,7 @@ function LoginForm() {
         const redirectUrl = searchParams.get('redirect') || '/'
         setTimeout(() => {
           router.push(redirectUrl)
-        }, 1500)
+        }, data.daily_reward_granted ? 2500 : 1500)  // 如果有奖励，延长显示时间
       } else {
         setError(loginResult.error || '登录处理失败')
       }

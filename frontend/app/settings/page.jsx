@@ -77,7 +77,8 @@ const SettingsContent = () => {
       'INITIAL_GRANT': '初始赠送',
       'MANUAL_GRANT': '手动发放',
       'DEDUCTION': '消费扣除',
-      'REFUND': '失败退款'
+      'REFUND': '失败退款',
+      'DAILY_REWARD': '每日登录奖励'
     };
     return typeMap[type] || type;
   };
@@ -96,6 +97,7 @@ const SettingsContent = () => {
       case 'INITIAL_GRANT':
       case 'MANUAL_GRANT':
       case 'REFUND':
+      case 'DAILY_REWARD':
         return 'text-green-600 font-medium';
       default:
         return 'text-text-primary font-medium';
