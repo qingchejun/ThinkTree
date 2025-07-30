@@ -1,4 +1,5 @@
 import React from 'react';
+import { Gift, Database, LayoutDashboard, CreditCard, Settings, LogOut, FileText, FileUp, Youtube, Podcast, FileAudio, Link, Sparkles, UploadCloud, PlusCircle } from 'lucide-react';
 
 const CreationHub = () => {
   return (
@@ -15,24 +16,24 @@ const CreationHub = () => {
             </div>
             <div className="flex items-center space-x-6">
               <a href="#" className="bg-gray-100 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-200 transition-colors flex items-center space-x-2 text-sm">
-                <i data-lucide="gift" className="w-4 h-4 text-orange-500"></i>
+                <Gift className="w-4 h-4 text-orange-500" />
                 <span>邀请好友</span>
               </a>
               <div className="relative" id="userMenuButton">
                 <button className="flex items-center space-x-2">
                   <img className="w-9 h-9 rounded-full" src="https://placehold.co/40x40/111827/ffffff?text=U" alt="用户头像" />
                   <div className="flex items-center space-x-1 text-gray-800 font-semibold">
-                    <i data-lucide="database" className="w-4 h-4 text-gray-500"></i>
+                    <Database className="w-4 h-4 text-gray-500" />
                     <span>1000</span>
                   </div>
                 </button>
                 <div id="userMenu" className="hidden absolute right-0 mt-3 w-56 bg-white rounded-lg shadow-lg py-2 z-50 border">
                   <div className="px-4 py-2 border-b"><p className="font-semibold text-gray-800">houj0927</p><p className="text-sm text-gray-500">houj0927@gmail.com</p></div>
-                  <a href="#" className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><i data-lucide="layout-dashboard" className="w-4 h-4"></i><span>我的思维导图</span></a>
-                  <a href="#" className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><i data-lucide="credit-card" className="w-4 h-4"></i><span>用量与计费</span></a>
-                  <a href="#" className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><i data-lucide="settings" className="w-4 h-4"></i><span>账户设置</span></a>
+                  <a href="#" className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><LayoutDashboard className="w-4 h-4" /><span>我的思维导图</span></a>
+                  <a href="#" className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><CreditCard className="w-4 h-4" /><span>用量与计费</span></a>
+                  <a href="#" className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><Settings className="w-4 h-4" /><span>账户设置</span></a>
                   <div className="border-t my-1"></div>
-                  <a href="#" className="flex items-center space-x-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50"><i data-lucide="log-out" className="w-4 h-4"></i><span>退出登录</span></a>
+                  <a href="#" className="flex items-center space-x-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50"><LogOut className="w-4 h-4" /><span>退出登录</span></a>
                 </div>
               </div>
             </div>
@@ -46,27 +47,27 @@ const CreationHub = () => {
             <h1 className="text-2xl font-bold text-center text-gray-800 mb-2">今天我们创造些什么？</h1>
             <div className="bg-white rounded-2xl shadow-lg border mt-6">
               <div className="flex justify-center border-b p-2 space-x-1">
-                <button className="creation-tab-button creation-tab-active flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm" data-tab="text"><i data-lucide="file-text" className="w-4 h-4 text-blue-500"></i><span>长文本</span></button>
-                <button className="creation-tab-button creation-tab-inactive flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm" data-tab="upload"><i data-lucide="file-up" className="w-4 h-4 text-green-500"></i><span>文档上传</span></button>
-                <button className="creation-tab-button creation-tab-inactive flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm opacity-50 cursor-not-allowed" disabled><i data-lucide="youtube" className="w-4 h-4 text-red-500"></i><span>YouTube</span><span className="text-red-500 text-xs ml-1">(开发中)</span></button>
-                <button className="creation-tab-button creation-tab-inactive flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm opacity-50 cursor-not-allowed" disabled><i data-lucide="podcast" className="w-4 h-4 text-purple-500"></i><span>播客</span><span className="text-red-500 text-xs ml-1">(开发中)</span></button>
-                <button className="creation-tab-button creation-tab-inactive flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm opacity-50 cursor-not-allowed" disabled><i data-lucide="file-audio" className="w-4 h-4 text-orange-500"></i><span>音频文件</span><span className="text-red-500 text-xs ml-1">(开发中)</span></button>
-                <button className="creation-tab-button creation-tab-inactive flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm opacity-50 cursor-not-allowed" disabled><i data-lucide="link" className="w-4 h-4 text-sky-500"></i><span>网页链接</span><span className="text-red-500 text-xs ml-1">(开发中)</span></button>
+                <button className="creation-tab-button creation-tab-active flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm" data-tab="text"><FileText className="w-4 h-4 text-blue-500" /><span>长文本</span></button>
+                <button className="creation-tab-button creation-tab-inactive flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm" data-tab="upload"><FileUp className="w-4 h-4 text-green-500" /><span>文档上传</span></button>
+                <button className="creation-tab-button creation-tab-inactive flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm opacity-50 cursor-not-allowed" disabled><Youtube className="w-4 h-4 text-red-500" /><span>YouTube</span><span className="text-red-500 text-xs ml-1">(开发中)</span></button>
+                <button className="creation-tab-button creation-tab-inactive flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm opacity-50 cursor-not-allowed" disabled><Podcast className="w-4 h-4 text-purple-500" /><span>播客</span><span className="text-red-500 text-xs ml-1">(开发中)</span></button>
+                <button className="creation-tab-button creation-tab-inactive flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm opacity-50 cursor-not-allowed" disabled><FileAudio className="w-4 h-4 text-orange-500" /><span>音频文件</span><span className="text-red-500 text-xs ml-1">(开发中)</span></button>
+                <button className="creation-tab-button creation-tab-inactive flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm opacity-50 cursor-not-allowed" disabled><Link className="w-4 h-4 text-sky-500" /><span>网页链接</span><span className="text-red-500 text-xs ml-1">(开发中)</span></button>
               </div>
               <div className="p-4">
                 <div id="tab-content-text" className="tab-content">
                   <textarea className="w-full h-40 p-4 border rounded-lg focus:ring-2 focus:ring-black focus:border-black transition text-base" placeholder="在此处输入你的想法、粘贴长文本或链接..."></textarea>
                   <div className="text-right mt-4">
-                    <button className="bg-black text-white px-5 py-2 rounded-lg font-semibold shadow-md hover:bg-gray-800 transition-colors flex items-center space-x-2 ml-auto"><i data-lucide="sparkles" className="w-4 h-4"></i><span>生成</span></button>
+                    <button className="bg-black text-white px-5 py-2 rounded-lg font-semibold shadow-md hover:bg-gray-800 transition-colors flex items-center space-x-2 ml-auto"><Sparkles className="w-4 h-4" /><span>生成</span></button>
                   </div>
                 </div>
                 <div id="tab-content-upload" className="tab-content hidden">
                   <div className="border-2 border-dashed border-gray-300 rounded-lg h-40 flex flex-col items-center justify-center text-center p-4">
-                    <i data-lucide="upload-cloud" className="w-10 h-10 text-gray-400 mb-2"></i>
+                    <UploadCloud className="w-10 h-10 text-gray-400 mb-2" />
                     <p className="font-semibold text-gray-700">将文件拖拽到此处或点击上传</p>
                   </div>
                   <div className="text-right mt-4">
-                    <button className="bg-black text-white px-5 py-2 rounded-lg font-semibold shadow-md hover:bg-gray-800 transition-colors flex items-center space-x-2 ml-auto"><i data-lucide="sparkles" className="w-4 h-4"></i><span>生成</span></button>
+                    <button className="bg-black text-white px-5 py-2 rounded-lg font-semibold shadow-md hover:bg-gray-800 transition-colors flex items-center space-x-2 ml-auto"><Sparkles className="w-4 h-4" /><span>生成</span></button>
                   </div>
                 </div>
               </div>
@@ -80,7 +81,7 @@ const CreationHub = () => {
               <a href="#" className="text-sm font-semibold text-gray-600 hover:text-black">查看全部 &rarr;</a>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-              <div className="border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center p-8 text-center h-full min-h-[196px] hover:bg-gray-100 transition-colors cursor-pointer"><i data-lucide="plus-circle" className="w-12 h-12 text-gray-400 mb-2"></i><h3 className="font-semibold text-gray-600">创建新项目</h3></div>
+              <div className="border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center p-8 text-center h-full min-h-[196px] hover:bg-gray-100 transition-colors cursor-pointer"><PlusCircle className="w-12 h-12 text-gray-400 mb-2" /><h3 className="font-semibold text-gray-600">创建新项目</h3></div>
               <div className="bg-white rounded-xl border overflow-hidden group hover:shadow-lg transition-shadow cursor-pointer"><div className="bg-gray-200 h-32 flex items-center justify-center"><img src="https://placehold.co/300x160/e5e7eb/111827?text=预览图" alt="思维导图预览图" className="w-full h-full object-cover" /></div><div className="p-4"><h3 className="font-semibold text-gray-800 truncate">第一季度产品规划</h3><p className="text-sm text-gray-500 mt-1">昨天 15:30 更新</p></div></div>
               <div className="bg-white rounded-xl border overflow-hidden group hover:shadow-lg transition-shadow cursor-pointer"><div className="bg-gray-200 h-32 flex items-center justify-center"><img src="https://placehold.co/300x160/d1d5db/111827?text=预览图" alt="思维导图预览图" className="w-full h-full object-cover" /></div><div className="p-4"><h3 className="font-semibold text-gray-800 truncate">个人知识管理体系 (PKM)</h3><p className="text-sm text-gray-500 mt-1">3天前 更新</p></div></div>
               <div className="bg-white rounded-xl border overflow-hidden group hover:shadow-lg transition-shadow cursor-pointer"><div className="bg-gray-200 h-32 flex items-center justify-center"><img src="https://placehold.co/300x160/e0e7ff/111827?text=预览图" alt="思维导图预览图" className="w-full h-full object-cover" /></div><div className="p-4"><h3 className="font-semibold text-gray-800 truncate">市场营销活动复盘</h3><p className="text-sm text-gray-500 mt-1">5天前 更新</p></div></div>

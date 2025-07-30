@@ -1,4 +1,5 @@
 import React from 'react';
+import { Sparkles, Cpu, FileStack, Users, BrainCircuit, FileOutput, Infinity, UploadCloud, Eye, PlusCircle } from 'lucide-react';
 
 const LandingPage = () => {
   return (
@@ -24,7 +25,7 @@ const LandingPage = () => {
         {/* 新增的徽章 */}
         <div className="mb-6 flex justify-center items-center">
           <div className="bg-orange-100 text-orange-700 border border-orange-200 rounded-full px-3 py-1 text-sm font-medium flex items-center">
-            <i data-lucide="sparkles" className="w-3 h-3 mr-1.5"></i>
+            <Sparkles className="w-3 h-3 mr-1.5" />
             NEW
           </div>
           <span className="text-gray-600 ml-3">智能驱动的思维与知识管理伙伴</span>
@@ -61,7 +62,7 @@ const LandingPage = () => {
             {/* 功能卡片 1: 智能生成 */}
             <div className="bg-gray-50 p-8 rounded-2xl flex items-start space-x-6">
               <div className="flex-shrink-0 flex items-center justify-center w-12 h-12 bg-blue-100 rounded-xl">
-                <i data-lucide="cpu" className="w-7 h-7 text-blue-600"></i>
+                <Cpu className="w-7 h-7 text-blue-600" />
               </div>
               <div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">智能生成</h3>
@@ -71,7 +72,7 @@ const LandingPage = () => {
             {/* 功能卡片 2: 多格式导入 */}
             <div className="bg-gray-50 p-8 rounded-2xl flex items-start space-x-6">
               <div className="flex-shrink-0 flex items-center justify-center w-12 h-12 bg-sky-100 rounded-xl">
-                 <i data-lucide="file-stack" className="w-7 h-7 text-sky-600"></i>
+                 <FileStack className="w-7 h-7 text-sky-600" />
               </div>
               <div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">多格式导入</h3>
@@ -81,7 +82,7 @@ const LandingPage = () => {
             {/* 功能卡片 3: 协作分享 */}
             <div className="bg-gray-50 p-8 rounded-2xl flex items-start space-x-6">
               <div className="flex-shrink-0 flex items-center justify-center w-12 h-12 bg-green-100 rounded-xl">
-                <i data-lucide="users" className="w-7 h-7 text-green-600"></i>
+                <Users className="w-7 h-7 text-green-600" />
               </div>
               <div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">协作分享</h3>
@@ -91,7 +92,7 @@ const LandingPage = () => {
             {/* 功能卡片 4: 智能优化 */}
             <div className="bg-gray-50 p-8 rounded-2xl flex items-start space-x-6">
               <div className="flex-shrink-0 flex items-center justify-center w-12 h-12 bg-rose-100 rounded-xl">
-                 <i data-lucide="brain-circuit" className="w-7 h-7 text-rose-600"></i>
+                 <BrainCircuit className="w-7 h-7 text-rose-600" />
               </div>
               <div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">智能优化</h3>
@@ -101,7 +102,7 @@ const LandingPage = () => {
             {/* 功能卡片 5: 多格式导出 */}
             <div className="bg-gray-50 p-8 rounded-2xl flex items-start space-x-6">
               <div className="flex-shrink-0 flex items-center justify-center w-12 h-12 bg-purple-100 rounded-xl">
-                <i data-lucide="file-output" className="w-7 h-7 text-purple-600"></i>
+                <FileOutput className="w-7 h-7 text-purple-600" />
               </div>
               <div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">多格式导出</h3>
@@ -111,7 +112,7 @@ const LandingPage = () => {
             {/* 功能卡片 6: 无限扩展 */}
             <div className="bg-gray-50 p-8 rounded-2xl flex items-start space-x-6">
               <div className="flex-shrink-0 flex items-center justify-center w-12 h-12 bg-amber-100 rounded-xl">
-                 <i data-lucide="infinity" className="w-7 h-7 text-amber-600"></i>
+                 <Infinity className="w-7 h-7 text-amber-600" />
               </div>
               <div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">无限扩展</h3>
@@ -132,9 +133,9 @@ const LandingPage = () => {
             <div className="hidden md:block absolute top-12 left-0 w-full h-0.5">
               <svg width="100%" height="100%"><line x1="0" y1="50%" x2="100%" y2="50%" strokeWidth="2" strokeDasharray="8 8" className="stroke-gray-300"></line></svg>
             </div>
-            <div className="relative bg-white p-8 rounded-xl border"><div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-black text-white w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg border-4 border-gray-50">1</div><div className="flex items-center justify-center w-20 h-20 bg-blue-100 rounded-full mx-auto mb-4 mt-8"><i data-lucide="upload-cloud" className="w-10 h-10 text-blue-600"></i></div><h3 className="text-xl font-semibold">输入内容</h3><p className="text-gray-500 mt-2">拖拽文件或粘贴文本。</p></div>
-            <div className="relative bg-white p-8 rounded-xl border"><div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-black text-white w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg border-4 border-gray-50">2</div><div className="flex items-center justify-center w-20 h-20 bg-purple-100 rounded-full mx-auto mb-4 mt-8"><i data-lucide="sparkles" className="w-10 h-10 text-purple-600"></i></div><h3 className="text-xl font-semibold">AI 即刻生成</h3><p className="text-gray-500 mt-2">智能分析核心要点。</p></div>
-            <div className="relative bg-white p-8 rounded-xl border"><div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-black text-white w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg border-4 border-gray-50">3</div><div className="flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mx-auto mb-4 mt-8"><i data-lucide="eye" className="w-10 h-10 text-green-600"></i></div><h3 className="text-xl font-semibold">查看、编辑与分享</h3><p className="text-gray-500 mt-2">获得清晰的思维导图。</p></div>
+            <div className="relative bg-white p-8 rounded-xl border"><div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-black text-white w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg border-4 border-gray-50">1</div><div className="flex items-center justify-center w-20 h-20 bg-blue-100 rounded-full mx-auto mb-4 mt-8"><UploadCloud className="w-10 h-10 text-blue-600" /></div><h3 className="text-xl font-semibold">输入内容</h3><p className="text-gray-500 mt-2">拖拽文件或粘贴文本。</p></div>
+            <div className="relative bg-white p-8 rounded-xl border"><div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-black text-white w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg border-4 border-gray-50">2</div><div className="flex items-center justify-center w-20 h-20 bg-purple-100 rounded-full mx-auto mb-4 mt-8"><Sparkles className="w-10 h-10 text-purple-600" /></div><h3 className="text-xl font-semibold">AI 即刻生成</h3><p className="text-gray-500 mt-2">智能分析核心要点。</p></div>
+            <div className="relative bg-white p-8 rounded-xl border"><div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-black text-white w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg border-4 border-gray-50">3</div><div className="flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mx-auto mb-4 mt-8"><Eye className="w-10 h-10 text-green-600" /></div><h3 className="text-xl font-semibold">查看、编辑与分享</h3><p className="text-gray-500 mt-2">获得清晰的思维导图。</p></div>
           </div>
         </div>
       </section>
