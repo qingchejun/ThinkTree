@@ -338,8 +338,8 @@ const RecentProjects = React.memo(({ mindmaps, onCardClick, onCreateNew }) => {
         </div>
         {mindmaps.map((mindmap) => (
           <div key={mindmap.id} onClick={() => onCardClick(mindmap.id)} className="bg-white rounded-xl border overflow-hidden group hover:shadow-lg transition-shadow cursor-pointer">
-            <div className="bg-gray-200 h-32 flex items-center justify-center">
-              <Image width={300} height={160} src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=160&fit=crop&crop=center&auto=format&q=80" alt="思维导图预览图" className="w-full h-full object-cover"/>
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-100 h-32 flex items-center justify-center">
+              <div className="text-4xl">🗺️</div>
             </div>
             <div className="p-4">
               <h3 className="font-semibold text-gray-800 truncate" title={mindmap.title}>{mindmap.title}</h3>

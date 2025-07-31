@@ -19,11 +19,25 @@ const nextConfig = {
   
   // 图片优化
   images: {
-    domains: [
-      'api.dicebear.com',      // 用户头像生成服务
-      'images.unsplash.com',   // 思维导图预览图
-      'placehold.co'           // 备用占位符服务
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'api.dicebear.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'placehold.co',
+        pathname: '/**',
+      }
     ],
+    dangerouslyAllowSVG: true,
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     formats: ['image/webp', 'image/avif'],
   },
   
