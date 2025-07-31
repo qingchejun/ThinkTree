@@ -1,6 +1,7 @@
 'use client';
 import { useState, useContext, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import AuthContext from '../../context/AuthContext';
 import { Button } from '../ui/Button';
 
@@ -34,17 +35,9 @@ const Header = ({ title, subtitle, showCreateButton = false }) => {
     setIsDropdownOpen(false);
   };
 
-  // 获取用户显示名称（使用邮箱前缀或完整邮箱）
+  // 获取用户显示名称
   const getUserDisplayName = () => {
-    if (!user?.email) return '用户';
-    const emailPrefix = user.email.split('@')[0];
-    return emailPrefix.length > 12 ? emailPrefix.substring(0, 12) + '...' : emailPrefix;
-  };
-
-  // 获取用户头像文字（邮箱首字母）
-  const getUserAvatar = () => {
-    if (!user?.email) return 'U';
-    return user.email.charAt(0).toUpperCase();
+    return user?.display_name || user?.displayName || user?.name || user?.email || '用户';
   };
 
   return (
@@ -114,9 +107,13 @@ const Header = ({ title, subtitle, showCreateButton = false }) => {
                   className="flex items-center space-x-3 text-sm font-medium text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 rounded-md px-3 py-2 transition-colors"
                 >
                   {/* 用户头像 */}
-                  <div className="w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center text-sm font-semibold">
-                    {getUserAvatar()}
-                  </div>
+                  <Image 
+                    width={32} 
+                    height={32} 
+                    className="w-8 h-8 rounded-full" 
+                    src="https://api.dicebear.com/7.x/initials/svg?seed=User&backgroundColor=3b82f6&textColor=ffffff" 
+                    alt="用户头像" 
+                  />
                   {/* 用户名称 */}
                   <span className="hidden sm:block">{getUserDisplayName()}</span>
                   {/* 下拉箭头 */}

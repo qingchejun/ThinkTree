@@ -19,7 +19,11 @@ const nextConfig = {
   
   // 图片优化
   images: {
-    domains: [],
+    domains: [
+      'api.dicebear.com',      // 用户头像生成服务
+      'images.unsplash.com',   // 思维导图预览图
+      'placehold.co'           // 备用占位符服务
+    ],
     formats: ['image/webp', 'image/avif'],
   },
   
