@@ -216,7 +216,7 @@ const AppHeader = React.memo(({ user, credits, onLogout }) => {
                 <Zap className="w-4 h-4 text-yellow-500" />
                 <span>{credits}</span>
               </div>
-              <Image width={32} height={32} className="w-8 h-8 rounded-full" src="https://api.dicebear.com/7.x/initials/svg?seed=User&backgroundColor=3b82f6&textColor=ffffff" alt="用户头像" />
+              <Image width={32} height={32} className="w-8 h-8 rounded-full" src="https://api.dicebear.com/7.x/avataaars/svg?seed=ThinkSo&backgroundColor=3b82f6" alt="用户头像" />
             </button>
             
             {/* 用户下拉菜单 */}
@@ -338,8 +338,8 @@ const RecentProjects = React.memo(({ mindmaps, onCardClick, onCreateNew }) => {
         </div>
         {mindmaps.map((mindmap) => (
           <div key={mindmap.id} onClick={() => onCardClick(mindmap.id)} className="bg-white rounded-xl border overflow-hidden group hover:shadow-lg transition-shadow cursor-pointer">
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-100 h-32 flex items-center justify-center">
-              <div className="text-4xl">🗺️</div>
+            <div className="bg-gray-100 h-32 flex items-center justify-center overflow-hidden">
+              <Image width={300} height={128} src="/mindmap-preview.png" alt="思维导图预览图" className="w-full h-full object-contain"/>
             </div>
             <div className="p-4">
               <h3 className="font-semibold text-gray-800 truncate" title={mindmap.title}>{mindmap.title}</h3>
@@ -387,7 +387,7 @@ const CreationHub = () => {
           fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/mindmaps/`, { 
             headers: { 'Authorization': `Bearer ${token}` } 
           }),
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/credits`, { 
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/profile`, { 
             headers: { 'Authorization': `Bearer ${token}` } 
           })
         ]);
@@ -398,12 +398,12 @@ const CreationHub = () => {
         }
         
         if (creditsResponse.ok) {
-          const creditsData = await creditsResponse.json();
-          console.log('Credits API响应:', creditsData);
-          setUserCredits(creditsData.balance || creditsData.credits || 0);
+          const userData = await creditsResponse.json();
+          console.log('用户信息API响应:', userData);
+          setUserCredits(userData.credits || userData.balance || 0);
         } else {
-          console.error('获取积分失败:', creditsResponse.status, creditsResponse.statusText);
-          // 如果积分API失败，尝试从用户信息中获取
+          console.error('获取用户信息失败:', creditsResponse.status, creditsResponse.statusText);
+          // 如果用户信息API失败，尝试从AuthContext的用户信息中获取
           if (user?.credits !== undefined) {
             setUserCredits(user.credits);
           }
