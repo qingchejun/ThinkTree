@@ -18,48 +18,162 @@
  */
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-// import { useRouter } from 'next/navigation'; // Removed Next.js specific import
-// import Link from 'next/link'; // Removed Next.js specific import
-// import { useAuth } from '../context/AuthContext'; // Removed local context import
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { useAuth } from '../context/AuthContext';
 import { Gift, Zap, LayoutDashboard, CreditCard, Settings, LogOut, FileText, FileUp, Youtube, Podcast, FileAudio, Link as LinkIcon, Sparkles, UploadCloud, PlusCircle, ListChecks } from 'lucide-react';
 
 // ===================================================================
-// ======================= MOCKS FOR COMPILATION =====================
+// ======================= 自定义 HOOKS ==============================
 // ===================================================================
 
-// Mocking Next.js's useRouter hook for compatibility in this environment.
-const useRouter = () => {
-  return {
-    push: (path) => console.log(`Navigating to: ${path}`),
-  };
-};
+// 自定义Hook：用于处理异步操作
+const useAsync = (asyncFunction) => {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-// Mocking Next.js's Link component with a standard anchor tag.
-const Link = ({ href, children, ...props }) => {
-  return <a href={href} {...props}>{children}</a>;
-};
-
-// Mocking the useAuth context hook as the file is not available.
-// This provides placeholder data to allow the component to render.
-const useAuth = () => ({
-  user: { email: 'houj0927@gmail.com', displayName: 'houj0927', avatarUrl: null },
-  token: 'mock-jwt-token-for-preview',
-  logout: () => console.log('Logout function called'),
-  isLoading: false,
-});
-
-// Mocking environment variable
-const process = {
-    env: {
-        NEXT_PUBLIC_API_URL: 'https://api.example.com'
+  const execute = async (...args) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const result = await asyncFunction(...args);
+      setData(result);
+      return result;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
     }
+  };
+
+  return { data, loading, error, execute };
 };
 
+// 自定义Hook：用于API调用
+const useApi = () => {
+  const { token } = useAuth();
+  
+  const apiCall = async (url, options = {}) => {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${url}`, {
+      ...options,
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.status}`);
+    }
+
+    return response.json();
+  };
+
+  return { apiCall };
+};
+
+
+// ===================================================================
+// ======================= 骨架屏组件 =================================
+// ===================================================================
+const LoadingSkeleton = () => {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header骨架屏 */}
+      <div className="bg-white border-b border-gray-200 px-6 py-3">
+        <div className="container mx-auto flex justify-between items-center">
+          <div className="flex items-center space-x-2">
+            <div className="w-8 h-8 bg-gray-200 rounded animate-pulse"></div>
+            <div className="w-20 h-6 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+          <div className="flex items-center space-x-6">
+            <div className="w-20 h-8 bg-gray-200 rounded animate-pulse"></div>
+            <div className="w-16 h-8 bg-gray-200 rounded-full animate-pulse"></div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Main内容骨架屏 */}
+      <div className="container mx-auto px-6 py-8">
+        <div className="w-full max-w-5xl mx-auto">
+          <div className="w-64 h-8 bg-gray-200 rounded animate-pulse mx-auto mb-6"></div>
+          <div className="bg-white rounded-2xl shadow-lg border p-6">
+            <div className="flex justify-center space-x-4 mb-4">
+              {[1,2,3,4,5,6].map(i => (
+                <div key={i} className="w-16 h-8 bg-gray-200 rounded animate-pulse"></div>
+              ))}
+            </div>
+            <div className="w-full h-40 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+        </div>
+        
+        {/* 项目骨架屏 */}
+        <div className="w-full max-w-6xl mx-auto mt-12">
+          <div className="w-32 h-6 bg-gray-200 rounded animate-pulse mb-4"></div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            {[1,2,3,4,5].map(i => (
+              <div key={i} className="bg-white rounded-xl border overflow-hidden">
+                <div className="bg-gray-200 h-32 animate-pulse"></div>
+                <div className="p-4">
+                  <div className="w-3/4 h-4 bg-gray-200 rounded animate-pulse mb-2"></div>
+                  <div className="w-1/2 h-3 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ===================================================================
+// ======================= 错误边界组件 ===============================
+// ===================================================================
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('CreationHub Error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <div className="text-center p-8">
+            <div className="text-red-500 text-6xl mb-4">⚠️</div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">出现了一些问题</h2>
+            <p className="text-gray-600 mb-6">页面加载时发生错误，请刷新页面重试</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              刷新页面
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 // ===================================================================
 // ======================= 1. 子组件：顶部导航栏 ========================
 // ===================================================================
-const AppHeader = ({ user, credits, onLogout }) => {
+const AppHeader = React.memo(({ user, credits, onLogout }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
@@ -112,9 +226,9 @@ const AppHeader = ({ user, credits, onLogout }) => {
                   <p className="text-sm text-gray-500 truncate">{user?.email}</p>
                 </div>
                 <Link href="/mindmaps" className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><LayoutDashboard className="w-4 h-4 text-gray-500"/><span>我的思维导图</span></Link>
-                <Link href="/settings" className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><CreditCard className="w-4 h-4 text-gray-500"/><span>用量与计费</span></Link>
+                <Link href="/settings?tab=billing" className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><CreditCard className="w-4 h-4 text-gray-500"/><span>用量与计费</span></Link>
                 <Link href="/settings" className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><Settings className="w-4 h-4 text-gray-500"/><span>账户设置</span></Link>
-                <Link href="/settings" className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><ListChecks className="w-4 h-4 text-gray-500"/><span>邀请记录</span></Link>
+                <Link href="/settings?tab=invitations" className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><ListChecks className="w-4 h-4 text-gray-500"/><span>邀请记录</span></Link>
                 <div className="border-t my-1"></div>
                 <button onClick={onLogout} className="w-full text-left flex items-center space-x-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50"><LogOut className="w-4 h-4"/><span>退出登录</span></button>
               </div>
@@ -124,12 +238,12 @@ const AppHeader = ({ user, credits, onLogout }) => {
       </div>
     </header>
   );
-};
+});
 
 // ===================================================================
 // ======================= 2. 子组件：创作面板 ========================
 // ===================================================================
-const CreationPanel = ({ onTextGenerate, onFileGenerate, loadingStates }) => {
+const CreationPanel = React.memo(({ onTextGenerate, onFileGenerate, loadingStates }) => {
   const [activeTab, setActiveTab] = useState('text');
   const [textInput, setTextInput] = useState('');
   const [dragActive, setDragActive] = useState(false);
@@ -200,12 +314,12 @@ const CreationPanel = ({ onTextGenerate, onFileGenerate, loadingStates }) => {
       </div>
     </div>
   );
-};
+});
 
 // ===================================================================
 // ======================= 3. 子组件：最近项目 ========================
 // ===================================================================
-const RecentProjects = ({ mindmaps, onCardClick, onCreateNew }) => {
+const RecentProjects = React.memo(({ mindmaps, onCardClick, onCreateNew }) => {
   return (
     <div id="dashboardView" className="w-full max-w-6xl mx-auto mt-12">
       <div className="flex items-center justify-between mb-4">
@@ -231,7 +345,7 @@ const RecentProjects = ({ mindmaps, onCardClick, onCreateNew }) => {
       </div>
     </div>
   );
-};
+});
 
 
 // ===================================================================
@@ -263,12 +377,23 @@ const CreationHub = () => {
       setIsDataLoading(true);
       try {
         const [mindmapsResponse, creditsResponse] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/mindmaps/`, { headers: { 'Authorization': `Bearer ${token}` } }),
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/credits`, { headers: { 'Authorization': `Bearer ${token}` } })
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/mindmaps/`, { 
+            headers: { 'Authorization': `Bearer ${token}` } 
+          }),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/credits`, { 
+            headers: { 'Authorization': `Bearer ${token}` } 
+          })
         ]);
         
-        if (mindmapsResponse.ok) setMindmaps((await mindmapsResponse.json())?.slice(0, 4) || []);
-        if (creditsResponse.ok) setUserCredits((await creditsResponse.json()).balance || 0);
+        if (mindmapsResponse.ok) {
+          const mindmapsData = await mindmapsResponse.json();
+          setMindmaps(mindmapsData?.slice(0, 4) || []);
+        }
+        
+        if (creditsResponse.ok) {
+          const creditsData = await creditsResponse.json();
+          setUserCredits(creditsData.balance || 0);
+        }
 
       } catch (error) {
         console.error('获取用户数据失败:', error);
@@ -282,27 +407,50 @@ const CreationHub = () => {
   // 处理文本生成
   const handleTextGenerate = async (textInput) => {
     if (!textInput.trim()) return alert('请输入内容');
-    setIsGenerating(true);
-    // ... 你的原始 handleTextGenerate 逻辑 ...
-    console.log("Generating from text:", textInput);
-    // 模拟API调用
-    setTimeout(() => {
-        setIsGenerating(false);
-        alert("思维导图生成成功! (模拟)");
-        router.push('/mindmap/new-id-from-text');
-    }, 2000);
+    
+    try {
+      setIsGenerating(true);
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/process-text`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          text: textInput.trim()
+        })
+      });
+
+      const result = await response.json();
+      
+      if (response.ok && result.success) {
+        // 成功生成思维导图，跳转到详情页面
+        router.push(`/mindmap/${result.data.mindmap_id}`);
+      } else if (response.status === 402) {
+        // 积分不足
+        const errorDetail = result.detail;
+        if (typeof errorDetail === 'object' && errorDetail.message === '积分不足') {
+          const shortfall = errorDetail.required_credits - errorDetail.current_balance;
+          alert(`积分不足！需要 ${errorDetail.required_credits} 积分，当前余额 ${errorDetail.current_balance} 积分，还差 ${shortfall} 积分。`);
+        } else {
+          alert('积分不足，无法生成思维导图');
+        }
+      } else {
+        throw new Error(result.detail || '生成失败');
+      }
+    } catch (error) {
+      console.error('文本处理错误:', error);
+      alert(error.message || '生成思维导图时出现错误，请稍后重试');
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   // 处理文件生成
-  const handleFileGenerate = async (file) => {
-    // ... 你的原始文件上传、分析、生成逻辑 ...
-    console.log("Generating from file");
-    setIsGenerating(true);
-     setTimeout(() => {
-        setIsGenerating(false);
-        alert("文件思维导图生成成功! (模拟)");
-        router.push('/mindmap/new-id-from-file');
-    }, 2000);
+  const handleFileGenerate = async () => {
+    // 这个函数在CreationPanel中被调用，但实际的文件处理逻辑应该在子组件中
+    console.log("File generation triggered");
   };
 
   // 处理登出
@@ -312,32 +460,30 @@ const CreationHub = () => {
   };
 
   if (isAuthLoading || isDataLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-900 border-t-transparent"></div>
-      </div>
-    );
+    return <LoadingSkeleton />;
   }
 
   if (!user) return null;
 
-  // 渲染全新的UI结构
+  // 渲染全新的UI结构，使用错误边界包装
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
-      <AppHeader user={user} credits={userCredits} onLogout={handleLogout} />
-      <main className="flex-1 container mx-auto px-6 py-8 overflow-y-auto">
-        <CreationPanel 
-          onTextGenerate={handleTextGenerate}
-          onFileGenerate={handleFileGenerate}
-          loadingStates={{ isAnalyzing, isGenerating }}
-        />
-        <RecentProjects 
-          mindmaps={mindmaps}
-          onCardClick={(id) => router.push(`/mindmap/${id}`)}
-          onCreateNew={() => console.log("Create new project clicked")}
-        />
-      </main>
-    </div>
+    <ErrorBoundary>
+      <div className="h-screen flex flex-col bg-gray-50">
+        <AppHeader user={user} credits={userCredits} onLogout={handleLogout} />
+        <main className="flex-1 container mx-auto px-6 py-8 overflow-y-auto">
+          <CreationPanel 
+            onTextGenerate={handleTextGenerate}
+            onFileGenerate={handleFileGenerate}
+            loadingStates={{ isAnalyzing, isGenerating }}
+          />
+          <RecentProjects 
+            mindmaps={mindmaps}
+            onCardClick={(id) => router.push(`/mindmap/${id}`)}
+            onCreateNew={() => router.push('/create')}
+          />
+        </main>
+      </div>
+    </ErrorBoundary>
   );
 };
 
