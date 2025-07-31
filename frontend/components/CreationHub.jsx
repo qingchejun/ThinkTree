@@ -20,6 +20,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth } from '../context/AuthContext';
 import { Gift, Zap, LayoutDashboard, CreditCard, Settings, LogOut, FileText, FileUp, Youtube, Podcast, FileAudio, Link as LinkIcon, Sparkles, UploadCloud, PlusCircle, ListChecks } from 'lucide-react';
 
@@ -215,7 +216,7 @@ const AppHeader = React.memo(({ user, credits, onLogout }) => {
                 <Zap className="w-4 h-4 text-yellow-500" />
                 <span>{credits}</span>
               </div>
-              <img className="w-8 h-8 rounded-full" src={user?.avatarUrl || "https://placehold.co/40x40/111827/ffffff?text=U"} alt="用户头像" />
+              <Image width={32} height={32} className="w-8 h-8 rounded-full" src={user?.avatarUrl || "https://placehold.co/40x40/111827/ffffff?text=U"} alt="用户头像" />
             </button>
             
             {/* 用户下拉菜单 */}
@@ -239,6 +240,8 @@ const AppHeader = React.memo(({ user, credits, onLogout }) => {
     </header>
   );
 });
+
+AppHeader.displayName = 'AppHeader';
 
 // ===================================================================
 // ======================= 2. 子组件：创作面板 ========================
@@ -316,6 +319,8 @@ const CreationPanel = React.memo(({ onTextGenerate, onFileGenerate, loadingState
   );
 });
 
+CreationPanel.displayName = 'CreationPanel';
+
 // ===================================================================
 // ======================= 3. 子组件：最近项目 ========================
 // ===================================================================
@@ -334,7 +339,7 @@ const RecentProjects = React.memo(({ mindmaps, onCardClick, onCreateNew }) => {
         {mindmaps.map((mindmap) => (
           <div key={mindmap.id} onClick={() => onCardClick(mindmap.id)} className="bg-white rounded-xl border overflow-hidden group hover:shadow-lg transition-shadow cursor-pointer">
             <div className="bg-gray-200 h-32 flex items-center justify-center">
-              <img src="https://placehold.co/300x160/e5e7eb/111827?text=预览图" alt="思维导图预览图" className="w-full h-full object-cover"/>
+              <Image width={300} height={160} src="https://placehold.co/300x160/e5e7eb/111827?text=预览图" alt="思维导图预览图" className="w-full h-full object-cover"/>
             </div>
             <div className="p-4">
               <h3 className="font-semibold text-gray-800 truncate" title={mindmap.title}>{mindmap.title}</h3>
@@ -346,6 +351,8 @@ const RecentProjects = React.memo(({ mindmaps, onCardClick, onCreateNew }) => {
     </div>
   );
 });
+
+RecentProjects.displayName = 'RecentProjects';
 
 
 // ===================================================================
