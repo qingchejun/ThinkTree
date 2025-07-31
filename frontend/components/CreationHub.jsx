@@ -216,7 +216,7 @@ const AppHeader = React.memo(({ user, credits, onLogout }) => {
                 <Zap className="w-4 h-4 text-yellow-500" />
                 <span>{credits}</span>
               </div>
-              <Image width={32} height={32} className="w-8 h-8 rounded-full" src={user?.avatarUrl || "https://placehold.co/40x40/111827/ffffff?text=U"} alt="用户头像" />
+              <Image width={32} height={32} className="w-8 h-8 rounded-full" src={user?.avatarUrl || "https://api.dicebear.com/7.x/initials/svg?seed=User&backgroundColor=3b82f6&textColor=ffffff"} alt="用户头像" />
             </button>
             
             {/* 用户下拉菜单 */}
@@ -339,7 +339,7 @@ const RecentProjects = React.memo(({ mindmaps, onCardClick, onCreateNew }) => {
         {mindmaps.map((mindmap) => (
           <div key={mindmap.id} onClick={() => onCardClick(mindmap.id)} className="bg-white rounded-xl border overflow-hidden group hover:shadow-lg transition-shadow cursor-pointer">
             <div className="bg-gray-200 h-32 flex items-center justify-center">
-              <Image width={300} height={160} src="https://placehold.co/300x160/e5e7eb/111827?text=预览图" alt="思维导图预览图" className="w-full h-full object-cover"/>
+              <Image width={300} height={160} src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=300&h=160&fit=crop&crop=center&auto=format&q=80" alt="思维导图预览图" className="w-full h-full object-cover"/>
             </div>
             <div className="p-4">
               <h3 className="font-semibold text-gray-800 truncate" title={mindmap.title}>{mindmap.title}</h3>
@@ -399,7 +399,14 @@ const CreationHub = () => {
         
         if (creditsResponse.ok) {
           const creditsData = await creditsResponse.json();
-          setUserCredits(creditsData.balance || 0);
+          console.log('Credits API响应:', creditsData);
+          setUserCredits(creditsData.balance || creditsData.credits || 0);
+        } else {
+          console.error('获取积分失败:', creditsResponse.status, creditsResponse.statusText);
+          // 如果积分API失败，尝试从用户信息中获取
+          if (user?.credits !== undefined) {
+            setUserCredits(user.credits);
+          }
         }
 
       } catch (error) {
