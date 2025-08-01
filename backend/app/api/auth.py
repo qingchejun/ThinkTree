@@ -613,6 +613,14 @@ async def update_profile(
         
         invitation_remaining = max(0, current_user.invitation_quota - invitation_used)
         
+        # 获取用户积分余额
+        try:
+            user_credits_record = CreditService.get_user_credits(db, current_user.id)
+            credits_balance = user_credits_record.balance if user_credits_record else 0
+        except Exception as e:
+            print(f"获取用户积分失败: {e}")
+            credits_balance = 0
+        
         # 构造更新后的用户信息
         updated_user = UserProfileResponse(
             id=current_user.id,
@@ -622,7 +630,7 @@ async def update_profile(
             is_verified=current_user.is_verified,
             is_superuser=current_user.is_superuser,
             created_at=current_user.created_at.isoformat(),
-            credits=current_user.credits,
+            credits=credits_balance,
             invitation_quota=current_user.invitation_quota,
             invitation_used=invitation_used,
             invitation_remaining=invitation_remaining
