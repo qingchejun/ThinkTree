@@ -8,9 +8,11 @@ import Toast from '@/components/common/Toast';
 import PasswordInput from '@/components/common/PasswordInput';
 import RedemptionCodeForm from '@/components/common/RedemptionCodeForm';
 import RedemptionHistory from '@/components/common/RedemptionHistory';
+import AvatarSelector, { getCurrentAvatar, getAvatarUrl } from '@/components/common/AvatarSelector';
 import { Button } from '../../components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
+import Image from 'next/image';
 
 const settingsNavItems = [
   {
@@ -50,6 +52,8 @@ const SettingsContent = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [toast, setToast] = useState(null);
   const [displayName, setDisplayName] = useState('');
+  const [isAvatarSelectorOpen, setIsAvatarSelectorOpen] = useState(false);
+  const [currentAvatar, setCurrentAvatar] = useState('default');
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
     newPassword: '',
@@ -71,6 +75,17 @@ const SettingsContent = () => {
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
+  };
+
+  // 初始化用户头像
+  useEffect(() => {
+    setCurrentAvatar(getCurrentAvatar());
+  }, []);
+
+  // 处理头像选择
+  const handleAvatarSelect = (avatarOption) => {
+    setCurrentAvatar(avatarOption.id);
+    showToast('头像更新成功！');
   };
   
   // 兑换码成功处理
@@ -248,6 +263,30 @@ const SettingsContent = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
+                {/* 头像选择 */}
+                <div>
+                  <label className="block text-sm font-medium text-text-primary mb-2">
+                    头像
+                  </label>
+                  <div className="flex items-center space-x-4">
+                    <Image
+                      width={80}
+                      height={80}
+                      src={getAvatarUrl(currentAvatar)}
+                      alt="用户头像"
+                      className="w-20 h-20 rounded-full object-cover border-2 border-gray-200"
+                    />
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => setIsAvatarSelectorOpen(true)}
+                      className="text-sm"
+                    >
+                      更换头像
+                    </Button>
+                  </div>
+                </div>
+                
                 <div>
                   <label className="block text-sm font-medium text-text-primary mb-2">
                     邮箱地址
@@ -685,6 +724,14 @@ const SettingsContent = () => {
           onClose={() => setToast(null)}
         />
       )}
+      
+      {/* 头像选择器 */}
+      <AvatarSelector
+        isOpen={isAvatarSelectorOpen}
+        onClose={() => setIsAvatarSelectorOpen(false)}
+        onSelect={handleAvatarSelect}
+        currentAvatar={currentAvatar}
+      />
     </div>
   );
 };

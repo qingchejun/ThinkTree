@@ -23,7 +23,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '../context/AuthContext';
 import { Gift, Zap, LayoutDashboard, CreditCard, Settings, LogOut, FileText, FileUp, Youtube, Podcast, FileAudio, Link as LinkIcon, Sparkles, UploadCloud, PlusCircle, ListChecks } from 'lucide-react';
-import AvatarSelector, { getCurrentAvatar, getAvatarUrl } from './common/AvatarSelector';
+import { getCurrentAvatar, getAvatarUrl } from './common/AvatarSelector';
 
 // ===================================================================
 // ======================= 自定义 HOOKS ==============================
@@ -177,7 +177,6 @@ class ErrorBoundary extends React.Component {
 // ===================================================================
 const AppHeader = React.memo(({ user, credits, onLogout }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isAvatarSelectorOpen, setIsAvatarSelectorOpen] = useState(false);
   const [currentAvatar, setCurrentAvatar] = useState('default');
   const menuRef = useRef(null);
 
@@ -198,17 +197,6 @@ const AppHeader = React.memo(({ user, credits, onLogout }) => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
-
-  // 处理头像选择
-  const handleAvatarSelect = (avatarOption) => {
-    setCurrentAvatar(avatarOption.id);
-  };
-
-  // 处理头像点击
-  const handleAvatarClick = () => {
-    setIsMenuOpen(false);
-    setIsAvatarSelectorOpen(true);
-  };
 
   return (
     <header className="bg-white/95 backdrop-blur-lg sticky top-0 z-40 border-b border-gray-200 flex-shrink-0">
@@ -235,16 +223,13 @@ const AppHeader = React.memo(({ user, credits, onLogout }) => {
                 <Zap className="w-4 h-4 text-yellow-500" />
                 <span>{credits}</span>
               </div>
-              <div className="relative">
-                <Image 
-                  width={32} 
-                  height={32} 
-                  className="w-8 h-8 rounded-full object-cover cursor-pointer hover:ring-2 hover:ring-blue-300 transition-all" 
-                  src={getAvatarUrl(currentAvatar)} 
-                  alt="用户头像"
-                  onClick={handleAvatarClick}
-                />
-              </div>
+              <Image 
+                width={32} 
+                height={32} 
+                className="w-8 h-8 rounded-full object-cover" 
+                src={getAvatarUrl(currentAvatar)} 
+                alt="用户头像"
+              />
             </button>
             
             {/* 用户下拉菜单 */}
@@ -265,14 +250,6 @@ const AppHeader = React.memo(({ user, credits, onLogout }) => {
           </div>
         </div>
       </div>
-      
-      {/* 头像选择器 */}
-      <AvatarSelector
-        isOpen={isAvatarSelectorOpen}
-        onClose={() => setIsAvatarSelectorOpen(false)}
-        onSelect={handleAvatarSelect}
-        currentAvatar={currentAvatar}
-      />
     </header>
   );
 });
