@@ -245,6 +245,10 @@ class PasswordUpdateResponse(BaseModel):
 class UserProfileUpdateRequest(BaseModel):
     """用户资料更新请求模型"""
     display_name: Optional[str] = None
+    
+    class Config:
+        # 允许额外字段，防止前端传递未知字段时报错
+        extra = "ignore"
 
 
 class UserProfileUpdateResponse(BaseModel):
@@ -569,6 +573,9 @@ async def update_profile(
     更新用户资料信息
     """
     try:
+        # 调试日志：记录接收到的请求数据
+        print(f"🔍 收到用户资料更新请求: {request.dict()}")
+        print(f"🔍 当前用户: {current_user.email}, display_name: {current_user.display_name}")
         # 记录修改前的值
         old_display_name = current_user.display_name
         changes = []
