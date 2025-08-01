@@ -50,10 +50,9 @@ const LandingPage = () => {
             <span className="text-2xl font-bold text-gray-900">ThinkSo</span>
           </div>
           
-          {/* 右侧：登录和注册按钮 */}
+          {/* 右侧：只保留登录按钮 */}
           <div className="flex items-center space-x-4">
             <button onClick={() => setIsLoginModalOpen(true)} className="text-gray-800 font-semibold hover:text-black">登录</button>
-            <button onClick={() => setIsLoginModalOpen(true)} className="bg-black text-white px-5 py-2 rounded-lg font-semibold shadow-md hover:bg-gray-800 transition-colors">免费注册</button>
           </div>
         </div>
       </header>
@@ -237,9 +236,9 @@ const LandingPage = () => {
       <section className="py-20 bg-gray-900 text-white">
         <div className="container mx-auto px-6 text-center">
           <h2 className="text-4xl font-bold">ThinkSo，让思维更灵动。</h2>
-          <Link href="/register" className="mt-8 inline-block bg-white text-black px-8 py-4 rounded-lg font-bold text-lg shadow-lg hover:bg-gray-200 transition-all transform hover:scale-105">
+          <button onClick={() => setIsLoginModalOpen(true)} className="mt-8 inline-block bg-white text-black px-8 py-4 rounded-lg font-bold text-lg shadow-lg hover:bg-gray-200 transition-all transform hover:scale-105">
             立即免费试用
-          </Link>
+          </button>
         </div>
       </section>
 
@@ -249,6 +248,9 @@ const LandingPage = () => {
           <p>&copy; 2025 ThinkSo. All rights reserved.</p>
         </div>
       </footer>
+
+      {/* 登录浮窗 */}
+      <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
     </div>
   );
 };

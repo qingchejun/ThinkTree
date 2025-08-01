@@ -36,35 +36,17 @@ const LoginModal = ({ isOpen, onClose }) => {
   const { login } = useContext(AuthContext);
   const router = useRouter();
 
-  // 处理邮件发送请求
+  // 处理邮件发送请求 - 暂时跳转到传统登录页
   const handleInitiateLogin = async (e) => {
     e.preventDefault();
     if (!email) {
       setError('请输入您的邮箱地址');
       return;
     }
-    setIsLoading(true);
-    setError('');
-
-    try {
-      // TODO: 调用后端API发送验证码
-      // const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/initiate`, {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ email })
-      // });
-      
-      // 临时模拟API调用
-      console.log(`向 ${email} 发送登录邮件...`);
-      await new Promise(resolve => setTimeout(resolve, 1000)); 
-      
-      setIsLoading(false);
-      setView('verify'); // 切换到验证码输入视图
-    } catch (error) {
-      console.error('发送验证码失败:', error);
-      setError('发送验证码失败，请稍后重试');
-      setIsLoading(false);
-    }
+    
+    // 暂时跳转到传统登录页面
+    router.push('/login');
+    onClose();
   };
 
   // 处理验证码输入
@@ -128,33 +110,10 @@ const LoginModal = ({ isOpen, onClose }) => {
     setCode(new Array(6).fill("")); // 清空验证码
   };
 
-  // 处理Google登录
+  // 处理Google登录 - 暂时显示即将推出
   const handleGoogleLogin = async () => {
-    setIsLoading(true);
-    setError('');
-    
-    try {
-      // TODO: 实现Google OAuth登录
-      console.log('启动Google OAuth登录...');
-      
-      // 临时模拟Google登录成功
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      const mockGoogleToken = "mock_google_token_" + Date.now();
-      const loginResult = await login(mockGoogleToken);
-      
-      if (loginResult.success) {
-        console.log("Google登录成功!");
-        onClose(); // 关闭浮窗
-        router.push('/dashboard'); // 跳转到仪表板
-      } else {
-        setError('Google登录失败，请稍后重试');
-      }
-    } catch (error) {
-      console.error('Google登录失败:', error);
-      setError('Google登录失败，请稍后重试');
-    }
-    
-    setIsLoading(false);
+    setError('Google 登录功能即将推出，敬请期待！');
+    setTimeout(() => setError(''), 3000);
   };
 
   // 返回初始视图
@@ -225,7 +184,7 @@ const LoginModal = ({ isOpen, onClose }) => {
                 disabled={isLoading}
                 className="w-full mt-4 py-3 px-4 bg-black text-white font-semibold rounded-lg shadow-md hover:bg-gray-800 transition-colors disabled:opacity-50"
               >
-                {isLoading ? '发送中...' : 'Continue'}
+                前往登录页面
               </button>
             </form>
           </div>
