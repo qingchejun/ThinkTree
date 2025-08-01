@@ -588,15 +588,14 @@ async def update_profile(
                     detail="显示名称不能超过50个字符"
                 )
             
-            current_user.display_name = request.display_name.strip()
-            changes.append(f"显示名称: {old_display_name} -> {current_user.display_name}")
+            new_display_name = request.display_name.strip()
+            if new_display_name != old_display_name:
+                current_user.display_name = new_display_name
+                changes.append(f"显示名称: {old_display_name} -> {current_user.display_name}")
         
-        # 如果没有任何更改
+        # 如果没有任何更改，也允许请求成功（可能是头像更换等前端操作）
         if not changes:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="没有提供任何更新数据"
-            )
+            changes.append("保持现有设置")
         
         # 保存更改
         db.commit()
