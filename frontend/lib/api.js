@@ -14,7 +14,11 @@ async function apiCall(endpoint, options = {}) {
     },
   }
   
-  const config = { ...defaultOptions, ...options }
+  const config = { 
+    ...defaultOptions, 
+    ...options,
+    headers: { ...defaultOptions.headers, ...options.headers }
+  }
   
   try {
     const response = await fetch(url, config)
@@ -164,7 +168,8 @@ export async function updateProfile(profileData, token) {
   return await apiCall('/api/auth/profile', {
     method: 'PUT',
     headers: {
-      'Authorization': `Bearer ${token}`
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
     },
     body: JSON.stringify(profileData)
   })
