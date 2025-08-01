@@ -236,7 +236,7 @@ const AppHeader = React.memo(({ user, credits, onLogout }) => {
             {isMenuOpen && (
               <div className="absolute right-0 mt-3 w-56 bg-white rounded-lg shadow-lg py-2 z-50 border">
                 <div className="px-4 py-2 border-b">
-                  <p className="font-semibold text-gray-800 truncate">{user?.displayName || user?.email}</p>
+                  <p className="font-semibold text-gray-800 truncate">{user?.display_name || user?.displayName || user?.name || user?.email || '用户'}</p>
                   <p className="text-sm text-gray-500 truncate">{user?.email}</p>
                 </div>
                 <Link href="/mindmaps" className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><LayoutDashboard className="w-4 h-4 text-gray-500"/><span>我的思维导图</span></Link>
