@@ -27,11 +27,13 @@
  * - CTA按钮已连接到相应的路由（登录/注册页面）
  * - 内容和文案需要根据产品发展进行更新
  */
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { Sparkles, Cpu, FileStack, Users, BrainCircuit, FileOutput, Infinity, UploadCloud, Eye, PlusCircle } from 'lucide-react';
+import LoginModal from './LoginModal';
 
 const LandingPage = () => {
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   return (
     <div id="loggedOutView">
       {/* 
@@ -50,8 +52,8 @@ const LandingPage = () => {
           
           {/* 右侧：登录和注册按钮 */}
           <div className="flex items-center space-x-4">
-            <Link href="/login" className="text-gray-800 font-semibold hover:text-black">登录</Link>
-            <Link href="/register" className="bg-black text-white px-5 py-2 rounded-lg font-semibold shadow-md hover:bg-gray-800 transition-colors">免费注册</Link>
+            <button onClick={() => setIsLoginModalOpen(true)} className="text-gray-800 font-semibold hover:text-black">登录</button>
+            <button onClick={() => setIsLoginModalOpen(true)} className="bg-black text-white px-5 py-2 rounded-lg font-semibold shadow-md hover:bg-gray-800 transition-colors">免费注册</button>
           </div>
         </div>
       </header>
@@ -77,9 +79,9 @@ const LandingPage = () => {
         
         {/* 主要CTA按钮 - 引导用户开始使用产品 */}
         <div className="mt-8 flex justify-center">
-          <Link href="/register" className="bg-gray-800 text-white px-12 py-4 rounded-lg font-bold text-xl shadow-lg hover:bg-black transition-all transform hover:scale-105">
+          <button onClick={() => setIsLoginModalOpen(true)} className="bg-gray-800 text-white px-12 py-4 rounded-lg font-bold text-xl shadow-lg hover:bg-black transition-all transform hover:scale-105">
             免费生成思维导图
-          </Link>
+          </button>
         </div>
 
         {/* 福利横幅 - 吸引用户注册的限时优惠信息 */}
