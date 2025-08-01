@@ -233,43 +233,8 @@ class FileParser:
                 with open(file_path, 'r', encoding='utf-8', errors='ignore') as file:
                     content = file.read()
         
-            # 解析SRT格式，提取字幕文本
-            subtitle_texts = []
-            lines = content.split('\n')
-            
-            i = 0
-            while i < len(lines):
-                line = lines[i].strip()
-                
-                # 跳过空行
-                if not line:
-                    i += 1
-                    continue
-                
-                # 跳过序号行（纯数字）
-                if line.isdigit():
-                    i += 1
-                    continue
-                
-                # 跳过时间戳行（包含 -->）
-                if '-->' in line:
-                    i += 1
-                    continue
-                
-                # 这是字幕文本行
-                if line:
-                    # 清理HTML标签（如果有）
-                    cleaned_line = re.sub(r'<[^>]+>', '', line)
-                    if cleaned_line.strip():
-                        subtitle_texts.append(cleaned_line.strip())
-                
-                i += 1
-            
-            if not subtitle_texts:
-                raise Exception("SRT文件中没有找到有效的字幕文本")
-            
-            # 合并重复的短句，提高可读性
-            return self._merge_subtitle_sentences(subtitle_texts)
+            # 使用统一的SRT内容处理方法
+            return self._process_srt_content(content)
         
         except Exception as e:
             raise Exception(f"SRT文件解析失败: {str(e)}")
@@ -427,6 +392,49 @@ class FileParser:
             except Exception as e2:
                 # 如果内存解析都失败，降级到临时文件方式
                 return self._fallback_to_temp_file(file_bytes, filename, '.pdf')
+    
+    def _process_srt_content(self, content: str) -> str:
+        """处理SRT格式内容，提取字幕文本"""
+        try:
+            # 解析SRT格式，提取字幕文本
+            subtitle_texts = []
+            lines = content.split('\n')
+            
+            i = 0
+            while i < len(lines):
+                line = lines[i].strip()
+                
+                # 跳过空行
+                if not line:
+                    i += 1
+                    continue
+                
+                # 跳过序号行（纯数字）
+                if line.isdigit():
+                    i += 1
+                    continue
+                
+                # 跳过时间戳行（包含 -->）
+                if '-->' in line:
+                    i += 1
+                    continue
+                
+                # 这是字幕文本行
+                if line:
+                    # 清理HTML标签（如果有）
+                    cleaned_line = re.sub(r'<[^>]+>', '', line)
+                    if cleaned_line.strip():
+                        subtitle_texts.append(cleaned_line.strip())
+                
+                i += 1
+            
+            if not subtitle_texts:
+                raise Exception("SRT文件中没有找到有效的字幕文本")
+            
+            # 合并重复的短句，提高可读性
+            return self._merge_subtitle_sentences(subtitle_texts)
+        except Exception as e:
+            raise Exception(f"SRT内容处理失败: {str(e)}")
     
     def _parse_srt_from_bytes(self, file_bytes: bytes) -> str:
         """从字节流解析SRT字幕文件"""
