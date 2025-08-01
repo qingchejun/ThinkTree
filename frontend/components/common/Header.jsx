@@ -110,8 +110,8 @@ const Header = ({ title, subtitle, showCreateButton = false }) => {
                   <Image 
                     width={32} 
                     height={32} 
-                    className="w-8 h-8 rounded-full" 
-                    src="https://api.dicebear.com/7.x/avataaars/svg?seed=ThinkSo&backgroundColor=3b82f6" 
+                    className="w-8 h-8 rounded-full object-cover" 
+                    src="/default-avatar.png" 
                     alt="用户头像" 
                   />
                   {/* 用户名称 */}

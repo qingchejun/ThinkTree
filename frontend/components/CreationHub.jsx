@@ -216,7 +216,7 @@ const AppHeader = React.memo(({ user, credits, onLogout }) => {
                 <Zap className="w-4 h-4 text-yellow-500" />
                 <span>{credits}</span>
               </div>
-              <Image width={32} height={32} className="w-8 h-8 rounded-full" src="https://api.dicebear.com/7.x/avataaars/svg?seed=ThinkSo&backgroundColor=3b82f6" alt="用户头像" />
+              <Image width={32} height={32} className="w-8 h-8 rounded-full object-cover" src="/default-avatar.png" alt="用户头像" />
             </button>
             
             {/* 用户下拉菜单 */}
