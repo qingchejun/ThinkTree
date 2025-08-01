@@ -4,12 +4,20 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import AuthContext from '../../context/AuthContext';
 import { Button } from '../ui/Button';
+import AvatarSelector, { getCurrentAvatar, getAvatarUrl } from './AvatarSelector';
 
 const Header = ({ title, subtitle, showCreateButton = false }) => {
   const { user, logout, isAdmin } = useContext(AuthContext);
   const router = useRouter();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isAvatarSelectorOpen, setIsAvatarSelectorOpen] = useState(false);
+  const [currentAvatar, setCurrentAvatar] = useState('default');
   const dropdownRef = useRef(null);
+
+  // 初始化用户头像
+  useEffect(() => {
+    setCurrentAvatar(getCurrentAvatar());
+  }, []);
 
   // 点击外部关闭下拉菜单
   useEffect(() => {
@@ -24,6 +32,18 @@ const Header = ({ title, subtitle, showCreateButton = false }) => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  // 处理头像选择
+  const handleAvatarSelect = (avatarOption) => {
+    setCurrentAvatar(avatarOption.id);
+  };
+
+  // 处理头像点击
+  const handleAvatarClick = (e) => {
+    e.stopPropagation();
+    setIsDropdownOpen(false);
+    setIsAvatarSelectorOpen(true);
+  };
 
   const handleLogout = () => {
     logout();
@@ -110,9 +130,10 @@ const Header = ({ title, subtitle, showCreateButton = false }) => {
                   <Image 
                     width={32} 
                     height={32} 
-                    className="w-8 h-8 rounded-full object-cover" 
-                    src="/default-avatar.png" 
-                    alt="用户头像" 
+                    className="w-8 h-8 rounded-full object-cover cursor-pointer hover:ring-2 hover:ring-blue-300 transition-all" 
+                    src={getAvatarUrl(currentAvatar)} 
+                    alt="用户头像"
+                    onClick={handleAvatarClick}
                   />
                   {/* 用户名称 */}
                   <span className="hidden sm:block">{getUserDisplayName()}</span>
@@ -258,6 +279,14 @@ const Header = ({ title, subtitle, showCreateButton = false }) => {
           </div>
         </div>
       </div>
+      
+      {/* 头像选择器 */}
+      <AvatarSelector
+        isOpen={isAvatarSelectorOpen}
+        onClose={() => setIsAvatarSelectorOpen(false)}
+        onSelect={handleAvatarSelect}
+        currentAvatar={currentAvatar}
+      />
     </div>
   );
 };
