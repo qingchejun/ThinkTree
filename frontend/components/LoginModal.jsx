@@ -36,17 +36,36 @@ const LoginModal = ({ isOpen, onClose }) => {
   const { login } = useContext(AuthContext);
   const router = useRouter();
 
-  // 处理邮件发送请求 - 暂时跳转到传统登录页
+  // 处理邮件发送请求
   const handleInitiateLogin = async (e) => {
     e.preventDefault();
     if (!email) {
       setError('请输入您的邮箱地址');
       return;
     }
-    
-    // 暂时跳转到传统登录页面
-    router.push('/login');
-    onClose();
+    setIsLoading(true);
+    setError('');
+
+    try {
+      // TODO: 调用后端API发送验证码
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/initiate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      
+      if (response.ok) {
+        setView('verify'); // 切换到验证码输入视图
+      } else {
+        const errorData = await response.json();
+        setError(errorData.detail || '发送验证码失败，请稍后重试');
+      }
+    } catch (error) {
+      console.error('发送验证码失败:', error);
+      setError('网络错误，请检查连接后重试');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // 处理验证码输入
@@ -74,46 +93,50 @@ const LoginModal = ({ isOpen, onClose }) => {
     setError('');
 
     try {
-      // TODO: 调用后端API验证验证码
-      // const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/verify`, {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ email, code: fullCode })
-      // });
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code: fullCode })
+      });
       
-      // 临时模拟验证逻辑
-      console.log(`使用验证码 ${fullCode} 为邮箱 ${email} 进行验证...`);
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      // 模拟成功验证 (实际应该检查后端响应)
-      if (fullCode === "123456") {
-        // TODO: 使用实际的JWT token
-        const mockToken = "mock_jwt_token_" + Date.now();
-        const loginResult = await login(mockToken);
+      if (response.ok) {
+        const data = await response.json();
+        
+        // 使用返回的JWT token进行登录
+        const loginResult = await login(data.access_token);
         
         if (loginResult.success) {
-          console.log("验证成功，登录完成!");
           onClose(); // 关闭浮窗
           router.push('/dashboard'); // 跳转到仪表板
         } else {
           setError('登录失败，请稍后重试');
         }
       } else {
-        setError('验证码不正确，请重试');
+        const errorData = await response.json();
+        setError(errorData.detail || '验证码不正确，请重试');
       }
     } catch (error) {
       console.error('验证失败:', error);
-      setError('验证失败，请稍后重试');
+      setError('网络错误，请稍后重试');
     }
     
     setIsLoading(false);
     setCode(new Array(6).fill("")); // 清空验证码
   };
 
-  // 处理Google登录 - 暂时显示即将推出
+  // 处理Google登录
   const handleGoogleLogin = async () => {
-    setError('Google 登录功能即将推出，敬请期待！');
-    setTimeout(() => setError(''), 3000);
+    setIsLoading(true);
+    setError('');
+    
+    try {
+      // 重定向到后端的Google OAuth认证端点
+      window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/api/auth/google`;
+    } catch (error) {
+      console.error('Google登录失败:', error);
+      setError('Google登录失败，请稍后重试');
+      setIsLoading(false);
+    }
   };
 
   // 返回初始视图
@@ -184,7 +207,7 @@ const LoginModal = ({ isOpen, onClose }) => {
                 disabled={isLoading}
                 className="w-full mt-4 py-3 px-4 bg-black text-white font-semibold rounded-lg shadow-md hover:bg-gray-800 transition-colors disabled:opacity-50"
               >
-                前往登录页面
+                {isLoading ? '发送中...' : 'Continue'}
               </button>
             </form>
           </div>
