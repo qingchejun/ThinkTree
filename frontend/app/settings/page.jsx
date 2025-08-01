@@ -54,6 +54,7 @@ const SettingsContent = () => {
   const [displayName, setDisplayName] = useState('');
   const [isAvatarSelectorOpen, setIsAvatarSelectorOpen] = useState(false);
   const [currentAvatar, setCurrentAvatar] = useState('default');
+  const [tempAvatar, setTempAvatar] = useState('default'); // 临时头像选择
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
     newPassword: '',
@@ -79,13 +80,15 @@ const SettingsContent = () => {
 
   // 初始化用户头像
   useEffect(() => {
-    setCurrentAvatar(getCurrentAvatar());
+    const savedAvatar = getCurrentAvatar();
+    setCurrentAvatar(savedAvatar);
+    setTempAvatar(savedAvatar);
   }, []);
 
-  // 处理头像选择
+  // 处理头像选择（仅临时选择，不立即生效）
   const handleAvatarSelect = (avatarOption) => {
-    setCurrentAvatar(avatarOption.id);
-    showToast('头像更新成功！');
+    setTempAvatar(avatarOption.id);
+    // 不立即showToast，等保存时再提示
   };
   
   // 兑换码成功处理
@@ -243,6 +246,13 @@ const SettingsContent = () => {
     try {
       setIsLoading(true);
       await updateProfile({ display_name: displayName }, token);
+      
+      // 保存头像选择到本地存储
+      if (tempAvatar !== currentAvatar) {
+        localStorage.setItem('userAvatar', tempAvatar);
+        setCurrentAvatar(tempAvatar);
+      }
+      
       showToast('个人资料更新成功！');
       loadProfileData(); // 重新加载数据
     } catch (error) {
@@ -272,7 +282,7 @@ const SettingsContent = () => {
                     <Image
                       width={80}
                       height={80}
-                      src={getAvatarUrl(currentAvatar)}
+                      src={getAvatarUrl(tempAvatar)}
                       alt="用户头像"
                       className="w-20 h-20 rounded-full object-cover border-2 border-gray-200"
                     />
@@ -730,7 +740,7 @@ const SettingsContent = () => {
         isOpen={isAvatarSelectorOpen}
         onClose={() => setIsAvatarSelectorOpen(false)}
         onSelect={handleAvatarSelect}
-        currentAvatar={currentAvatar}
+        currentAvatar={tempAvatar}
       />
     </div>
   );

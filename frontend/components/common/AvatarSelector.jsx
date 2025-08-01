@@ -29,8 +29,7 @@ export default function AvatarSelector({ isOpen, onClose, onSelect, currentAvata
   const handleConfirm = () => {
     const selectedOption = AVATAR_OPTIONS.find(option => option.id === selectedAvatar);
     if (selectedOption) {
-      // 保存到本地存储
-      localStorage.setItem('userAvatar', selectedAvatar);
+      // 不再直接保存到本地存储，让父组件处理
       onSelect(selectedOption);
     }
     onClose();

@@ -3,11 +3,6 @@ const nextConfig = {
   // 启用 React Strict Mode
   reactStrictMode: true,
   
-  // 实验性功能：启用绝对导入
-  experimental: {
-    externalDir: true,
-  },
-  
   // 启用 SWC 压缩
   swcMinify: true,
   
@@ -40,42 +35,6 @@ const nextConfig = {
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     formats: ['image/webp', 'image/avif'],
   },
-  
-  // 重写规则
-  async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/:path*`,
-      },
-    ]
-  },
-  
-  // 头部配置
-  async headers() {
-    return [
-      {
-        source: '/:path*',
-        headers: [
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-          {
-            key: 'X-Frame-Options',
-            value: 'DENY',
-          },
-          {
-            key: 'X-XSS-Protection',
-            value: '1; mode=block',
-          },
-        ],
-      },
-    ]
-  },
-  
-  // 移除 standalone 配置以修复 Render 部署问题
-  // output: 'standalone',
   
   // 压缩配置
   compress: true,
