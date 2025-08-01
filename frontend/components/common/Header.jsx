@@ -18,6 +18,19 @@ const Header = ({ title, subtitle, showCreateButton = false }) => {
     setCurrentAvatar(getCurrentAvatar());
   }, []);
 
+  // 监听头像变更事件
+  useEffect(() => {
+    const handleAvatarChange = (event) => {
+      const { newAvatar } = event.detail;
+      setCurrentAvatar(newAvatar);
+    };
+
+    window.addEventListener('avatarChanged', handleAvatarChange);
+    return () => {
+      window.removeEventListener('avatarChanged', handleAvatarChange);
+    };
+  }, []);
+
   // 点击外部关闭下拉菜单
   useEffect(() => {
     const handleClickOutside = (event) => {

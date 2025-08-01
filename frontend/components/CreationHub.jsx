@@ -185,6 +185,19 @@ const AppHeader = React.memo(({ user, credits, onLogout }) => {
     setCurrentAvatar(getCurrentAvatar());
   }, []);
 
+  // 监听头像变更事件
+  useEffect(() => {
+    const handleAvatarChange = (event) => {
+      const { newAvatar } = event.detail;
+      setCurrentAvatar(newAvatar);
+    };
+
+    window.addEventListener('avatarChanged', handleAvatarChange);
+    return () => {
+      window.removeEventListener('avatarChanged', handleAvatarChange);
+    };
+  }, []);
+
   // 点击外部关闭菜单的逻辑
   useEffect(() => {
     const handleClickOutside = (event) => {

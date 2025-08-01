@@ -43,7 +43,7 @@ const settingsNavItems = [
 
 // 分离出使用 useSearchParams 的组件
 const SettingsContent = () => {
-  const { user, token, loading } = useContext(AuthContext);
+  const { user, token, loading, refreshUser } = useContext(AuthContext);
   const router = useRouter();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState('profile');
@@ -245,7 +245,7 @@ const SettingsContent = () => {
   const handleSaveProfile = async () => {
     try {
       setIsLoading(true);
-      await updateProfile({ display_name: displayName }, token);
+      const response = await updateProfile({ display_name: displayName }, token);
       
       // 保存头像选择到本地存储
       if (tempAvatar !== currentAvatar) {
@@ -253,8 +253,19 @@ const SettingsContent = () => {
         setCurrentAvatar(tempAvatar);
       }
       
+      // 更新全局用户状态 - 刷新用户信息以确保所有组件获得最新数据
+      await refreshUser();
+      
+      // 触发头像变更事件，通知其他组件更新头像显示
+      if (tempAvatar !== currentAvatar) {
+        // 派发自定义事件，通知其他组件头像已更改
+        window.dispatchEvent(new CustomEvent('avatarChanged', { 
+          detail: { newAvatar: tempAvatar } 
+        }));
+      }
+      
       showToast('个人资料更新成功！');
-      loadProfileData(); // 重新加载数据
+      // 移除loadProfileData调用，因为refreshUser已经更新了全局状态
     } catch (error) {
       console.error('更新个人资料失败:', error);
       showToast('更新失败，请稍后重试', 'error');
