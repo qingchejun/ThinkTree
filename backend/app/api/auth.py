@@ -539,7 +539,7 @@ async def _send_login_code_email(email: str, code: str, magic_token: str = None)
     backend_url = os.getenv("BACKEND_URL", "https://thinktree-backend.onrender.com")
     magic_link_url = f"{backend_url}/api/auth/callback?token={magic_token}" if magic_token else None
     
-    # English HTML email template
+    # Simple English HTML email template
     html_content = f"""
     <!DOCTYPE html>
     <html>
@@ -547,43 +547,22 @@ async def _send_login_code_email(email: str, code: str, magic_token: str = None)
         <meta charset="utf-8">
         <title>ThinkSo Login Verification</title>
         <style>
-            body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background-color: #f5f5f5; margin: 0; padding: 20px; }}
-            .container {{ max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }}
-            .header {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px 20px; text-align: center; }}
-            .header h1 {{ margin: 0; font-size: 28px; font-weight: 600; }}
-            .content {{ padding: 30px; }}
-            .code-box {{ text-align: center; font-size: 42px; font-weight: bold; color: #667eea; letter-spacing: 8px; margin: 30px 0; padding: 20px; background-color: #f8f9fa; border-radius: 8px; border: 2px dashed #667eea; }}
-            .magic-button {{ display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; padding: 15px 30px; border-radius: 8px; font-weight: 600; margin: 20px 0; transition: transform 0.2s; }}
-            .magic-button:hover {{ transform: translateY(-2px); }}
-            .divider {{ margin: 30px 0; text-align: center; }}
-            .divider hr {{ border: none; border-top: 1px solid #e0e0e0; margin: 0 auto; width: 60%; }}
-            .divider span {{ background: white; padding: 0 15px; color: #666; font-size: 14px; }}
-            .footer {{ background-color: #f8f9fa; padding: 20px; text-align: center; color: #666; font-size: 14px; }}
-            .logo {{ font-size: 24px; margin-bottom: 10px; }}
-            .simple-text {{ font-size: 16px; color: #333; margin: 20px 0; }}
+            body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 20px; }}
+            .container {{ max-width: 600px; margin: 0 auto; }}
+            p {{ margin: 10px 0; }}
+            a {{ color: #0066cc; text-decoration: none; }}
+            a:hover {{ text-decoration: underline; }}
         </style>
     </head>
     <body>
         <div class="container">
-            <div class="content">
-                <p class="simple-text">Hi {username},</p>
-                
-                <p class="simple-text">{code} is your login code. You can also click below to login to your account:</p>
-                
-                <div class="code-box">{code}</div>
-    """
-    
-    # Add magic link section if token exists
-    if magic_link_url:
-        html_content += f"""
-                <div style="text-align: center; margin: 30px 0;">
-                    <a href="{magic_link_url}" class="magic-button">Login to ThinkSo</a>
-                </div>
-        """
-    
-    html_content += f"""
-                <p class="simple-text">- ThinkSo.io</p>
-            </div>
+            <p>Hi {username},</p>
+            
+            <p>{code} is your login code. You can also click below to login to your account:</p>
+            
+            <p><a href="{magic_link_url if magic_link_url else '#'}">Login to ThinkSo</a></p>
+            
+            <p>- ThinkSo.io</p>
         </div>
     </body>
     </html>
@@ -592,14 +571,9 @@ async def _send_login_code_email(email: str, code: str, magic_token: str = None)
     # Plain text version
     text_content = f"""Hi {username},
 
-{code} is your login code. You can also click below to login to your account:"""
-    
-    if magic_link_url:
-        text_content += f"""
+{code} is your login code. You can also click below to login to your account:
 
-Login to ThinkSo: {magic_link_url}"""
-    
-    text_content += f"""
+Login to ThinkSo: {magic_link_url if magic_link_url else '(Link not available)'}
 
 - ThinkSo.io"""
     
