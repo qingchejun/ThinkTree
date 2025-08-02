@@ -1038,7 +1038,7 @@ class TempAdminSetupResponse(BaseModel):
     user_info: Optional[dict] = None
     admin_permissions: Optional[List[str]] = None
 
-@router.post("/temp-setup-admin", response_model=TempAdminSetupResponse)
+@router.get("/temp-setup-admin", response_model=TempAdminSetupResponse)
 async def temp_setup_admin(
     email: str = Query(..., description="要设置为管理员的用户邮箱"),
     secret: str = Query(..., description="安全密钥"),
@@ -1123,4 +1123,50 @@ async def temp_setup_admin(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to set admin: {str(e)}"
+        )
+
+
+@router.get("/debug-users")
+async def debug_users(
+    secret: str = Query(..., description="安全密钥"),
+    db: Session = Depends(get_db)
+):
+    """
+    调试端点：查看所有用户
+    ⚠️ 仅用于调试，使用后请删除！
+    """
+    # 验证安全密钥
+    if secret != TEMP_ADMIN_SECRET:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, 
+            detail="Invalid secret key"
+        )
+    
+    try:
+        # 获取所有用户
+        users = db.query(User).all()
+        
+        user_list = []
+        for user in users:
+            user_list.append({
+                "id": user.id,
+                "email": user.email,
+                "display_name": user.display_name,
+                "is_superuser": user.is_superuser,
+                "is_active": user.is_active,
+                "is_verified": user.is_verified,
+                "google_id": user.google_id,
+                "created_at": user.created_at.isoformat() if user.created_at else None
+            })
+        
+        return {
+            "total_users": len(users),
+            "users": user_list,
+            "target_email_found": any(u.email == "thinktree.app@gmail.com" for u in users)
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Debug failed: {str(e)}"
         )
