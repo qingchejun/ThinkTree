@@ -52,7 +52,12 @@ const LandingPage = () => {
           
           {/* 右侧：只保留登录按钮 */}
           <div className="flex items-center space-x-4">
-            <button onClick={() => setIsLoginModalOpen(true)} className="text-gray-800 font-semibold hover:text-black">登录</button>
+            <button 
+              onClick={() => setIsLoginModalOpen(true)} 
+              className="bg-gray-800 text-white px-6 py-2 rounded-lg font-semibold hover:bg-black transition-all"
+            >
+              登录
+            </button>
           </div>
         </div>
       </header>

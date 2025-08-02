@@ -30,7 +30,8 @@ const LoginModal = ({ isOpen, onClose }) => {
   const [view, setView] = useState('initial'); // 'initial' | 'verify'
   const [email, setEmail] = useState('');
   const [code, setCode] = useState(new Array(6).fill(""));
-  const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isEmailLoading, setIsEmailLoading] = useState(false);
   const [error, setError] = useState('');
   
   const { login } = useContext(AuthContext);
@@ -43,7 +44,7 @@ const LoginModal = ({ isOpen, onClose }) => {
       setError('请输入您的邮箱地址');
       return;
     }
-    setIsLoading(true);
+    setIsEmailLoading(true);
     setError('');
 
     try {
@@ -64,7 +65,7 @@ const LoginModal = ({ isOpen, onClose }) => {
       console.error('发送验证码失败:', error);
       setError('网络错误，请检查连接后重试');
     } finally {
-      setIsLoading(false);
+      setIsEmailLoading(false);
     }
   };
 
@@ -89,7 +90,7 @@ const LoginModal = ({ isOpen, onClose }) => {
 
   // 处理验证码提交
   const handleVerifyCode = async (fullCode) => {
-    setIsLoading(true);
+    setIsEmailLoading(true);
     setError('');
 
     try {
@@ -120,13 +121,13 @@ const LoginModal = ({ isOpen, onClose }) => {
       setError('网络错误，请稍后重试');
     }
     
-    setIsLoading(false);
+    setIsEmailLoading(false);
     setCode(new Array(6).fill("")); // 清空验证码
   };
 
   // 处理Google登录
   const handleGoogleLogin = async () => {
-    setIsLoading(true);
+    setIsGoogleLoading(true);
     setError('');
     
     try {
@@ -135,7 +136,7 @@ const LoginModal = ({ isOpen, onClose }) => {
     } catch (error) {
       console.error('Google登录失败:', error);
       setError('Google登录失败，请稍后重试');
-      setIsLoading(false);
+      setIsGoogleLoading(false);
     }
   };
 
@@ -172,7 +173,7 @@ const LoginModal = ({ isOpen, onClose }) => {
             {/* Google登录按钮 */}
             <button 
               onClick={handleGoogleLogin}
-              disabled={isLoading}
+              disabled={isGoogleLoading}
               className="w-full flex items-center justify-center py-3 px-4 border border-gray-300 rounded-lg text-gray-700 font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50"
             >
               <svg className="w-5 h-5 mr-3" viewBox="0 0 48 48">
@@ -181,7 +182,7 @@ const LoginModal = ({ isOpen, onClose }) => {
                 <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"></path>
                 <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.574l6.19,5.238C39.902,35.61,44,29.909,44,24C44,22.659,43.862,21.35,43.611,20.083z"></path>
               </svg>
-              {isLoading ? '登录中...' : 'Continue with Google'}
+              {isGoogleLoading ? '登录中...' : 'Continue with Google'}
             </button>
             
             {/* 分隔线 */}
@@ -199,15 +200,15 @@ const LoginModal = ({ isOpen, onClose }) => {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email"
                 className="w-full py-3 px-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black transition"
-                disabled={isLoading}
+                disabled={isEmailLoading}
               />
               {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={isEmailLoading}
                 className="w-full mt-4 py-3 px-4 bg-black text-white font-semibold rounded-lg shadow-md hover:bg-gray-800 transition-colors disabled:opacity-50"
               >
-                {isLoading ? '发送中...' : 'Continue'}
+                {isEmailLoading ? '发送中...' : 'Continue'}
               </button>
             </form>
           </div>
@@ -239,7 +240,7 @@ const LoginModal = ({ isOpen, onClose }) => {
                   onChange={e => handleCodeChange(e.target, index)}
                   onFocus={e => e.target.select()}
                   className="w-12 h-14 text-center text-2xl font-semibold border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black transition"
-                  disabled={isLoading}
+                  disabled={isEmailLoading}
                 />
               ))}
             </div>
@@ -249,17 +250,17 @@ const LoginModal = ({ isOpen, onClose }) => {
             {/* 继续按钮 */}
             <button
               onClick={() => handleVerifyCode(code.join(""))}
-              disabled={isLoading || code.join("").length < 6}
+              disabled={isEmailLoading || code.join("").length < 6}
               className="w-full py-3 px-4 bg-black text-white font-semibold rounded-lg shadow-md hover:bg-gray-800 transition-colors disabled:opacity-50 mb-4"
             >
-              {isLoading ? '验证中...' : 'Continue →'}
+              {isEmailLoading ? '验证中...' : 'Continue →'}
             </button>
 
             {/* 返回按钮 */}
             <button 
               onClick={handleGoBack} 
               className="text-sm text-gray-600 hover:text-black transition-colors"
-              disabled={isLoading}
+              disabled={isEmailLoading}
             >
               ← 返回
             </button>
