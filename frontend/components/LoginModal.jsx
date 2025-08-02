@@ -112,6 +112,24 @@ const LoginModal = ({ isOpen, onClose }) => {
     }
   };
 
+  // 处理粘贴验证码
+  const handlePaste = (e) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData('text');
+    
+    // 检查粘贴的内容是否是6位数字
+    if (/^\d{6}$/.test(pastedData)) {
+      const newCode = pastedData.split('');
+      setCode(newCode);
+      
+      // 将焦点移到最后一个输入框
+      inputRefs.current[5]?.focus();
+      
+      // 自动提交验证码
+      handleVerifyCode(pastedData);
+    }
+  };
+
 
   // 处理验证码提交
   const handleVerifyCode = async (fullCode) => {
@@ -272,6 +290,7 @@ const LoginModal = ({ isOpen, onClose }) => {
                   value={digit}
                   onChange={e => handleCodeChange(e.target, index)}
                   onKeyDown={e => handleKeyDown(e, index)}
+                  onPaste={index === 0 ? handlePaste : undefined}
                   onFocus={e => e.target.select()}
                   className="w-12 h-14 text-center text-2xl font-semibold border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black transition"
                   disabled={isEmailLoading}

@@ -2,6 +2,7 @@
 用户认证 API 路由
 """
 
+import os
 import random
 import string
 import uuid
@@ -529,56 +530,109 @@ async def login(request: Request, credentials: UserLogin, db: Session = Depends(
 # ===================================================================
 async def _send_login_code_email(email: str, code: str, magic_token: str = None):
     """
-    发送登录验证码邮件的辅助函数
+    发送登录验证码邮件的辅助函数 - 升级版
     """
+    # 从邮箱地址中提取用户名
+    username = email.split('@')[0]
+    
+    # 构建魔法链接URL（指向后端API）
+    backend_url = os.getenv("BACKEND_URL", "https://thinktree-backend.onrender.com")
+    magic_link_url = f"{backend_url}/api/auth/callback?token={magic_token}" if magic_token else None
+    
+    # 升级版HTML邮件模板
     html_content = f"""
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
-        <h2 style="text-align: center; color: #333;">ThinkSo 登录验证</h2>
-        <p>您好！</p>
-        <p>您正在使用邮箱登录 ThinkSo。您的验证码是：</p>
-        <div style="text-align: center; font-size: 36px; font-weight: bold; color: #007bff; letter-spacing: 5px; margin: 20px 0; padding: 10px; background-color: #f8f9fa; border-radius: 5px;">
-            {code}
-        </div>
-        <p>此验证码 <strong>10 分钟内</strong> 有效。请勿将此验证码泄露给他人。</p>
-        <p>如果您没有请求登录，请忽略此邮件。</p>
-        <hr>
-        <p style="text-align: center; font-size: 12px; color: #888;">ThinkSo 团队</p>
-    </div>
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <title>ThinkSo 登录验证</title>
+        <style>
+            body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background-color: #f5f5f5; margin: 0; padding: 20px; }}
+            .container {{ max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }}
+            .header {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px 20px; text-align: center; }}
+            .header h1 {{ margin: 0; font-size: 28px; font-weight: 600; }}
+            .content {{ padding: 30px; }}
+            .code-box {{ text-align: center; font-size: 42px; font-weight: bold; color: #667eea; letter-spacing: 8px; margin: 30px 0; padding: 20px; background-color: #f8f9fa; border-radius: 8px; border: 2px dashed #667eea; }}
+            .magic-button {{ display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; padding: 15px 30px; border-radius: 8px; font-weight: 600; margin: 20px 0; transition: transform 0.2s; }}
+            .magic-button:hover {{ transform: translateY(-2px); }}
+            .divider {{ margin: 30px 0; text-align: center; }}
+            .divider hr {{ border: none; border-top: 1px solid #e0e0e0; margin: 0 auto; width: 60%; }}
+            .divider span {{ background: white; padding: 0 15px; color: #666; font-size: 14px; }}
+            .footer {{ background-color: #f8f9fa; padding: 20px; text-align: center; color: #666; font-size: 14px; }}
+            .logo {{ font-size: 24px; margin-bottom: 10px; }}
+            .warning {{ background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; padding: 15px; margin: 20px 0; color: #856404; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <div class="logo">🧠 ThinkSo</div>
+                <h1>Hi {username}!</h1>
+                <p>您的登录验证码已准备好</p>
+            </div>
+            <div class="content">
+                <p>您正在登录 ThinkSo，请使用以下验证码完成登录：</p>
+                
+                <div class="code-box">{code}</div>
+                
+                <div class="warning">
+                    <strong>⏰ 重要提醒：</strong> 此验证码将在 <strong>10 分钟</strong> 后失效，请尽快使用。
+                </div>
     """
     
-    # 如果有魔法链接令牌，添加魔法链接
-    if magic_token:
-        magic_link_url = f"{settings.frontend_url}/auth/magic-link?token={magic_token}"
-        html_content = f"""
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
-            <h2 style="text-align: center; color: #333;">ThinkSo 登录验证</h2>
-            <p>您好！</p>
-            <p>您正在使用邮箱登录 ThinkSo。您的验证码是：</p>
-            <div style="text-align: center; font-size: 36px; font-weight: bold; color: #007bff; letter-spacing: 5px; margin: 20px 0; padding: 10px; background-color: #f8f9fa; border-radius: 5px;">
-                {code}
-            </div>
-            <p>此验证码 <strong>10 分钟内</strong> 有效。请勿将此验证码泄露给他人。</p>
-            <p>您也可以点击下面的链接直接登录：</p>
-            <div style="text-align: center; margin: 20px 0;">
-                <a href="{magic_link_url}" style="display: inline-block; padding: 12px 24px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">登录到 ThinkSo</a>
-            </div>
-            <p>如果您没有请求登录，请忽略此邮件。</p>
-            <hr>
-            <p style="text-align: center; font-size: 12px; color: #888;">ThinkSo 团队</p>
-        </div>
+    # 如果有魔法令牌，添加魔法链接部分
+    if magic_link_url:
+        html_content += f"""
+                <div class="divider">
+                    <hr><span>或者</span>
+                </div>
+                
+                <div style="text-align: center;">
+                    <p>点击下面的按钮可以直接登录，无需输入验证码：</p>
+                    <a href="{magic_link_url}" class="magic-button">🪄 一键登录到 ThinkSo</a>
+                </div>
         """
+    
+    html_content += f"""
+                <div style="margin-top: 30px; font-size: 14px; color: #666;">
+                    <p><strong>🔒 安全提示：</strong></p>
+                    <ul>
+                        <li>请勿将验证码分享给他人</li>
+                        <li>ThinkSo 不会主动询问您的验证码</li>
+                        <li>如果您没有请求登录，请忽略此邮件</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer">
+                <p>此邮件由 ThinkSo 系统自动发送，请勿回复</p>
+                <p>© 2024 ThinkSo Team. All rights reserved.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
     
     # 纯文本版本
     text_content = f"""
-    ThinkSo 登录验证
+    Hi {username}!
     
-    您好！
+    您正在登录 ThinkSo，您的验证码是：{code}
     
-    您正在使用邮箱登录 ThinkSo。您的验证码是：{code}
+    此验证码将在 10 分钟后失效，请尽快使用。
+    """
     
-    此验证码 10 分钟内有效。请勿将此验证码泄露给他人。
+    if magic_link_url:
+        text_content += f"""
     
-    如果您没有请求登录，请忽略此邮件。
+    您也可以点击以下链接直接登录：
+    {magic_link_url}
+        """
+    
+    text_content += f"""
+    
+    安全提示：
+    - 请勿将验证码分享给他人
+    - 如果您没有请求登录，请忽略此邮件
     
     ThinkSo 团队
     """
@@ -586,7 +640,7 @@ async def _send_login_code_email(email: str, code: str, magic_token: str = None)
     # 使用 fastapi_mail 的 MessageSchema 类
     from fastapi_mail import MessageSchema, MessageType
     message = MessageSchema(
-        subject=f"您的 ThinkSo 登录验证码是 {code}",
+        subject=f"Hi {username}! 您的 ThinkSo 登录验证码：{code}",
         recipients=[email],
         body=text_content,
         html=html_content,
@@ -1743,8 +1797,8 @@ async def fix_google_id_column(db: Session = Depends(get_db)):
         )
 
 
-@router.get("/magic-link")
-async def magic_link_login(token: str, db: Session = Depends(get_db)):
+@router.get("/callback")
+async def magic_link_callback(token: str, db: Session = Depends(get_db)):
     """
     魔法链接登录 - 通过邮件中的链接直接登录
     """
@@ -1800,7 +1854,7 @@ async def magic_link_login(token: str, db: Session = Depends(get_db)):
     # 为该用户创建 JWT 访问令牌
     jwt_token = create_access_token(data={"sub": str(user.id)})
     
-    # 重定向回前端，并在 URL 参数中带上 JWT
+    # 重定向回前端首页，并在 URL 参数中带上 JWT
     frontend_callback_url = f"{settings.frontend_url}/auth/callback?token={jwt_token}"
     
     if daily_reward_granted:
