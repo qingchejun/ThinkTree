@@ -4,8 +4,8 @@ services:
   - type: web
     name: thinktree-backend
     env: python
-    buildCommand: cd backend && pip install -r requirements.txt
-    startCommand: cd backend && python -c "from app.core.database import Base, engine; print('Creating database tables...'); Base.metadata.create_all(bind=engine); print('Tables created successfully.')" && uvicorn main:app --host 0.0.0.0 --port $PORT
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -c "from app.core.database import Base, engine; print('Creating database tables...'); Base.metadata.create_all(bind=engine); print('Tables created successfully.')" && uvicorn main:app --host 0.0.0.0 --port $PORT
     # ⬆️上面这行是完整的startCommand
     # ⬇️下面这行必须另起一行并保持相同的缩进
     healthCheckPath: /health
