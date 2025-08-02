@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, Depends, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 from slowapi import Limiter
