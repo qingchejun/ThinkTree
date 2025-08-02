@@ -1809,20 +1809,20 @@ async def test_google_user_info(current_user: User = Depends(get_current_user)):
 # ==================== 一次性数据库迁移端点 =======================
 # ===================================================================
 
-@router.post("/admin/run-migration-9x7k2p")
-async def run_database_migration():
+@router.post("/fix-login-tokens-8k9m3x")
+async def fix_login_tokens_table():
     """
-    一次性安全迁移端点 - 通过编程方式调用 Alembic 执行数据库迁移
-    注意：这是一个临时端点，迁移完成后应立即删除
+    一次性SQL修复端点 - 直接使用原始SQL添加magic_token列和索引
+    注意：这是一个临时端点，修复完成后应立即删除
     """
     try:
-        from alembic.config import Config
-        from alembic import command
+        from sqlalchemy import text, create_engine
         import os
-        import io
-        from contextlib import redirect_stdout, redirect_stderr
+        import logging
         
-        # 1. 从环境变量中获取正确的生产数据库URL
+        logger = logging.getLogger(__name__)
+        
+        # 1. 从环境变量获取生产数据库URL
         prod_db_url = os.environ.get("DATABASE_URL")
         
         if not prod_db_url:
@@ -1832,48 +1832,74 @@ async def run_database_migration():
                 "detail": "请检查环境变量配置"
             }
         
-        # 2. 兼容性修复：Render的URL可能以'postgres://'开头，需要转换为'postgresql://'
+        # 2. 兼容性修复：postgres:// -> postgresql://
         original_url = prod_db_url
         if prod_db_url.startswith("postgres://"):
             prod_db_url = prod_db_url.replace("postgres://", "postgresql://", 1)
         
-        # 🔍 诊断日志：打印迁移端点使用的数据库URL
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.info(f"🔍 迁移端点从环境变量获取的原始URL: {original_url}")
-        logger.info(f"🔍 迁移端点即将连接到: {prod_db_url}")
+        logger.info(f"🔍 SQL修复端点从环境变量获取的原始URL: {original_url}")
+        logger.info(f"🔍 SQL修复端点即将连接到: {prod_db_url}")
         
-        # 捕获 Alembic 输出
-        stdout_capture = io.StringIO()
-        stderr_capture = io.StringIO()
+        # 3. 创建临时数据库连接
+        temp_engine = create_engine(prod_db_url)
         
-        with redirect_stdout(stdout_capture), redirect_stderr(stderr_capture):
-            # 3. 加载 Alembic 配置
-            alembic_cfg = Config("alembic.ini")
+        executed_operations = []
+        
+        with temp_engine.connect() as connection:
+            # 4. 执行SQL修复：添加magic_token列（如果不存在）
+            try:
+                add_column_sql = text("ALTER TABLE login_tokens ADD COLUMN IF NOT EXISTS magic_token VARCHAR(255);")
+                connection.execute(add_column_sql)
+                connection.commit()
+                executed_operations.append("添加 magic_token 列")
+                logger.info("✅ 成功添加 magic_token 列")
+            except Exception as e:
+                logger.warning(f"添加列时出现警告（可能已存在）: {e}")
+                executed_operations.append(f"添加列警告: {str(e)}")
             
-            # 4. 🔥 关键修复：强制用生产环境的URL覆盖alembic的默认配置
-            alembic_cfg.set_main_option("sqlalchemy.url", prod_db_url)
-            logger.info(f"🔍 Alembic配置已设置为: {prod_db_url}")
+            # 5. 创建唯一索引（如果不存在）
+            try:
+                create_index_sql = text("CREATE UNIQUE INDEX IF NOT EXISTS ix_login_tokens_magic_token ON login_tokens (magic_token);")
+                connection.execute(create_index_sql)
+                connection.commit()
+                executed_operations.append("创建 magic_token 唯一索引")
+                logger.info("✅ 成功创建 magic_token 唯一索引")
+            except Exception as e:
+                logger.warning(f"创建索引时出现警告（可能已存在）: {e}")
+                executed_operations.append(f"创建索引警告: {str(e)}")
             
-            # 5. 在正确的生产数据库上执行迁移
-            command.upgrade(alembic_cfg, "head")
+            # 6. 验证表结构
+            try:
+                verify_sql = text("SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'login_tokens' AND column_name = 'magic_token';")
+                result = connection.execute(verify_sql)
+                column_info = result.fetchone()
+                
+                if column_info:
+                    executed_operations.append(f"验证成功: magic_token 列存在，类型: {column_info[1]}")
+                    logger.info(f"✅ 验证成功: magic_token 列存在，类型: {column_info[1]}")
+                else:
+                    executed_operations.append("验证失败: magic_token 列未找到")
+                    logger.error("❌ 验证失败: magic_token 列未找到")
+            except Exception as e:
+                executed_operations.append(f"验证过程出错: {str(e)}")
+                logger.error(f"验证过程出错: {e}")
         
-        # 获取输出
-        stdout_output = stdout_capture.getvalue()
-        stderr_output = stderr_capture.getvalue()
+        # 7. 关闭临时连接
+        temp_engine.dispose()
         
         return {
             "status": "success",
-            "message": "已在正确的生产数据库上成功执行迁移！",
+            "message": "login_tokens 表已成功修复！",
             "database_url_used": prod_db_url[:20] + "..." if len(prod_db_url) > 20 else prod_db_url,
-            "alembic_output": stdout_output,
-            "errors": stderr_output if stderr_output else None
+            "executed_operations": executed_operations,
+            "note": "magic_token 列和唯一索引已添加到 login_tokens 表"
         }
         
     except Exception as e:
+        logger.error(f"SQL修复失败: {e}")
         return {
             "status": "error",
-            "message": "数据库迁移执行失败",
+            "message": "login_tokens 表修复失败",
             "detail": str(e),
             "type": type(e).__name__
         }
