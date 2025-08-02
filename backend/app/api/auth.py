@@ -1803,3 +1803,51 @@ async def test_google_user_info(current_user: User = Depends(get_current_user)):
         avatar_url=current_user.avatar_url,
         is_new_user=current_user.google_id is not None and current_user.password_hash is None
     )
+
+
+# ===================================================================
+# ==================== 一次性数据库迁移端点 =======================
+# ===================================================================
+
+@router.post("/admin/run-migration-9x7k2p")
+async def run_database_migration():
+    """
+    一次性安全迁移端点 - 通过编程方式调用 Alembic 执行数据库迁移
+    注意：这是一个临时端点，迁移完成后应立即删除
+    """
+    try:
+        from alembic.config import Config
+        from alembic import command
+        import os
+        import io
+        from contextlib import redirect_stdout, redirect_stderr
+        
+        # 捕获 Alembic 输出
+        stdout_capture = io.StringIO()
+        stderr_capture = io.StringIO()
+        
+        with redirect_stdout(stdout_capture), redirect_stderr(stderr_capture):
+            # 加载 Alembic 配置
+            alembic_cfg = Config("alembic.ini")
+            
+            # 执行数据库迁移到最新版本
+            command.upgrade(alembic_cfg, "head")
+        
+        # 获取输出
+        stdout_output = stdout_capture.getvalue()
+        stderr_output = stderr_capture.getvalue()
+        
+        return {
+            "status": "success",
+            "message": "数据库迁移已成功执行",
+            "alembic_output": stdout_output,
+            "errors": stderr_output if stderr_output else None
+        }
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": "数据库迁移执行失败",
+            "detail": str(e),
+            "type": type(e).__name__
+        }
