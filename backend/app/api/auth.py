@@ -1822,15 +1822,32 @@ async def run_database_migration():
         import io
         from contextlib import redirect_stdout, redirect_stderr
         
+        # 1. 从环境变量中获取正确的生产数据库URL
+        prod_db_url = os.environ.get("DATABASE_URL")
+        
+        if not prod_db_url:
+            return {
+                "status": "error",
+                "message": "生产环境的 DATABASE_URL 未设置！",
+                "detail": "请检查环境变量配置"
+            }
+        
+        # 2. 兼容性修复：Render的URL可能以'postgres://'开头，需要转换为'postgresql://'
+        if prod_db_url.startswith("postgres://"):
+            prod_db_url = prod_db_url.replace("postgres://", "postgresql://", 1)
+        
         # 捕获 Alembic 输出
         stdout_capture = io.StringIO()
         stderr_capture = io.StringIO()
         
         with redirect_stdout(stdout_capture), redirect_stderr(stderr_capture):
-            # 加载 Alembic 配置
+            # 3. 加载 Alembic 配置
             alembic_cfg = Config("alembic.ini")
             
-            # 执行数据库迁移到最新版本
+            # 4. 🔥 关键修复：强制用生产环境的URL覆盖alembic的默认配置
+            alembic_cfg.set_main_option("sqlalchemy.url", prod_db_url)
+            
+            # 5. 在正确的生产数据库上执行迁移
             command.upgrade(alembic_cfg, "head")
         
         # 获取输出
@@ -1839,7 +1856,8 @@ async def run_database_migration():
         
         return {
             "status": "success",
-            "message": "数据库迁移已成功执行",
+            "message": "已在正确的生产数据库上成功执行迁移！",
+            "database_url_used": prod_db_url[:20] + "..." if len(prod_db_url) > 20 else prod_db_url,
             "alembic_output": stdout_output,
             "errors": stderr_output if stderr_output else None
         }
