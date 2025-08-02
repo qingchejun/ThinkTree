@@ -80,9 +80,15 @@ class Settings(BaseSettings):
 # 全局设置实例
 settings = Settings()
 
-# 🔍 关键诊断信息：打印应用实际使用的数据库URL
+# 🔍 关键诊断信息：打印应用实际使用的数据库URL（不触发连接）
 print("=" * 80)
 print("---DIAGNOSTIC-INFO--- DATABASE_URL being used is:")
 print(f"原始环境变量: {settings.database_url}")
 print(f"修复后的URL: {settings.database_url_fixed}")
+
+# 分析数据库URL问题
+if "dpg-" in settings.database_url:
+    print("⚠️  检测到 Render 内部数据库主机名，这可能是问题根源")
+    print("   建议检查 Render 数据库配置是否使用了外部连接字符串")
+    
 print("=" * 80)

@@ -14,15 +14,11 @@ engine = create_engine(
     settings.database_url_fixed,
     # SQLite 特殊配置
     connect_args={"check_same_thread": False} if "sqlite" in settings.database_url else {},
-    echo=settings.debug  # 在调试模式下显示 SQL 语句
+    echo=settings.debug,  # 在调试模式下显示 SQL 语句
+    # 关闭连接池预连接，避免启动时立即连接数据库
+    pool_pre_ping=True,
+    pool_recycle=3600
 )
-
-# 🔍 诊断日志：打印主应用使用的数据库URL
-import logging
-logger = logging.getLogger(__name__)
-logger.info(f"🔍 主应用引擎已连接到: {engine.url}")
-logger.info(f"🔍 原始数据库URL: {settings.database_url}")
-logger.info(f"🔍 修复后URL: {settings.database_url_fixed}")
 
 # 创建会话工厂
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
