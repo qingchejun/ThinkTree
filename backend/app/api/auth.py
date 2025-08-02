@@ -1724,63 +1724,6 @@ async def fix_google_id_column(db: Session = Depends(get_db)):
             output=None
         )
 
-@router.post("/fix-login-tokens", response_model=MigrationResponse)
-async def fix_login_tokens_table(db: Session = Depends(get_db)):
-    """
-    直接修复login_tokens表的magic_token字段（紧急修复用）
-    """
-    try:
-        # 直接使用SQL添加magic_token字段
-        sql_commands = [
-            # 检查字段是否存在
-            """
-            SELECT column_name 
-            FROM information_schema.columns 
-            WHERE table_name='login_tokens' AND column_name='magic_token'
-            """,
-            # 如果不存在则添加字段
-            "ALTER TABLE login_tokens ADD COLUMN IF NOT EXISTS magic_token VARCHAR(255)",
-            # 添加唯一索引
-            "CREATE UNIQUE INDEX IF NOT EXISTS ix_login_tokens_magic_token ON login_tokens (magic_token)"
-        ]
-        
-        results = []
-        
-        for sql in sql_commands:
-            try:
-                if "SELECT" in sql:
-                    result = db.execute(text(sql))
-                    columns = [row[0] for row in result.fetchall()]
-                    if 'magic_token' in columns:
-                        results.append("✅ magic_token字段已存在")
-                        continue
-                    else:
-                        results.append("⚠️ magic_token字段不存在，准备添加")
-                else:
-                    db.execute(text(sql))
-                    results.append(f"✅ 执行成功: {sql[:50]}...")
-            except Exception as e:
-                if "already exists" in str(e) or "duplicate" in str(e).lower():
-                    results.append(f"✅ 已存在: {sql[:50]}...")
-                else:
-                    results.append(f"❌ 失败: {sql[:50]}... - {str(e)}")
-        
-        db.commit()
-        
-        return MigrationResponse(
-            success=True,
-            message="Login Tokens表修复完成",
-            output="\n".join(results)
-        )
-        
-    except Exception as e:
-        db.rollback()
-        return MigrationResponse(
-            success=False,
-            message=f"修复失败: {str(e)}",
-            output=None
-        )
-
 
 @router.get("/magic-link")
 async def magic_link_login(token: str, db: Session = Depends(get_db)):
