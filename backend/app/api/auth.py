@@ -1198,6 +1198,14 @@ async def login_via_google(request: StarletteRequest):
     """
     try:
         from ..core.oauth import get_google_oauth_client
+        from ..core.config import settings
+        
+        # 检查 Google OAuth 配置
+        if not settings.google_client_id or not settings.google_client_secret:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Google OAuth 服务暂不可用: 缺少配置信息"
+            )
         
         google_client = get_google_oauth_client()
         
@@ -1207,7 +1215,14 @@ async def login_via_google(request: StarletteRequest):
         # 重定向到 Google 授权页面
         return await google_client.authorize_redirect(request, callback_url)
         
+    except ValueError as ve:
+        # OAuth 配置错误
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Google OAuth 配置错误: {str(ve)}"
+        )
     except Exception as e:
+        # 其他错误
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Google OAuth 初始化失败: {str(e)}"

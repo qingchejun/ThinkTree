@@ -66,6 +66,10 @@ class Settings(BaseSettings):
     # Google reCAPTCHA 配置
     recaptcha_secret_key: str = os.getenv("RECAPTCHA_SECRET_KEY", "")
     recaptcha_score_threshold: float = float(os.getenv("RECAPTCHA_SCORE_THRESHOLD", "0.5"))
+    
+    # Google OAuth 配置
+    google_client_id: str = os.getenv("GOOGLE_CLIENT_ID", "")
+    google_client_secret: str = os.getenv("GOOGLE_CLIENT_SECRET", "")
 
     class Config:
         """Pydantic 配置"""
