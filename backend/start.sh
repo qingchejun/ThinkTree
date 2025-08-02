@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# ThinkSo 生产环境启动脚本
+# ThinkSo 生产环境启动脚本 - v3.2.3
 echo "Starting ThinkSo backend..."
 
 # 运行数据库迁移
