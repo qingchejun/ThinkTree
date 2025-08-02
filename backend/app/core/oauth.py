@@ -1,27 +1,91 @@
 """
 OAuth 配置模块 - Google OAuth 2.0 集成
 
-使用 authlib 库处理 Google OAuth 认证流程
+使用简化的方式处理 Google OAuth 认证流程
 """
 
-import os
-from authlib.integrations.starlette_client import OAuth
-from starlette.config import Config
+import secrets
+import urllib.parse
+from typing import Dict, Any
+import httpx
 from .config import settings
 
-# 从环境变量加载配置
-try:
-    config = Config('.env')  # 本地开发时可以读取.env文件
-except Exception:
-    # 生产环境可能没有.env文件，直接使用环境变量
-    config = Config()
+class GoogleOAuthClient:
+    """Google OAuth 客户端"""
+    
+    def __init__(self):
+        self.client_id = settings.google_client_id
+        self.client_secret = settings.google_client_secret
+        self.discovery_url = "https://accounts.google.com/.well-known/openid_configuration"
+        self._discovery_cache = None
+    
+    async def get_discovery_document(self) -> Dict[str, Any]:
+        """获取 Google OAuth 发现文档"""
+        if self._discovery_cache is None:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(self.discovery_url)
+                response.raise_for_status()
+                self._discovery_cache = response.json()
+        return self._discovery_cache
+    
+    async def get_authorization_url(self, redirect_uri: str, state: str = None) -> str:
+        """获取 Google OAuth 授权 URL"""
+        discovery = await self.get_discovery_document()
+        
+        if state is None:
+            state = secrets.token_urlsafe(32)
+        
+        params = {
+            'client_id': self.client_id,
+            'redirect_uri': redirect_uri,
+            'scope': 'openid email profile',
+            'response_type': 'code',
+            'state': state,
+            'access_type': 'offline'
+        }
+        
+        auth_url = discovery['authorization_endpoint']
+        return f"{auth_url}?{urllib.parse.urlencode(params)}"
+    
+    async def exchange_code_for_token(self, code: str, redirect_uri: str) -> Dict[str, Any]:
+        """用授权码换取访问令牌"""
+        discovery = await self.get_discovery_document()
+        
+        data = {
+            'client_id': self.client_id,
+            'client_secret': self.client_secret,
+            'code': code,
+            'grant_type': 'authorization_code',
+            'redirect_uri': redirect_uri
+        }
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                discovery['token_endpoint'],
+                data=data,
+                headers={'Content-Type': 'application/x-www-form-urlencoded'}
+            )
+            response.raise_for_status()
+            return response.json()
+    
+    async def get_user_info(self, access_token: str) -> Dict[str, Any]:
+        """获取用户信息"""
+        discovery = await self.get_discovery_document()
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                discovery['userinfo_endpoint'],
+                headers={'Authorization': f'Bearer {access_token}'}
+            )
+            response.raise_for_status()
+            return response.json()
 
-# 初始化 OAuth 实例
-oauth = OAuth(config)
-
-def register_google_oauth():
+def get_google_oauth_client() -> GoogleOAuthClient:
     """
-    注册 Google OAuth 提供者
+    获取 Google OAuth 客户端实例
+    
+    Returns:
+        GoogleOAuthClient: OAuth 客户端实例
     """
     # 检查必需的环境变量
     if not settings.google_client_id or not settings.google_client_secret:
@@ -29,32 +93,4 @@ def register_google_oauth():
             "Google OAuth 配置不完整: 缺少 GOOGLE_CLIENT_ID 或 GOOGLE_CLIENT_SECRET 环境变量"
         )
     
-    # 注册 Google OAuth 提供者
-    oauth.register(
-        name='google',
-        client_id=settings.google_client_id,
-        client_secret=settings.google_client_secret,
-        server_metadata_url='https://accounts.google.com/.well-known/openid_configuration',
-        client_kwargs={
-            'scope': 'openid email profile'
-        }
-    )
-
-# 延迟注册，允许在运行时检查配置
-_google_client = None
-
-def get_google_oauth_client():
-    """
-    获取 Google OAuth 客户端实例
-    
-    Returns:
-        google oauth client: authlib 客户端实例
-    """
-    global _google_client
-    
-    if _google_client is None:
-        # 首次调用时注册 Google OAuth
-        register_google_oauth()
-        _google_client = oauth.google
-    
-    return _google_client
+    return GoogleOAuthClient()

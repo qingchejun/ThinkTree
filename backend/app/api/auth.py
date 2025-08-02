@@ -1199,6 +1199,7 @@ async def login_via_google(request: StarletteRequest):
     try:
         from ..core.oauth import get_google_oauth_client
         from ..core.config import settings
+        from fastapi.responses import RedirectResponse
         
         # 检查 Google OAuth 配置
         if not settings.google_client_id or not settings.google_client_secret:
@@ -1212,8 +1213,11 @@ async def login_via_google(request: StarletteRequest):
         # 构建回调 URL
         callback_url = str(request.url_for('google_callback'))
         
+        # 获取授权 URL
+        auth_url = await google_client.get_authorization_url(callback_url)
+        
         # 重定向到 Google 授权页面
-        return await google_client.authorize_redirect(request, callback_url)
+        return RedirectResponse(url=auth_url)
         
     except ValueError as ve:
         # OAuth 配置错误
@@ -1238,16 +1242,31 @@ async def google_callback(request: StarletteRequest, db: Session = Depends(get_d
         from ..core.oauth import get_google_oauth_client
         from ..services.credit_service import CreditService
         
+        # 获取授权码
+        code = request.query_params.get('code')
+        if not code:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="缺少授权码"
+            )
+        
         google_client = get_google_oauth_client()
         
-        # 1. 从 Google 获取访问令牌
-        token = await google_client.authorize_access_token(request)
+        # 构建回调 URL（必须与第一步中的完全一致）
+        callback_url = str(request.url_for('google_callback'))
+        
+        # 1. 用授权码换取访问令牌
+        token_data = await google_client.exchange_code_for_token(code, callback_url)
+        access_token = token_data.get('access_token')
+        
+        if not access_token:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="获取访问令牌失败"
+            )
         
         # 2. 从 Google 获取用户信息
-        user_info = token.get('userinfo')
-        if not user_info:
-            # 如果 userinfo 不在 token 中，使用 parse_id_token 方法
-            user_info = await google_client.parse_id_token(request, token)
+        user_info = await google_client.get_user_info(access_token)
         
         google_id = user_info.get('sub')  # Google 用户 ID
         email = user_info.get('email')
