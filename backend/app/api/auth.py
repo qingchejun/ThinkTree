@@ -2,11 +2,14 @@
 用户认证 API 路由
 """
 
+import random
+import string
+from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, HTTPException, Depends, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import text
+from sqlalchemy import text, desc
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 from slowapi import Limiter
@@ -16,6 +19,7 @@ from starlette.requests import Request as StarletteRequest
 from ..core.database import get_db
 from ..models.user import User
 from ..models.invitation import InvitationCode
+from ..models.login_token import LoginToken
 from ..services.credit_service import CreditService
 from ..utils.security import (
     verify_password,
@@ -35,6 +39,7 @@ security = HTTPBearer()
 limiter = Limiter(key_func=get_remote_address)
 
 
+# ... (existing admin endpoints remain unchanged)
 @router.post("/admin-verify")
 async def admin_verify_direct(request: dict, db: Session = Depends(get_db)):
     """
@@ -122,6 +127,7 @@ async def admin_reset_password_direct(request: dict, db: Session = Depends(get_d
     }
 
 
+
 # Pydantic 模型用于请求验证
 class UserRegister(BaseModel):
     """用户注册请求模型"""
@@ -137,6 +143,20 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
+
+class InitiateLoginRequest(BaseModel):
+    """发起登录请求模型"""
+    email: EmailStr
+
+class InitiateLoginResponse(BaseModel):
+    """发起登录响应模型"""
+    success: bool
+    message: str
+
+class VerifyCodeRequest(BaseModel):
+    """验证码验证请求模型"""
+    email: EmailStr
+    code: str
 
 class UserResponse(BaseModel):
     """用户响应模型"""
@@ -312,6 +332,7 @@ async def register(request: Request, user_data: UserRegister, db: Session = Depe
     """
     用户注册 - 需要邀请码，注册后发送验证邮件
     """
+    # ... (existing register endpoint remains unchanged)
     # reCAPTCHA验证 (如果启用)
     if is_recaptcha_enabled():
         is_valid, error_msg, score = await verify_recaptcha_with_action(
@@ -436,6 +457,7 @@ async def login(request: Request, credentials: UserLogin, db: Session = Depends(
     """
     用户登录
     """
+    # ... (existing login endpoint remains unchanged)
     # 查找用户
     user = db.query(User).filter(User.email == credentials.email).first()
     if not user:
@@ -500,6 +522,164 @@ async def login(request: Request, credentials: UserLogin, db: Session = Depends(
     )
 
 
+# ===================================================================
+# ==================== 邮箱验证码登录 (新功能) =======================
+# ===================================================================
+async def _send_login_code_email(email: str, code: str):
+    """
+    发送登录验证码邮件的辅助函数
+    """
+    html_content = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+        <h2 style="text-align: center; color: #333;">ThinkSo 登录验证</h2>
+        <p>您好！</p>
+        <p>您正在使用邮箱登录 ThinkSo。您的验证码是：</p>
+        <div style="text-align: center; font-size: 36px; font-weight: bold; color: #007bff; letter-spacing: 5px; margin: 20px 0; padding: 10px; background-color: #f8f9fa; border-radius: 5px;">
+            {code}
+        </div>
+        <p>此验证码 <strong>10 分钟内</strong> 有效。请勿将此验证码泄露给他人。</p>
+        <p>如果您没有请求登录，请忽略此邮件。</p>
+        <hr>
+        <p style="text-align: center; font-size: 12px; color: #888;">ThinkSo 团队</p>
+    </div>
+    """
+    
+    message = {
+        "subject": f"您的 ThinkSo 登录验证码是 {code}",
+        "recipients": [email],
+        "body": html_content,
+        "subtype": "html"
+    }
+    
+    from ..utils.email_service import email_service
+    await email_service.fm.send_message(message)
+
+@router.post("/initiate-login", response_model=InitiateLoginResponse)
+@limiter.limit("5/minute")
+async def initiate_login(request: Request, data: InitiateLoginRequest, db: Session = Depends(get_db)):
+    """
+    发起邮箱验证码登录流程，发送验证码邮件。
+    """
+    # 1. 生成6位随机数字验证码
+    code = "".join(random.choices(string.digits, k=6))
+    
+    # 2. 对验证码进行哈希处理
+    code_hash = get_password_hash(code)
+    
+    # 3. 设置过期时间（10分钟后）
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
+    
+    # 4. 创建并存储登录令牌记录
+    login_token = LoginToken(
+        email=data.email,
+        code_hash=code_hash,
+        expires_at=expires_at
+    )
+    db.add(login_token)
+    db.commit()
+    
+    # 5. 发送邮件
+    try:
+        await _send_login_code_email(data.email, code)
+    except Exception as e:
+        # 即便邮件发送失败，为了不暴露邮箱是否存在，也返回成功
+        # 但在服务器端记录严重错误
+        print(f"CRITICAL: Failed to send login code email to {data.email}: {e}")
+
+    return InitiateLoginResponse(success=True, message="如果您的邮箱已注册，验证码已发送。")
+
+
+@router.post("/verify-code", response_model=TokenResponse)
+@limiter.limit("10/minute")
+async def verify_code(request: Request, data: VerifyCodeRequest, db: Session = Depends(get_db)):
+    """
+    使用邮箱和验证码完成登录。
+    """
+    now = datetime.now(timezone.utc)
+
+    # a. 在login_tokens表中查找匹配的、最新的、未使用的、未过期的记录
+    login_token = db.query(LoginToken).filter(
+        LoginToken.email == data.email,
+        LoginToken.used_at.is_(None),
+        LoginToken.expires_at > now
+    ).order_by(desc(LoginToken.created_at)).first()
+
+    if not login_token:
+        raise HTTPException(status_code=400, detail="验证码无效或已过期")
+
+    # b. 验证用户提交的code与数据库中的code_hash是否匹配
+    if not verify_password(data.code, login_token.code_hash):
+        # 为防止暴力破解，即使验证码错误，也将此token标记为已使用
+        login_token.used_at = now
+        db.commit()
+        raise HTTPException(status_code=400, detail="验证码错误")
+
+    # c. 验证通过
+    # i. 将该token标记为已使用
+    login_token.used_at = now
+    
+    # ii. 在users表中查找或创建新用户
+    user = db.query(User).filter(User.email == data.email).first()
+    daily_reward_granted = False
+
+    if not user:
+        # 创建新用户
+        new_user = User(
+            email=data.email,
+            is_active=True,
+            is_verified=True, # 通过邮箱验证码登录的用户，邮箱视为已验证
+            display_name=data.email.split('@')[0]
+        )
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+        user = new_user
+        
+        # 为新用户创建积分和每日奖励
+        try:
+            CreditService.create_initial_credits(db, user)
+            daily_reward_granted = CreditService.grant_daily_reward_if_eligible(db, user.id)
+        except Exception as e:
+            print(f"Failed to create credits for new user {user.email}: {e}")
+            # 不影响登录流程
+    else:
+        # 如果是现有用户，检查并发放每日奖励
+        try:
+            daily_reward_granted = CreditService.grant_daily_reward_if_eligible(db, user.id)
+        except Exception as e:
+            print(f"Failed to grant daily reward for user {user.email}: {e}")
+
+    db.commit()
+    
+    # iii. 生成JWT登录凭证并返回
+    access_token = create_access_token(data={"sub": str(user.id)})
+    
+    user_credits_record = CreditService.get_user_credits(db, user.id)
+    credits_balance = user_credits_record.balance if user_credits_record else 0
+
+    user_response = UserResponse(
+        id=user.id,
+        email=user.email,
+        display_name=user.display_name,
+        is_active=user.is_active,
+        is_verified=user.is_verified,
+        is_superuser=user.is_superuser,
+        created_at=user.created_at.isoformat(),
+        credits=credits_balance,
+        invitation_quota=user.invitation_quota
+    )
+
+    return TokenResponse(
+        access_token=access_token,
+        token_type="bearer",
+        user=user_response,
+        daily_reward_granted=daily_reward_granted
+    )
+
+# ===================================================================
+# ======================== 现有路由 (部分) ==========================
+# ===================================================================
+
 class UserProfileResponse(BaseModel):
     """用户详细资料响应模型 - 包含积分余额和邀请码使用统计"""
     id: int
@@ -521,6 +701,7 @@ async def get_profile(current_user: User = Depends(get_current_user), db: Sessio
     """
     获取当前用户信息 - 包含邀请码配额信息
     """
+    # ... (existing profile endpoint remains unchanged)
     # 计算已使用的邀请码数量
     invitation_used = 0
     try:
@@ -575,6 +756,7 @@ async def update_profile(
     """
     更新用户资料信息
     """
+    # ... (existing update_profile endpoint remains unchanged)
     try:
         # 调试日志：记录接收到的请求数据
         print(f"🔍 收到用户资料更新请求: {request.dict()}")
@@ -661,6 +843,7 @@ async def update_profile(
         )
 
 
+# ... (The rest of the file remains the same)
 @router.get("/verify-token")
 async def verify_token(current_user: User = Depends(get_current_user)):
     """
@@ -887,12 +1070,6 @@ async def request_password_reset(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"请求处理失败: {str(e)}"
         )
-
-
-# 调试端点已移除 - 邮件服务已正常工作
-
-
-# 用户状态调试端点已移除 - 可通过管理员后台查看
 
 
 @router.post("/reset-password", response_model=PasswordResetResponse)

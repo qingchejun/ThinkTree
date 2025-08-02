@@ -22,9 +22,10 @@
  */
 'use client';
 
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AuthContext from '../context/AuthContext';
+import { api } from '../lib/api'; 
 
 const LoginModal = ({ isOpen, onClose }) => {
   const [view, setView] = useState('initial'); // 'initial' | 'verify'
@@ -37,6 +38,14 @@ const LoginModal = ({ isOpen, onClose }) => {
   const { login } = useContext(AuthContext);
   const router = useRouter();
 
+  const inputRefs = useRef([]);
+
+  useEffect(() => {
+    if (view === 'verify') {
+      inputRefs.current[0]?.focus();
+    }
+  }, [view]);
+
   // 处理邮件发送请求
   const handleInitiateLogin = async (e) => {
     e.preventDefault();
@@ -44,26 +53,26 @@ const LoginModal = ({ isOpen, onClose }) => {
       setError('请输入您的邮箱地址');
       return;
     }
+    // Simple regex for email validation
+    if (!/\S+@\S+\.\S+/.test(email)) {
+        setError('请输入有效的邮箱地址');
+        return;
+    }
+
     setIsEmailLoading(true);
     setError('');
 
     try {
-      // TODO: 调用后端API发送验证码
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/initiate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      });
+      const response = await api.post('/auth/initiate-login', { email });
       
-      if (response.ok) {
-        setView('verify'); // 切换到验证码输入视图
+      if (response.data.success) {
+        setView('verify');
       } else {
-        const errorData = await response.json();
-        setError(errorData.detail || '发送验证码失败，请稍后重试');
+        setError(response.data.message || '发送验证码失败，请稍后重试');
       }
     } catch (error) {
       console.error('发送验证码失败:', error);
-      setError('网络错误，请检查连接后重试');
+      setError(error.response?.data?.detail || '网络错误，请检查连接后重试');
     } finally {
       setIsEmailLoading(false);
     }
@@ -73,7 +82,7 @@ const LoginModal = ({ isOpen, onClose }) => {
   const handleCodeChange = (element, index) => {
     if (isNaN(element.value)) return false;
     
-    let newCode = [...code];
+    const newCode = [...code];
     newCode[index] = element.value;
     setCode(newCode);
 
@@ -81,48 +90,48 @@ const LoginModal = ({ isOpen, onClose }) => {
     if (element.nextSibling && element.value) {
       element.nextSibling.focus();
     }
-
-    // 当6位验证码都输入后，自动提交
-    if (newCode.every(digit => digit !== "")) {
-      handleVerifyCode(newCode.join(""));
+    
+    const fullCode = newCode.join("");
+    if (fullCode.length === 6) {
+      handleVerifyCode(fullCode);
+    }
+  };
+  
+  const handleKeyDown = (e, index) => {
+    if (e.key === "Backspace" && !code[index] && index > 0) {
+      inputRefs.current[index - 1].focus();
     }
   };
 
+
   // 处理验证码提交
   const handleVerifyCode = async (fullCode) => {
+    if(fullCode.length < 6) return;
     setIsEmailLoading(true);
     setError('');
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/verify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, code: fullCode })
-      });
+      const response = await api.post('/auth/verify-code', { email, code: fullCode });
       
-      if (response.ok) {
-        const data = await response.json();
-        
-        // 使用返回的JWT token进行登录
-        const loginResult = await login(data.access_token);
-        
-        if (loginResult.success) {
-          onClose(); // 关闭浮窗
-          router.push('/dashboard'); // 跳转到仪表板
-        } else {
-          setError('登录失败，请稍后重试');
-        }
+      const { access_token, user, daily_reward_granted } = response.data;
+      
+      const loginResult = await login(access_token, user, daily_reward_granted);
+      
+      if (loginResult.success) {
+        onClose();
+        router.push('/dashboard');
       } else {
-        const errorData = await response.json();
-        setError(errorData.detail || '验证码不正确，请重试');
+        setError('登录失败，请稍后重试');
+        setCode(new Array(6).fill(""));
       }
     } catch (error) {
       console.error('验证失败:', error);
-      setError('网络错误，请稍后重试');
+      setError(error.response?.data?.detail || '验证码不正确，请重试');
+      setCode(new Array(6).fill("")); // 清空验证码
+      inputRefs.current[0]?.focus();
+    } finally {
+      setIsEmailLoading(false);
     }
-    
-    setIsEmailLoading(false);
-    setCode(new Array(6).fill("")); // 清空验证码
   };
 
   // 处理Google登录
@@ -205,7 +214,7 @@ const LoginModal = ({ isOpen, onClose }) => {
               {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
               <button
                 type="submit"
-                disabled={isEmailLoading}
+                disabled={isEmailLoading || !email}
                 className="w-full mt-4 py-3 px-4 bg-black text-white font-semibold rounded-lg shadow-md hover:bg-gray-800 transition-colors disabled:opacity-50"
               >
                 {isEmailLoading ? '发送中...' : 'Continue'}
@@ -234,10 +243,14 @@ const LoginModal = ({ isOpen, onClose }) => {
               {code.map((digit, index) => (
                 <input
                   key={index}
+                  ref={el => inputRefs.current[index] = el}
                   type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   maxLength="1"
                   value={digit}
                   onChange={e => handleCodeChange(e.target, index)}
+                  onKeyDown={e => handleKeyDown(e, index)}
                   onFocus={e => e.target.select()}
                   className="w-12 h-14 text-center text-2xl font-semibold border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black transition"
                   disabled={isEmailLoading}
@@ -247,13 +260,12 @@ const LoginModal = ({ isOpen, onClose }) => {
 
             {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
             
-            {/* 继续按钮 */}
             <button
-              onClick={() => handleVerifyCode(code.join(""))}
-              disabled={isEmailLoading || code.join("").length < 6}
-              className="w-full py-3 px-4 bg-black text-white font-semibold rounded-lg shadow-md hover:bg-gray-800 transition-colors disabled:opacity-50 mb-4"
-            >
-              {isEmailLoading ? '验证中...' : 'Continue →'}
+                onClick={() => handleVerifyCode(code.join(""))}
+                disabled={isEmailLoading || code.join("").length < 6}
+                className="w-full py-3 px-4 bg-black text-white font-semibold rounded-lg shadow-md hover:bg-gray-800 transition-colors disabled:opacity-50 mb-4"
+              >
+                {isEmailLoading ? '验证中...' : 'Continue →'}
             </button>
 
             {/* 返回按钮 */}
