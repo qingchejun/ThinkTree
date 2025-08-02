@@ -79,3 +79,10 @@ class Settings(BaseSettings):
 
 # 全局设置实例
 settings = Settings()
+
+# 🔍 关键诊断信息：打印应用实际使用的数据库URL
+print("=" * 80)
+print("---DIAGNOSTIC-INFO--- DATABASE_URL being used is:")
+print(f"原始环境变量: {settings.database_url}")
+print(f"修复后的URL: {settings.database_url_fixed}")
+print("=" * 80)
