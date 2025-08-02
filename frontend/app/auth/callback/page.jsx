@@ -16,11 +16,11 @@
  */
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '../../../context/AuthContext';
 
-export default function AuthCallbackPage() {
+function AuthCallbackContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { login } = useAuth();
@@ -156,5 +156,27 @@ export default function AuthCallbackPage() {
         {renderContent()}
       </div>
     </div>
+  );
+}
+
+// 加载状态组件
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full mx-4 text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mx-auto mb-6"></div>
+        <h2 className="text-xl font-semibold text-gray-900 mb-2">加载中</h2>
+        <p className="text-gray-600">正在初始化...</p>
+      </div>
+    </div>
+  );
+}
+
+// 主页面组件，用Suspense包装
+export default function AuthCallbackPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <AuthCallbackContent />
+    </Suspense>
   );
 }

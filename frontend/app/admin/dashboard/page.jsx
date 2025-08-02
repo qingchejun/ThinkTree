@@ -130,7 +130,11 @@ const AdminDashboard = () => {
               <h3 className="text-lg font-semibold text-red-900 mb-2">加载失败</h3>
               <p className="text-red-700 mb-4">{error}</p>
               <button
-                onClick={() => window.location.reload()}
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    window.location.reload();
+                  }
+                }}
                 className="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700"
               >
                 重新加载
