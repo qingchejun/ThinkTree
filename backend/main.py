@@ -12,6 +12,10 @@ from slowapi.errors import RateLimitExceeded
 from app.api import upload, mindmaps, auth, share, invitations, admin, redemption
 from app.core.config import settings
 
+# 🔧 关键修复：导入所有模型，确保 SQLAlchemy Base 能注册到它们
+# 这解决了 LoginToken 表和其他表在 Alembic 迁移中不被识别的问题
+from app.models import User, Mindmap, InvitationCode, UserCredits, CreditTransaction, RedemptionCode, LoginToken
+
 # 创建rate limiter实例
 limiter = Limiter(key_func=get_remote_address)
 
