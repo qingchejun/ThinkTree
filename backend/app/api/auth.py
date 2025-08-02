@@ -532,61 +532,28 @@ async def _send_login_code_email(email: str, code: str, magic_token: str = None)
     """
     Send login verification code email - English version
     """
-    # Extract username from email address  
+    # 1. 准备邮件内容
     username = email.split('@')[0]
+    magic_link_url = f"https://thinktree-backend.onrender.com/api/auth/callback?token={magic_token}"
     
-    # Build magic link URL (pointing to backend API)
-    backend_url = os.getenv("BACKEND_URL", "https://thinktree-backend.onrender.com")
-    magic_link_url = f"{backend_url}/api/auth/callback?token={magic_token}" if magic_token else None
+    # 2. 构建 HTML 正文
+    html_body = f"""
+<p>Hi {username},</p>
+<p>{code} is your login code. You can also click below to login to your account:</p>
+<p><a href="{magic_link_url}">Login to ThinkSo</a></p>
+<p>- ThinkSo.io</p>
+"""
     
-    # Simple English HTML email template
-    html_content = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="utf-8">
-        <title>ThinkSo Login Verification</title>
-        <style>
-            body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 20px; }}
-            .container {{ max-width: 600px; margin: 0 auto; }}
-            p {{ margin: 10px 0; }}
-            a {{ color: #0066cc; text-decoration: none; }}
-            a:hover {{ text-decoration: underline; }}
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <p>Hi {username},</p>
-            
-            <p>{code} is your login code. You can also click below to login to your account:</p>
-            
-            <p><a href="{magic_link_url if magic_link_url else '#'}">Login to ThinkSo</a></p>
-            
-            <p>- ThinkSo.io</p>
-        </div>
-    </body>
-    </html>
-    """
-    
-    # Plain text version
-    text_content = f"""Hi {username},
-
-{code} is your login code. You can also click below to login to your account:
-
-Login to ThinkSo: {magic_link_url if magic_link_url else '(Link not available)'}
-
-- ThinkSo.io"""
-    
-    # 使用 fastapi_mail 的 MessageSchema 类
+    # 3. 创建 MessageSchema 对象，强制使用 HTML
     from fastapi_mail import MessageSchema, MessageType
     message = MessageSchema(
-        subject=f"👏{code} is your login code.",
+        subject=f"👏 {code} is your login code.",
         recipients=[email],
-        body=text_content,
-        html=html_content,
-        subtype=MessageType.html
+        html=html_body,          # 关键：使用 html 参数而不是 body
+        subtype=MessageType.html # 关键：指定类型为 HTML
     )
     
+    # 4. 发送邮件
     from ..utils.email_service import email_service
     await email_service.fm.send_message(message)
 
