@@ -1,84 +1,27 @@
-#!/usr/bin/env python3
-"""
-数据库初始化脚本
-用于生产环境的数据库初始化和迁移
-"""
-
-import subprocess
+# backend/init_db.py
+import logging
 import sys
-from pathlib import Path
+import os
 
-from app.core.config import settings
-from app.core.database import engine
-from sqlalchemy import text
+# 确保 app 模块可以被找到
+sys.path.append(os.getcwd())
 
-def run_command(command, description):
-    """运行shell命令"""
-    print(f"📋 {description}...")
+from app.core.database import Base, engine
+# 关键：确保导入所有模型，以便Base.metadata知道它们的存在
+from app.models import User, Mindmap, InvitationCode, UserCredits, CreditTransaction, RedemptionCode, LoginToken
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def init_db():
     try:
-        result = subprocess.run(command, shell=True, check=True, capture_output=True, text=True)
-        print(f"✅ {description} 成功")
-        if result.stdout:
-            print(f"输出: {result.stdout}")
-        return True
-    except subprocess.CalledProcessError as e:
-        print(f"❌ {description} 失败")
-        print(f"错误: {e.stderr}")
-        return False
-
-def check_database_connection():
-    """检查数据库连接"""
-    print("🔍 检查数据库连接...")
-    try:
-        with engine.connect() as conn:
-            result = conn.execute(text("SELECT 1"))
-            result.fetchone()
-        print("✅ 数据库连接正常")
-        return True
+        logger.info("Creating all database tables based on models...")
+        # 一次性创建所有在Base中定义的表
+        Base.metadata.create_all(bind=engine)
+        logger.info("Database tables created successfully.")
     except Exception as e:
-        print(f"❌ 数据库连接失败: {str(e)}")
-        return False
-
-def init_database():
-    """初始化数据库"""
-    print("🚀 开始数据库初始化...")
-    print(f"📍 数据库URL: {settings.database_url_fixed}")
-    
-    # 检查数据库连接
-    if not check_database_connection():
-        print("❌ 数据库连接失败，请检查 DATABASE_URL 配置")
-        return False
-    
-    # 运行数据库迁移
-    if not run_command("alembic upgrade head", "运行数据库迁移"):
-        return False
-    
-    print("🎉 数据库初始化完成！")
-    return True
-
-def reset_database():
-    """重置数据库（开发环境使用）"""
-    print("⚠️  警告：这将删除所有数据！")
-    confirm = input("确认重置数据库？(yes/no): ")
-    if confirm.lower() != 'yes':
-        print("❌ 操作已取消")
-        return False
-    
-    print("🔄 重置数据库...")
-    
-    # 删除所有迁移版本
-    if not run_command("alembic downgrade base", "回滚所有迁移"):
-        return False
-    
-    # 重新运行迁移
-    if not run_command("alembic upgrade head", "重新运行迁移"):
-        return False
-    
-    print("🎉 数据库重置完成！")
-    return True
+        logger.error(f"Error creating database tables: {e}")
+        raise
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1] == "--reset":
-        reset_database()
-    else:
-        init_database()
+    init_db()
