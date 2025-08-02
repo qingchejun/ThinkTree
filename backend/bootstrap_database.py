@@ -302,9 +302,15 @@ class DatabaseBootstrapper:
         try:
             print("🏷️  开始标记Alembic版本...")
             
-            # 运行 alembic stamp head 命令
+            # 首先获取最新的修订版本
+            latest_revision = self.get_latest_alembic_revision()
+            if not latest_revision:
+                print("⚠️  无法获取最新Alembic修订版本，跳过版本标记")
+                return False
+            
+            # 尝试强制标记为最新版本，忽略版本历史
             result = subprocess.run(
-                ['alembic', 'stamp', 'head'],
+                ['alembic', 'stamp', '--purge', latest_revision],
                 capture_output=True,
                 text=True,
                 cwd=os.path.dirname(os.path.abspath(__file__))
@@ -312,16 +318,28 @@ class DatabaseBootstrapper:
             
             if result.returncode == 0:
                 print("✅ Alembic版本标记成功")
-                
-                # 验证标记结果
-                latest_revision = self.get_latest_alembic_revision()
-                if latest_revision:
-                    print(f"🎯 当前Alembic版本已设置为: {latest_revision}")
-                
+                print(f"🎯 当前Alembic版本已设置为: {latest_revision}")
                 return True
             else:
-                print(f"❌ Alembic版本标记失败: {result.stderr}")
-                return False
+                # 如果 --purge 选项失败，尝试直接标记
+                print(f"⚠️  使用--purge标记失败，尝试直接标记: {result.stderr}")
+                
+                # 直接标记为最新版本
+                result = subprocess.run(
+                    ['alembic', 'stamp', latest_revision],
+                    capture_output=True,
+                    text=True,
+                    cwd=os.path.dirname(os.path.abspath(__file__))
+                )
+                
+                if result.returncode == 0:
+                    print("✅ 直接Alembic版本标记成功")
+                    print(f"🎯 当前Alembic版本已设置为: {latest_revision}")
+                    return True
+                else:
+                    print(f"❌ Alembic版本标记失败: {result.stderr}")
+                    # 如果还是失败，尝试手动更新数据库中的版本记录
+                    return self._manually_update_alembic_version(latest_revision)
                 
         except FileNotFoundError:
             print("⚠️  未找到alembic命令，跳过版本标记")
@@ -329,6 +347,43 @@ class DatabaseBootstrapper:
             return False
         except Exception as e:
             print(f"❌ 标记Alembic版本时出错: {e}")
+            return False
+    
+    def _manually_update_alembic_version(self, target_revision: str) -> bool:
+        """手动更新数据库中的Alembic版本记录"""
+        try:
+            print(f"🔧 尝试手动更新Alembic版本为: {target_revision}")
+            
+            with self.engine.connect() as conn:
+                # 检查alembic_version表是否存在
+                result = conn.execute(text("""
+                    SELECT table_name FROM information_schema.tables 
+                    WHERE table_name = 'alembic_version'
+                """))
+                
+                table_exists = result.scalar() is not None
+                
+                if table_exists:
+                    # 更新现有版本记录
+                    conn.execute(text(
+                        "UPDATE alembic_version SET version_num = :version"
+                    ), {"version": target_revision})
+                else:
+                    # 创建alembic_version表并插入版本记录
+                    conn.execute(text(
+                        "CREATE TABLE alembic_version (version_num VARCHAR(32) NOT NULL, "
+                        "CONSTRAINT alembic_version_pkc PRIMARY KEY (version_num))"
+                    ))
+                    conn.execute(text(
+                        "INSERT INTO alembic_version (version_num) VALUES (:version)"
+                    ), {"version": target_revision})
+                
+                conn.commit()
+                print(f"✅ 手动更新Alembic版本成功: {target_revision}")
+                return True
+                
+        except Exception as e:
+            print(f"❌ 手动更新Alembic版本失败: {e}")
             return False
     
     def bootstrap(self) -> bool:
