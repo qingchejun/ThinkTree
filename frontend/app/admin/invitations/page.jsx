@@ -15,6 +15,12 @@ const AdminInvitations = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null); // 错误消息状态
   const [successMessage, setSuccessMessage] = useState(null); // 成功消息状态
+  const [isClient, setIsClient] = useState(false); // 客户端检查
+
+  // 检查是否在客户端
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
   
   // 分页和筛选
   const [currentPage, setCurrentPage] = useState(1);
@@ -130,18 +136,38 @@ const AdminInvitations = () => {
 
   // 复制邀请码
   const copyInvitationCode = (code) => {
+    if (!isClient || typeof window === 'undefined') return;
+    
     const inviteUrl = `${window.location.origin}/register?invitation_code=${code}`;
-    navigator.clipboard.writeText(inviteUrl).then(() => {
-      setSuccessMessage('邀请链接已复制到剪贴板');
-      setTimeout(() => setSuccessMessage(null), 2000);
-    }).catch(() => {
-      setError('复制失败，请手动复制');
-    });
+    
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(inviteUrl).then(() => {
+        setSuccessMessage('邀请链接已复制到剪贴板');
+        setTimeout(() => setSuccessMessage(null), 2000);
+      }).catch(() => {
+        setError('复制失败，请手动复制');
+      });
+    } else {
+      // 降级方案：使用传统的复制方法
+      try {
+        const textArea = document.createElement('textarea');
+        textArea.value = inviteUrl;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        setSuccessMessage('邀请链接已复制到剪贴板');
+        setTimeout(() => setSuccessMessage(null), 2000);
+      } catch {
+        setError('复制失败，请手动复制');
+      }
+    }
   };
 
   // 初始加载
   useEffect(() => {
     fetchInvitations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   // 格式化日期

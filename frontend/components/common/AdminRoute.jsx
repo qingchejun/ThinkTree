@@ -11,7 +11,11 @@ const AdminRoute = ({ children }) => {
     if (!isLoading) {
       if (!user) {
         // 用户未登录，重定向到登录页
-        router.push('/login?redirect=' + encodeURIComponent(window.location.pathname));
+        if (typeof window !== 'undefined') {
+          router.push('/login?redirect=' + encodeURIComponent(window.location.pathname));
+        } else {
+          router.push('/login');
+        }
         return;
       }
       

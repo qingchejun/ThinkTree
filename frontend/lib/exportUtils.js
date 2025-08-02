@@ -1,7 +1,15 @@
 /**
  * ThinkSo 思维导图导出工具库
- * v3.0.0 - 导出功能优化版
+ * v3.1.0 - SSR 兼容版本
  */
+
+/**
+ * 检查是否在客户端环境
+ * @returns {boolean}
+ */
+function isClientSide() {
+  return typeof window !== 'undefined' && typeof document !== 'undefined';
+}
 
 /**
  * 从 Markmap 实例获取 SVG 内容（优化版，避免重绘）
@@ -9,6 +17,10 @@
  * @returns {string} SVG 字符串
  */
 export function getSVGFromMarkmap(markmapInstance) {
+  if (!isClientSide()) {
+    throw new Error('此功能仅在客户端可用');
+  }
+
   if (!markmapInstance || !markmapInstance.svg) {
     throw new Error('Markmap 实例无效')
   }
@@ -94,6 +106,10 @@ export function getSVGFromMarkmap(markmapInstance) {
  * @param {string} mimeType - MIME类型
  */
 export function downloadFile(content, filename, mimeType = 'text/plain') {
+  if (!isClientSide()) {
+    throw new Error('下载功能仅在客户端可用');
+  }
+
   try {
     let blob
     if (content instanceof Blob) {
@@ -144,6 +160,10 @@ export function exportSVG(markmapInstance, filename = 'mindmap') {
  * @returns {Promise<Blob>} PNG Blob
  */
 export function svgToPNG(svgContent, scale = 2) {
+  if (!isClientSide()) {
+    return Promise.reject(new Error('PNG转换功能仅在客户端可用'));
+  }
+
   return new Promise((resolve, reject) => {
     try {
       // 创建临时的SVG元素来获取尺寸

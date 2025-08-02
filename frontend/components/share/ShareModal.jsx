@@ -14,12 +14,19 @@ export default function ShareModal({ isOpen, onClose, mindmapId, mindmapTitle })
   const [shareInfo, setShareInfo] = useState(null)
   const [error, setError] = useState(null)
   const [successMessage, setSuccessMessage] = useState(null) // 成功消息状态
+  const [isClient, setIsClient] = useState(false) // 客户端检查
+
+  // 检查是否在客户端
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
 
   // 获取分享信息
   useEffect(() => {
     if (isOpen && mindmapId && token) {
       fetchShareInfo()
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, mindmapId, token])
 
   const fetchShareInfo = async () => {
@@ -134,12 +141,25 @@ export default function ShareModal({ isOpen, onClose, mindmapId, mindmapTitle })
 
   // 复制链接
   const handleCopyLink = async () => {
-    if (!shareInfo?.share_url) return
+    if (!shareInfo?.share_url || !isClient) return
 
     try {
       const fullUrl = `${window.location.origin}${shareInfo.share_url}`
-      await navigator.clipboard.writeText(fullUrl)
-      setSuccessMessage('分享链接已复制到剪贴板')
+      
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(fullUrl)
+        setSuccessMessage('分享链接已复制到剪贴板')
+      } else {
+        // 降级方案：使用传统的复制方法
+        const textArea = document.createElement('textarea')
+        textArea.value = fullUrl
+        document.body.appendChild(textArea)
+        textArea.select()
+        document.execCommand('copy')
+        document.body.removeChild(textArea)
+        setSuccessMessage('分享链接已复制到剪贴板')
+      }
+      
       // 2秒后清除成功消息
       setTimeout(() => setSuccessMessage(null), 2000)
     } catch (err) {
@@ -240,7 +260,7 @@ export default function ShareModal({ isOpen, onClose, mindmapId, mindmapTitle })
                       <input
                         type="text"
                         readOnly
-                        value={`${window.location.origin}${shareInfo.share_url}`}
+                        value={isClient ? `${window.location.origin}${shareInfo.share_url}` : shareInfo.share_url || ''}
                         className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm bg-gray-50 text-gray-700"
                       />
                       <button

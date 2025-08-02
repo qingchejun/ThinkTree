@@ -51,7 +51,11 @@ function EditorContent() {
           <h2 className="text-lg font-semibold text-gray-900 mb-2">加载失败</h2>
           <p className="text-gray-600 mb-4">{error}</p>
           <button
-            onClick={() => window.history.back()}
+            onClick={() => {
+              if (typeof window !== 'undefined') {
+                window.history.back()
+              }
+            }}
             className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
           >
             返回上一页
@@ -67,7 +71,11 @@ function EditorContent() {
       <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <button
-            onClick={() => window.history.back()}
+            onClick={() => {
+              if (typeof window !== 'undefined') {
+                window.history.back()
+              }
+            }}
             className="text-gray-600 hover:text-gray-900"
           >
             ← 返回

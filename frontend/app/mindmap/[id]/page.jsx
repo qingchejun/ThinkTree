@@ -45,6 +45,7 @@ export default function ViewMindmapPage() {
       title: mindmap.title,
       markdown: mindmap.content
     } : null
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mindmap?.title, mindmap?.content])
 
   // 路由保护 - 未登录用户重定向到登录页

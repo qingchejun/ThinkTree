@@ -17,6 +17,7 @@ export default function SharePage() {
   const [mindmap, setMindmap] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [isClient, setIsClient] = useState(false)
 
   // 稳定化mindmapData引用
   const stableMindmapData = useMemo(() => {
@@ -26,8 +27,14 @@ export default function SharePage() {
     } : null
   }, [mindmap?.title, mindmap?.content])
 
+  // 初始化客户端状态
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+
   // 获取分享的思维导图
   useEffect(() => {
+    if (!isClient) return;
     const fetchSharedMindmap = async () => {
       if (!shareToken) {
         setError('分享链接无效')
@@ -67,7 +74,7 @@ export default function SharePage() {
     }
 
     fetchSharedMindmap()
-  }, [shareToken])
+  }, [shareToken, isClient])
 
   // 格式化日期显示
   const formatDate = (dateString) => {
@@ -134,7 +141,11 @@ export default function SharePage() {
               <p className="text-red-700 mb-4">{error}</p>
               <div className="space-y-2">
                 <button
-                  onClick={() => window.location.reload()}
+                  onClick={() => {
+                    if (typeof window !== 'undefined') {
+                      window.location.reload()
+                    }
+                  }}
                   className="w-full bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700"
                 >
                   重新加载

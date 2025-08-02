@@ -55,6 +55,7 @@ const SettingsContent = () => {
   const [isAvatarSelectorOpen, setIsAvatarSelectorOpen] = useState(false);
   const [currentAvatar, setCurrentAvatar] = useState('default');
   const [tempAvatar, setTempAvatar] = useState('default'); // 临时头像选择
+  const [isClient, setIsClient] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
     newPassword: '',
@@ -78,12 +79,18 @@ const SettingsContent = () => {
     setTimeout(() => setToast(null), 3000);
   };
 
+  // 初始化客户端状态
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   // 初始化用户头像
   useEffect(() => {
+    if (!isClient) return;
     const savedAvatar = getCurrentAvatar();
     setCurrentAvatar(savedAvatar);
     setTempAvatar(savedAvatar);
-  }, []);
+  }, [isClient]);
 
   // 处理头像选择（仅临时选择，不立即生效）
   const handleAvatarSelect = (avatarOption) => {
@@ -220,6 +227,7 @@ const SettingsContent = () => {
       loadInvitations();
       loadCreditHistory(); // 加载积分历史
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, token, loading, router]);
 
   if (loading) {
@@ -248,7 +256,7 @@ const SettingsContent = () => {
       const response = await updateProfile({ display_name: displayName }, token);
       
       // 保存头像选择到本地存储
-      if (tempAvatar !== currentAvatar) {
+      if (tempAvatar !== currentAvatar && isClient) {
         localStorage.setItem('userAvatar', tempAvatar);
         setCurrentAvatar(tempAvatar);
       }
@@ -257,7 +265,7 @@ const SettingsContent = () => {
       await refreshUser();
       
       // 触发头像变更事件，通知其他组件更新头像显示
-      if (tempAvatar !== currentAvatar) {
+      if (tempAvatar !== currentAvatar && isClient) {
         // 派发自定义事件，通知其他组件头像已更改
         window.dispatchEvent(new CustomEvent('avatarChanged', { 
           detail: { newAvatar: tempAvatar } 

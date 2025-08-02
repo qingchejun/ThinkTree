@@ -11,15 +11,24 @@ const Header = ({ title, subtitle, showCreateButton = false }) => {
   const router = useRouter();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [currentAvatar, setCurrentAvatar] = useState('default');
+  const [isClient, setIsClient] = useState(false);
   const dropdownRef = useRef(null);
+
+  // 初始化客户端状态
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // 初始化用户头像
   useEffect(() => {
+    if (!isClient) return;
     setCurrentAvatar(getCurrentAvatar());
-  }, []);
+  }, [isClient]);
 
   // 监听头像变更事件
   useEffect(() => {
+    if (!isClient) return;
+    
     const handleAvatarChange = (event) => {
       const { newAvatar } = event.detail;
       setCurrentAvatar(newAvatar);
@@ -29,10 +38,11 @@ const Header = ({ title, subtitle, showCreateButton = false }) => {
     return () => {
       window.removeEventListener('avatarChanged', handleAvatarChange);
     };
-  }, []);
+  }, [isClient]);
 
   // 点击外部关闭下拉菜单
   useEffect(() => {
+    if (!isClient) return;
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsDropdownOpen(false);
@@ -43,7 +53,7 @@ const Header = ({ title, subtitle, showCreateButton = false }) => {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+  }, [isClient]);
 
   const handleLogout = () => {
     logout();

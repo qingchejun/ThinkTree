@@ -1,5 +1,6 @@
 'use client';
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import AuthContext from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/common/Header';
@@ -8,7 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import Toast from '@/components/common/Toast';
 
-const AdminCodesPage = () => {
+const AdminCodesPageComponent = () => {
   const { user, token, loading } = useContext(AuthContext);
   const router = useRouter();
   
@@ -31,6 +32,14 @@ const AdminCodesPage = () => {
   const [totalPages, setTotalPages] = useState(0);
   const [totalCodes, setTotalCodes] = useState(0);
   const [statusFilter, setStatusFilter] = useState('ALL');
+  
+  // 客户端检查状态
+  const [isClient, setIsClient] = useState(false);
+
+  // 检查是否在客户端
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
@@ -72,6 +81,7 @@ const AdminCodesPage = () => {
     if (user && user.is_superuser && token) {
       loadCodesList();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, token]);
 
   // 状态筛选改变时重新加载
@@ -186,9 +196,27 @@ const AdminCodesPage = () => {
 
   // 复制兑换码到剪贴板
   const copyToClipboard = async (text) => {
+    if (typeof window === 'undefined' || !isClient) {
+      showToast('复制功能仅在客户端可用', 'error');
+      return;
+    }
+
     try {
-      await navigator.clipboard.writeText(text);
-      showToast('已复制到剪贴板', 'success');
+      if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        showToast('已复制到剪贴板', 'success');
+      } else if (typeof document !== 'undefined') {
+        // 降级方案：使用传统的复制方法
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        showToast('已复制到剪贴板', 'success');
+      } else {
+        showToast('复制功能不可用', 'error');
+      }
     } catch (error) {
       console.error('复制失败:', error);
       showToast('复制失败', 'error');
@@ -516,5 +544,22 @@ const AdminCodesPage = () => {
     </div>
   );
 };
+
+// 使用 dynamic import 禁用 SSR 来完全避免 location 错误
+const AdminCodesPage = dynamic(() => Promise.resolve(AdminCodesPageComponent), {
+  ssr: false,
+  loading: () => (
+    <div className="min-h-screen flex items-center justify-center bg-background-secondary">
+      <Card className="w-full max-w-md mx-4">
+        <CardContent className="pt-6">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-brand-primary border-t-transparent mx-auto mb-4"></div>
+            <p className="text-text-secondary">加载中...</p>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+});
 
 export default AdminCodesPage;

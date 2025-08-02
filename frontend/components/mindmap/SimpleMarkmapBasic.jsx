@@ -16,6 +16,7 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
   
   // 展开/折叠状态管理
   const [isExpanded, setIsExpanded] = useState(true) // 默认全展开
+  const [isClient, setIsClient] = useState(false)
 
   // 暴露 markmap 实例给父组件
   useImperativeHandle(ref, () => ({
@@ -205,7 +206,13 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
     }
   }
 
+  // 初始化客户端状态
   useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isClient) return;
     const initMarkmap = async () => {
       // 如果正在处理中，跳过初始化
       if (isProcessingRef.current) {
@@ -329,11 +336,13 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
     const timer = setTimeout(initMarkmap, 100)
 
     // 添加窗口大小变化监听
-    window.addEventListener('resize', handleResize)
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', handleResize)
+    }
     
     // 使用ResizeObserver监听容器尺寸变化
     let resizeObserver
-    if (containerRef.current && window.ResizeObserver) {
+    if (containerRef.current && typeof window !== 'undefined' && window.ResizeObserver) {
       resizeObserver = new ResizeObserver(() => {
         // 防抖处理，避免频繁调用
         if (!isProcessingRef.current) {
@@ -350,7 +359,9 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
         clearTimeout(fitTimeoutRef.current)
         fitTimeoutRef.current = null
       }
-      window.removeEventListener('resize', handleResize)
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('resize', handleResize)
+      }
       if (resizeObserver) {
         resizeObserver.disconnect()
       }
@@ -362,7 +373,7 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
       isToggleOperationRef.current = false
       isProcessingRef.current = false
     }
-  }, [mindmapData])
+  }, [mindmapData, isClient])
 
   // 当数据变化时重置展开状态
   useEffect(() => {

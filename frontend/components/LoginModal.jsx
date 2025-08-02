@@ -33,11 +33,17 @@ const LoginModal = ({ isOpen, onClose }) => {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isEmailLoading, setIsEmailLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isClient, setIsClient] = useState(false);
   
   const { login } = useContext(AuthContext);
   const router = useRouter();
 
   const inputRefs = useRef([]);
+
+  // 初始化客户端状态
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   useEffect(() => {
     if (view === 'verify') {
@@ -175,6 +181,8 @@ const LoginModal = ({ isOpen, onClose }) => {
 
   // 处理Google登录
   const handleGoogleLogin = async () => {
+    if (!isClient) return;
+    
     setIsGoogleLoading(true);
     setError('');
     

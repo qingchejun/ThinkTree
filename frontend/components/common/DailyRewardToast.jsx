@@ -3,12 +3,31 @@
  */
 'use client'
 
+import { useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 
 export function DailyRewardToast() {
   const { showDailyRewardToast, setShowDailyRewardToast } = useAuth()
+  const [isClient, setIsClient] = useState(false)
 
-  if (!showDailyRewardToast) {
+  // 初始化客户端状态和样式注入
+  useEffect(() => {
+    setIsClient(true)
+    
+    // 注入样式到文档头部
+    if (typeof document !== 'undefined') {
+      const styleId = 'daily-reward-toast-styles'
+      // 检查是否已经添加了样式
+      if (!document.getElementById(styleId)) {
+        const styleElement = document.createElement('style')
+        styleElement.id = styleId
+        styleElement.textContent = styles
+        document.head.appendChild(styleElement)
+      }
+    }
+  }, [])
+
+  if (!showDailyRewardToast || !isClient) {
     return null
   }
 
@@ -53,9 +72,4 @@ const styles = `
   }
 `
 
-// 如果使用CSS-in-JS，在document头部插入样式
-if (typeof document !== 'undefined') {
-  const styleElement = document.createElement('style')
-  styleElement.textContent = styles
-  document.head.appendChild(styleElement)
-}
+// 样式现在通过组件内的useEffect注入，避免SSR问题

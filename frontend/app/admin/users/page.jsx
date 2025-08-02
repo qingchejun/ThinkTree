@@ -15,6 +15,7 @@ const AdminUsers = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null); // 错误消息状态
   const [successMessage, setSuccessMessage] = useState(null); // 成功消息状态
+  const [isClient, setIsClient] = useState(false);
   
   // 分页和筛选
   const [currentPage, setCurrentPage] = useState(1);
@@ -116,7 +117,7 @@ const AdminUsers = () => {
 
   // 删除用户（软删除）
   const deleteUser = async (userId, userEmail) => {
-    if (!window.confirm(`确定要删除用户 "${userEmail}" 吗？此操作会将用户设为非活跃状态。`)) {
+    if (!isClient || !window.confirm(`确定要删除用户 "${userEmail}" 吗？此操作会将用户设为非活跃状态。`)) {
       return;
     }
 
@@ -262,8 +263,15 @@ const AdminUsers = () => {
     }
   };
 
+  // 初始化客户端状态
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   // 点击外部关闭下拉菜单
   useEffect(() => {
+    if (!isClient) return;
+    
     const handleClickOutside = (event) => {
       if (showDropdown && !event.target.closest('.relative')) {
         setShowDropdown(null);
@@ -274,11 +282,12 @@ const AdminUsers = () => {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showDropdown]);
+  }, [showDropdown, isClient]);
 
   // 初始加载
   useEffect(() => {
     fetchUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   // 格式化日期

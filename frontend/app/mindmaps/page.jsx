@@ -22,6 +22,12 @@ export default function MindmapsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [successMessage, setSuccessMessage] = useState(null) // 成功消息状态
+  const [isClient, setIsClient] = useState(false) // 客户端检查
+
+  // 检查是否在客户端
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
 
   // 分享模态框状态
   const [shareModal, setShareModal] = useState({
@@ -87,7 +93,7 @@ export default function MindmapsPage() {
 
   // 删除思维导图
   const handleDelete = async (mindmapId, title) => {
-    if (!window.confirm(`确定要删除思维导图"${title}"吗？此操作不可恢复。`)) {
+    if (!isClient || !window.confirm(`确定要删除思维导图"${title}"吗？此操作不可恢复。`)) {
       return
     }
 

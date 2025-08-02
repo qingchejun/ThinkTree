@@ -24,6 +24,7 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [showDailyRewardToast, setShowDailyRewardToast] = useState(null)
+  const [isClient, setIsClient] = useState(false)
   const router = useRouter()
 
   // 防止重复请求的标志
@@ -87,7 +88,7 @@ export function AuthProvider({ children }) {
       } else {
         console.error('❌ 获取用户信息失败:', response.status, response.statusText)
         // 令牌无效，清除存储的数据
-        if (response.status === 401) {
+        if (response.status === 401 && typeof window !== 'undefined') {
           localStorage.removeItem('access_token')
         }
         return null
@@ -126,7 +127,9 @@ export function AuthProvider({ children }) {
       }
       
       // 存储令牌到 localStorage
-      localStorage.setItem('access_token', accessToken)
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('access_token', accessToken)
+      }
       setToken(accessToken)
       
       // 获取用户信息 - 使用唯一ID避免重复请求，跳过超时控制避免AbortController冲突
@@ -162,7 +165,9 @@ export function AuthProvider({ children }) {
     setToken(null)
     
     // 清除 localStorage
-    localStorage.removeItem('access_token')
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('access_token')
+    }
     
     // 跳转到登录页面
     if (typeof window !== 'undefined') {
@@ -181,11 +186,15 @@ export function AuthProvider({ children }) {
     }
   }
 
+  // 初始化客户端状态
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+
   // 组件挂载时检查持久化的登录状态
   useEffect(() => {
     // 确保在客户端执行
-    if (typeof window === 'undefined') {
-      console.log('❌ 服务端环境，跳过初始化')
+    if (!isClient) {
       return
     }
     
@@ -243,13 +252,14 @@ export function AuthProvider({ children }) {
     return () => {
       mounted = false
     }
-  }, [])
+  }, [isClient])
 
   // 提供给子组件的值
   const contextValue = {
     user,
     token,
     isLoading,
+    isClient,
     login,
     logout,
     refreshUser,
@@ -261,7 +271,7 @@ export function AuthProvider({ children }) {
   }
 
   // 开发环境调试日志 - 只在客户端执行
-  if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
+  if (process.env.NODE_ENV === 'development' && isClient) {
     console.log('AuthContext状态更新:', {
       hasUser: !!user,
       hasToken: !!token,

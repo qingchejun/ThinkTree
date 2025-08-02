@@ -158,7 +158,11 @@ class ErrorBoundary extends React.Component {
             <h2 className="text-2xl font-bold text-gray-900 mb-4">出现了一些问题</h2>
             <p className="text-gray-600 mb-6">页面加载时发生错误，请刷新页面重试</p>
             <button 
-              onClick={() => window.location.reload()}
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  window.location.reload();
+                }
+              }}
               className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
             >
               刷新页面
@@ -178,15 +182,24 @@ class ErrorBoundary extends React.Component {
 const AppHeader = React.memo(({ user, credits, onLogout }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [currentAvatar, setCurrentAvatar] = useState('default');
+  const [isClient, setIsClient] = useState(false);
   const menuRef = useRef(null);
+
+  // 初始化客户端状态
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // 初始化用户头像
   useEffect(() => {
+    if (!isClient) return;
     setCurrentAvatar(getCurrentAvatar());
-  }, []);
+  }, [isClient]);
 
   // 监听头像变更事件
   useEffect(() => {
+    if (!isClient) return;
+    
     const handleAvatarChange = (event) => {
       const { newAvatar } = event.detail;
       setCurrentAvatar(newAvatar);
@@ -196,10 +209,12 @@ const AppHeader = React.memo(({ user, credits, onLogout }) => {
     return () => {
       window.removeEventListener('avatarChanged', handleAvatarChange);
     };
-  }, []);
+  }, [isClient]);
 
   // 点击外部关闭菜单的逻辑
   useEffect(() => {
+    if (!isClient) return;
+    
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
         setIsMenuOpen(false);
@@ -209,7 +224,7 @@ const AppHeader = React.memo(({ user, credits, onLogout }) => {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+  }, [isClient]);
 
   return (
     <header className="bg-white/95 backdrop-blur-lg sticky top-0 z-40 border-b border-gray-200 flex-shrink-0">

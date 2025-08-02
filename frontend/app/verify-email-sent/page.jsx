@@ -11,6 +11,12 @@ function VerifyEmailSentContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
+  const [isClient, setIsClient] = useState(false)
+
+  // 初始化客户端状态
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
 
   useEffect(() => {
     const emailParam = searchParams.get('email')
@@ -89,7 +95,11 @@ function VerifyEmailSentContent() {
           {/* 操作按钮 */}
           <div className="space-y-3">
             <button
-              onClick={() => window.location.reload()}
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  window.location.reload()
+                }
+              }}
               className="w-full bg-blue-600 text-white py-2 px-4 rounded-md text-sm font-medium hover:bg-blue-700 transition duration-200"
             >
               重新发送验证邮件
