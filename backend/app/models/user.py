@@ -22,8 +22,11 @@ class User(Base):
     # 用户邮箱 (唯一)
     email = Column(String(255), unique=True, index=True, nullable=False)
     
-    # 密码哈希
-    password_hash = Column(String(255), nullable=False)
+    # 密码哈希 (Google 登录用户可为空)
+    password_hash = Column(String(255), nullable=True)
+    
+    # Google OAuth ID (用于 Google 登录)
+    google_id = Column(String(100), unique=True, index=True, nullable=True)
     
     # 用户状态
     is_active = Column(Boolean, default=True, nullable=False)

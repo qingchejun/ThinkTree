@@ -4,11 +4,13 @@
 
 from fastapi import APIRouter, HTTPException, Depends, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+from starlette.requests import Request as StarletteRequest
 
 from ..core.database import get_db
 from ..models.user import User
@@ -1183,3 +1185,154 @@ async def get_config_status():
 
 # 更新前向引用
 UserProfileUpdateResponse.model_rebuild()
+
+
+# ===================================================================
+# ======================= Google OAuth 路由 =========================
+# ===================================================================
+
+@router.get("/google")
+async def login_via_google(request: StarletteRequest):
+    """
+    Google OAuth 登录 - 第一步：重定向到 Google 授权页面
+    """
+    try:
+        from ..core.oauth import get_google_oauth_client
+        
+        google_client = get_google_oauth_client()
+        
+        # 构建回调 URL
+        callback_url = str(request.url_for('google_callback'))
+        
+        # 重定向到 Google 授权页面
+        return await google_client.authorize_redirect(request, callback_url)
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Google OAuth 初始化失败: {str(e)}"
+        )
+
+
+@router.get("/google/callback", name="google_callback")
+async def google_callback(request: StarletteRequest, db: Session = Depends(get_db)):
+    """
+    Google OAuth 回调处理 - 第二步：处理 Google 返回的授权码并完成登录
+    """
+    try:
+        from ..core.oauth import get_google_oauth_client
+        from ..services.credit_service import CreditService
+        
+        google_client = get_google_oauth_client()
+        
+        # 1. 从 Google 获取访问令牌
+        token = await google_client.authorize_access_token(request)
+        
+        # 2. 从 Google 获取用户信息
+        user_info = token.get('userinfo')
+        if not user_info:
+            # 如果 userinfo 不在 token 中，使用 parse_id_token 方法
+            user_info = await google_client.parse_id_token(request, token)
+        
+        google_id = user_info.get('sub')  # Google 用户 ID
+        email = user_info.get('email')
+        name = user_info.get('name', email.split('@')[0] if email else 'User')
+        avatar_url = user_info.get('picture')
+        
+        if not google_id or not email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="从 Google 获取用户信息失败"
+            )
+        
+        # 3. 在数据库中查找或创建用户
+        db_user = db.query(User).filter(User.google_id == google_id).first()
+        
+        if not db_user:
+            # 检查是否已存在相同邮箱的用户（可能是传统注册用户）
+            existing_user = db.query(User).filter(User.email == email).first()
+            
+            if existing_user:
+                # 关联现有用户账户到 Google
+                existing_user.google_id = google_id
+                if not existing_user.is_verified:
+                    existing_user.is_verified = True  # Google 用户默认已验证邮箱
+                if not existing_user.display_name:
+                    existing_user.display_name = name
+                if not existing_user.avatar_url and avatar_url:
+                    existing_user.avatar_url = avatar_url
+                
+                db.commit()
+                db.refresh(existing_user)
+                db_user = existing_user
+            else:
+                # 创建新的 Google 用户
+                new_user = User(
+                    email=email,
+                    display_name=name,
+                    google_id=google_id,
+                    avatar_url=avatar_url,
+                    is_active=True,
+                    is_verified=True,  # Google 用户默认已验证邮箱
+                    password_hash=None  # Google 用户不需要密码
+                )
+                
+                db.add(new_user)
+                db.commit()
+                db.refresh(new_user)
+                db_user = new_user
+                
+                # 为新用户创建初始积分记录
+                try:
+                    CreditService.create_initial_credits(db, new_user)
+                except Exception as credit_error:
+                    print(f"为 Google 用户 {new_user.email} 创建初始积分失败: {credit_error}")
+        
+        # 4. 检查并发放每日奖励（仅对登录用户）
+        daily_reward_granted = False
+        try:
+            daily_reward_granted = CreditService.grant_daily_reward_if_eligible(db, db_user.id)
+        except Exception as reward_error:
+            print(f"为 Google 用户 {db_user.email} 发放每日奖励失败: {reward_error}")
+        
+        # 5. 为该用户创建 JWT 访问令牌
+        jwt_token = create_access_token(data={"sub": str(db_user.id)})
+        
+        # 6. 重定向回前端，并在 URL 参数中带上 JWT
+        frontend_callback_url = f"{request.base_url.scheme}://{request.base_url.netloc}/auth/callback?token={jwt_token}"
+        
+        if daily_reward_granted:
+            frontend_callback_url += "&daily_reward=true"
+        
+        return RedirectResponse(url=frontend_callback_url)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        # 发生错误时重定向到登录页面并显示错误信息
+        error_message = f"Google 登录失败: {str(e)}"
+        login_url = f"{request.base_url.scheme}://{request.base_url.netloc}/login?error={error_message}"
+        return RedirectResponse(url=login_url)
+
+
+class GoogleUserInfo(BaseModel):
+    """Google 用户信息响应模型（调试用）"""
+    google_id: str
+    email: str
+    name: str
+    avatar_url: Optional[str] = None
+    is_new_user: bool
+
+
+@router.get("/google/test-info")
+async def test_google_user_info(current_user: User = Depends(get_current_user)):
+    """
+    测试端点：获取当前用户的 Google 相关信息（调试用）
+    """
+    return GoogleUserInfo(
+        google_id=current_user.google_id or "未关联",
+        email=current_user.email,
+        name=current_user.display_name or "未设置",
+        avatar_url=current_user.avatar_url,
+        is_new_user=current_user.google_id is not None and current_user.password_hash is None
+    )
