@@ -24,8 +24,7 @@
 
 import React, { useState, useContext, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import AuthContext from '../context/AuthContext';
-import { api } from '../lib/api'; 
+import AuthContext from '../context/AuthContext'; 
 
 const LoginModal = ({ isOpen, onClose }) => {
   const [view, setView] = useState('initial'); // 'initial' | 'verify'
@@ -63,12 +62,22 @@ const LoginModal = ({ isOpen, onClose }) => {
     setError('');
 
     try {
-      const response = await api.post('/auth/initiate-login', { email });
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/initiate-login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
       
-      if (response.data.success) {
-        setView('verify');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setView('verify');
+        } else {
+          setError(data.message || '发送验证码失败，请稍后重试');
+        }
       } else {
-        setError(response.data.message || '发送验证码失败，请稍后重试');
+        const errorData = await response.json();
+        setError(errorData.detail || '发送验证码失败，请稍后重试');
       }
     } catch (error) {
       console.error('发送验证码失败:', error);
@@ -111,18 +120,30 @@ const LoginModal = ({ isOpen, onClose }) => {
     setError('');
 
     try {
-      const response = await api.post('/auth/verify-code', { email, code: fullCode });
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/verify-code`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code: fullCode })
+      });
       
-      const { access_token, user, daily_reward_granted } = response.data;
-      
-      const loginResult = await login(access_token, user, daily_reward_granted);
-      
-      if (loginResult.success) {
-        onClose();
-        router.push('/dashboard');
+      if (response.ok) {
+        const data = await response.json();
+        const { access_token, user, daily_reward_granted } = data;
+        
+        const loginResult = await login(access_token);
+        
+        if (loginResult.success) {
+          onClose();
+          router.push('/dashboard');
+        } else {
+          setError('登录失败，请稍后重试');
+          setCode(new Array(6).fill(""));
+        }
       } else {
-        setError('登录失败，请稍后重试');
-        setCode(new Array(6).fill(""));
+        const errorData = await response.json();
+        setError(errorData.detail || '验证码不正确，请重试');
+        setCode(new Array(6).fill("")); // 清空验证码
+        inputRefs.current[0]?.focus();
       }
     } catch (error) {
       console.error('验证失败:', error);
