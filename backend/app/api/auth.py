@@ -1334,7 +1334,7 @@ async def google_callback(request: StarletteRequest, db: Session = Depends(get_d
         jwt_token = create_access_token(data={"sub": str(db_user.id)})
         
         # 6. 重定向回前端，并在 URL 参数中带上 JWT
-        frontend_callback_url = f"{request.base_url.scheme}://{request.base_url.netloc}/auth/callback?token={jwt_token}"
+        frontend_callback_url = f"https://thinkso.io/auth/callback?token={jwt_token}"
         
         if daily_reward_granted:
             frontend_callback_url += "&daily_reward=true"
@@ -1346,7 +1346,7 @@ async def google_callback(request: StarletteRequest, db: Session = Depends(get_d
     except Exception as e:
         # 发生错误时重定向到登录页面并显示错误信息
         error_message = f"Google 登录失败: {str(e)}"
-        login_url = f"{request.base_url.scheme}://{request.base_url.netloc}/login?error={error_message}"
+        login_url = f"https://thinkso.io/login?error={error_message}"
         return RedirectResponse(url=login_url)
 
 
