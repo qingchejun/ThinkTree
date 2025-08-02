@@ -17,6 +17,7 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 from starlette.requests import Request as StarletteRequest
 
+from ..core.database import get_db
 from ..core.config import settings
 from ..models.user import User
 from ..models.invitation import InvitationCode
