@@ -1,13 +1,16 @@
-# Render 部署配置 (最终修正版 - 已修复格式)
+# Render 部署配置 (最终版)
 services:
   # FastAPI 后端服务
   - type: web
     name: thinktree-backend
     env: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: python -c "from app.core.database import Base, engine; print('Creating database tables...'); Base.metadata.create_all(bind=engine); print('Tables created successfully.')" && uvicorn main:app --host 0.0.0.0 --port $PORT
-    # ⬆️上面这行是完整的startCommand
-    # ⬇️下面这行必须另起一行并保持相同的缩进
+    # 构建命令：必须先进入 backend 目录，才能找到 requirements.txt
+    buildCommand: cd backend && pip install -r requirements.txt
+    # 启动命令：
+    # 1. 必须先 cd backend 进入正确的目录。
+    # 2. 运行 python -c "..."，在代码中手动导入所有模型，确保 create_all() 能找到所有表。
+    # 3. 成功创建数据库表后，启动 uvicorn 服务。
+    startCommand: cd backend && python -c "import sys; import os; sys.path.append(os.getcwd()); from app.core.database import Base, engine; from app.models import User, Mindmap, InvitationCode, UserCredits, CreditTransaction, RedemptionCode, LoginToken; print('Imported all models. Creating database tables...'); Base.metadata.create_all(bind=engine); print('Tables created successfully.')" && uvicorn main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     envVars:
       - key: GEMINI_API_KEY
@@ -27,7 +30,7 @@ services:
       - key: UPLOAD_DIR
         value: ./uploads
 
-  # Next.js 前端服务
+  # Next.js 前端服务 (无改动)
   - type: web
     name: thinktree-frontend
     env: node
@@ -42,7 +45,7 @@ services:
       - key: PORT
         value: "10000"
 
-# PostgreSQL 数据库
+# PostgreSQL 数据库 (无改动)
 databases:
   - name: thinktree-db
-    plan: free # 免费版 PostgreSQL
+    plan: free
