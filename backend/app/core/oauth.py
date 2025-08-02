@@ -22,10 +22,14 @@ class GoogleOAuthClient:
     async def get_discovery_document(self) -> Dict[str, Any]:
         """获取 Google OAuth 发现文档"""
         if self._discovery_cache is None:
-            async with httpx.AsyncClient() as client:
-                response = await client.get(self.discovery_url)
-                response.raise_for_status()
-                self._discovery_cache = response.json()
+            # 硬编码已知的Google OAuth端点，避免网络问题
+            self._discovery_cache = {
+                "authorization_endpoint": "https://accounts.google.com/o/oauth2/v2/auth",
+                "token_endpoint": "https://oauth2.googleapis.com/token",
+                "userinfo_endpoint": "https://openidconnect.googleapis.com/v1/userinfo",
+                "issuer": "https://accounts.google.com",
+                "jwks_uri": "https://www.googleapis.com/oauth2/v3/certs"
+            }
         return self._discovery_cache
     
     async def get_authorization_url(self, redirect_uri: str, state: str = None) -> str:
