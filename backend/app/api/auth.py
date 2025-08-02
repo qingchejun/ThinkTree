@@ -530,40 +530,26 @@ async def login(request: Request, credentials: UserLogin, db: Session = Depends(
 # ===================================================================
 async def _send_login_code_email(email: str, code: str, magic_token: str = None):
     """
-    发送包含 HTML 和纯文本两种格式的登录验证码邮件
+    发送纯文本格式的登录验证码邮件
     """
-    # 1. 准备通用内容
+    # 1. 准备邮件内容
     username = email.split('@')[0]
-    magic_link_url = f"https://thinktree-backend.onrender.com/api/auth/callback?token={magic_token}"
     
-    # 2. 构建 HTML 正文 (用于现代邮件客户端)
-    html_body = f"""
-<p>Hi {username},</p>
-<p><b>{code}</b> is your login code. You can also click below to login to your account:</p>
-<p><a href="{magic_link_url}">Login to ThinkSo</a></p>
-<p>- ThinkSo.io</p>
-"""
-    
-    # 3. 构建纯文本正文 (用于兼容旧客户端或预览)
+    # 2. 构建纯文本正文
     text_body = f"""Hi {username},
 
-{code} is your login code. You can also use the link below to login to your account:
-
-{magic_link_url}
-
-- ThinkSo.io"""
+{code} is your login code."""
     
-    # 4. 创建包含两种格式的 MessageSchema 对象
+    # 3. 创建纯文本邮件
     from fastapi_mail import MessageSchema, MessageType
     message = MessageSchema(
         subject=f"👏 {code} is your login code.",
         recipients=[email],
-        body=text_body,   # 提供纯文本版本
-        html=html_body,   # 提供HTML版本
-        subtype=MessageType.html
+        body=text_body,
+        subtype=MessageType.plain
     )
     
-    # 5. 发送邮件
+    # 4. 发送邮件
     from ..utils.email_service import email_service
     await email_service.fm.send_message(message)
 
