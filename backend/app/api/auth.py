@@ -1364,6 +1364,12 @@ class OAuthStatusResponse(BaseModel):
     message: str
     client_configured: bool
 
+class MigrationResponse(BaseModel):
+    """数据库迁移响应模型"""
+    success: bool
+    message: str
+    output: Optional[str] = None
+
 
 @router.get("/google/status", response_model=OAuthStatusResponse)
 async def check_google_oauth_status():
@@ -1400,6 +1406,53 @@ async def check_google_oauth_status():
             status="错误",
             message=str(e),
             client_configured=False
+        )
+
+@router.post("/migrate", response_model=MigrationResponse)
+async def run_database_migration():
+    """
+    手动运行数据库迁移（紧急修复用）
+    """
+    import subprocess
+    import os
+    
+    try:
+        # 获取项目根目录
+        backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        
+        # 运行Alembic迁移
+        result = subprocess.run(
+            ['alembic', 'upgrade', 'head'],
+            capture_output=True,
+            text=True,
+            cwd=backend_dir,
+            timeout=120
+        )
+        
+        if result.returncode == 0:
+            return MigrationResponse(
+                success=True,
+                message="数据库迁移成功完成",
+                output=result.stdout
+            )
+        else:
+            return MigrationResponse(
+                success=False,
+                message=f"数据库迁移失败: {result.stderr}",
+                output=result.stdout
+            )
+            
+    except subprocess.TimeoutExpired:
+        return MigrationResponse(
+            success=False,
+            message="迁移执行超时",
+            output=None
+        )
+    except Exception as e:
+        return MigrationResponse(
+            success=False,
+            message=f"迁移执行异常: {str(e)}",
+            output=None
         )
 
 @router.get("/google/test-info")

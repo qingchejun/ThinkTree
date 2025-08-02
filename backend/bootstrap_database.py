@@ -423,9 +423,47 @@ class DatabaseBootstrapper:
             return False
 
 
+def force_run_migrations():
+    """强制运行Alembic迁移"""
+    print("🚀 强制运行数据库迁移...")
+    try:
+        # 直接运行 alembic upgrade head
+        result = subprocess.run(
+            ['alembic', 'upgrade', 'head'],
+            capture_output=True,
+            text=True,
+            cwd=os.path.dirname(os.path.abspath(__file__))
+        )
+        
+        if result.returncode == 0:
+            print("✅ Alembic迁移成功完成")
+            print(f"📋 迁移输出:\n{result.stdout}")
+            return True
+        else:
+            print(f"❌ Alembic迁移失败: {result.stderr}")
+            return False
+            
+    except Exception as e:
+        print(f"❌ 运行Alembic迁移时出错: {e}")
+        return False
+
 def main():
     """主函数"""
     try:
+        # 检查命令行参数
+        force_migrate = "--migrate" in sys.argv
+        
+        if force_migrate:
+            print("🔧 强制迁移模式")
+            print("=" * 80)
+            success = force_run_migrations()
+            if success:
+                print("✅ 强制迁移成功完成")
+                sys.exit(0)
+            else:
+                print("❌ 强制迁移失败")
+                sys.exit(1)
+        
         bootstrapper = DatabaseBootstrapper()
         success = bootstrapper.bootstrap()
         
