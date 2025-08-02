@@ -1833,8 +1833,15 @@ async def run_database_migration():
             }
         
         # 2. 兼容性修复：Render的URL可能以'postgres://'开头，需要转换为'postgresql://'
+        original_url = prod_db_url
         if prod_db_url.startswith("postgres://"):
             prod_db_url = prod_db_url.replace("postgres://", "postgresql://", 1)
+        
+        # 🔍 诊断日志：打印迁移端点使用的数据库URL
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"🔍 迁移端点从环境变量获取的原始URL: {original_url}")
+        logger.info(f"🔍 迁移端点即将连接到: {prod_db_url}")
         
         # 捕获 Alembic 输出
         stdout_capture = io.StringIO()
@@ -1846,6 +1853,7 @@ async def run_database_migration():
             
             # 4. 🔥 关键修复：强制用生产环境的URL覆盖alembic的默认配置
             alembic_cfg.set_main_option("sqlalchemy.url", prod_db_url)
+            logger.info(f"🔍 Alembic配置已设置为: {prod_db_url}")
             
             # 5. 在正确的生产数据库上执行迁移
             command.upgrade(alembic_cfg, "head")

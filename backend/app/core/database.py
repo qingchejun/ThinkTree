@@ -17,6 +17,13 @@ engine = create_engine(
     echo=settings.debug  # 在调试模式下显示 SQL 语句
 )
 
+# 🔍 诊断日志：打印主应用使用的数据库URL
+import logging
+logger = logging.getLogger(__name__)
+logger.info(f"🔍 主应用引擎已连接到: {engine.url}")
+logger.info(f"🔍 原始数据库URL: {settings.database_url}")
+logger.info(f"🔍 修复后URL: {settings.database_url_fixed}")
+
 # 创建会话工厂
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
