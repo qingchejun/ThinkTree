@@ -530,22 +530,22 @@ async def login(request: Request, credentials: UserLogin, db: Session = Depends(
 # ===================================================================
 async def _send_login_code_email(email: str, code: str, magic_token: str = None):
     """
-    发送登录验证码邮件的辅助函数 - 升级版
+    Send login verification code email - English version
     """
-    # 从邮箱地址中提取用户名
+    # Extract username from email address  
     username = email.split('@')[0]
     
-    # 构建魔法链接URL（指向后端API）
+    # Build magic link URL (pointing to backend API)
     backend_url = os.getenv("BACKEND_URL", "https://thinktree-backend.onrender.com")
     magic_link_url = f"{backend_url}/api/auth/callback?token={magic_token}" if magic_token else None
     
-    # 升级版HTML邮件模板
+    # English HTML email template
     html_content = f"""
     <!DOCTYPE html>
     <html>
     <head>
         <meta charset="utf-8">
-        <title>ThinkSo 登录验证</title>
+        <title>ThinkSo Login Verification</title>
         <style>
             body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background-color: #f5f5f5; margin: 0; padding: 20px; }}
             .container {{ max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }}
@@ -560,87 +560,53 @@ async def _send_login_code_email(email: str, code: str, magic_token: str = None)
             .divider span {{ background: white; padding: 0 15px; color: #666; font-size: 14px; }}
             .footer {{ background-color: #f8f9fa; padding: 20px; text-align: center; color: #666; font-size: 14px; }}
             .logo {{ font-size: 24px; margin-bottom: 10px; }}
-            .warning {{ background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; padding: 15px; margin: 20px 0; color: #856404; }}
+            .simple-text {{ font-size: 16px; color: #333; margin: 20px 0; }}
         </style>
     </head>
     <body>
         <div class="container">
-            <div class="header">
-                <div class="logo">🧠 ThinkSo</div>
-                <h1>Hi {username}!</h1>
-                <p>您的登录验证码已准备好</p>
-            </div>
             <div class="content">
-                <p>您正在登录 ThinkSo，请使用以下验证码完成登录：</p>
+                <p class="simple-text">Hi {username},</p>
+                
+                <p class="simple-text">{code} is your login code. You can also click below to login to your account:</p>
                 
                 <div class="code-box">{code}</div>
-                
-                <div class="warning">
-                    <strong>⏰ 重要提醒：</strong> 此验证码将在 <strong>10 分钟</strong> 后失效，请尽快使用。
-                </div>
     """
     
-    # 如果有魔法令牌，添加魔法链接部分
+    # Add magic link section if token exists
     if magic_link_url:
         html_content += f"""
-                <div class="divider">
-                    <hr><span>或者</span>
-                </div>
-                
-                <div style="text-align: center;">
-                    <p>点击下面的按钮可以直接登录，无需输入验证码：</p>
-                    <a href="{magic_link_url}" class="magic-button">🪄 一键登录到 ThinkSo</a>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="{magic_link_url}" class="magic-button">Login to ThinkSo</a>
                 </div>
         """
     
     html_content += f"""
-                <div style="margin-top: 30px; font-size: 14px; color: #666;">
-                    <p><strong>🔒 安全提示：</strong></p>
-                    <ul>
-                        <li>请勿将验证码分享给他人</li>
-                        <li>ThinkSo 不会主动询问您的验证码</li>
-                        <li>如果您没有请求登录，请忽略此邮件</li>
-                    </ul>
-                </div>
-            </div>
-            <div class="footer">
-                <p>此邮件由 ThinkSo 系统自动发送，请勿回复</p>
-                <p>© 2024 ThinkSo Team. All rights reserved.</p>
+                <p class="simple-text">- ThinkSo.io</p>
             </div>
         </div>
     </body>
     </html>
     """
     
-    # 纯文本版本
-    text_content = f"""
-    Hi {username}!
-    
-    您正在登录 ThinkSo，您的验证码是：{code}
-    
-    此验证码将在 10 分钟后失效，请尽快使用。
-    """
+    # Plain text version
+    text_content = f"""Hi {username},
+
+{code} is your login code. You can also click below to login to your account:"""
     
     if magic_link_url:
         text_content += f"""
-    
-    您也可以点击以下链接直接登录：
-    {magic_link_url}
-        """
+
+Login to ThinkSo: {magic_link_url}"""
     
     text_content += f"""
-    
-    安全提示：
-    - 请勿将验证码分享给他人
-    - 如果您没有请求登录，请忽略此邮件
-    
-    ThinkSo 团队
-    """
+
+- ThinkSo.io"""
     
     # 使用 fastapi_mail 的 MessageSchema 类
     from fastapi_mail import MessageSchema, MessageType
     message = MessageSchema(
-        subject=f"Hi {username}! 您的 ThinkSo 登录验证码：{code}",
+        subject=f"👏{code} is your login code.",
         recipients=[email],
         body=text_content,
         html=html_content,
