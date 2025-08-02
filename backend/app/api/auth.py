@@ -1357,6 +1357,50 @@ class GoogleUserInfo(BaseModel):
     avatar_url: Optional[str] = None
     is_new_user: bool
 
+class OAuthStatusResponse(BaseModel):
+    """OAuth状态响应模型"""
+    service: str
+    status: str
+    message: str
+    client_configured: bool
+
+
+@router.get("/google/status", response_model=OAuthStatusResponse)
+async def check_google_oauth_status():
+    """
+    检查 Google OAuth 配置状态（调试用）
+    """
+    try:
+        from ..core.oauth import get_google_oauth_client
+        from ..core.config import settings
+        
+        client_configured = bool(settings.google_client_id and settings.google_client_secret)
+        
+        if not client_configured:
+            return OAuthStatusResponse(
+                service="Google OAuth",
+                status="未配置",
+                message="缺少GOOGLE_CLIENT_ID或GOOGLE_CLIENT_SECRET环境变量",
+                client_configured=False
+            )
+        
+        # 尝试创建客户端
+        google_client = get_google_oauth_client()
+        
+        return OAuthStatusResponse(
+            service="Google OAuth",
+            status="已配置",
+            message=f"客户端ID: {settings.google_client_id[:10]}...",
+            client_configured=True
+        )
+        
+    except Exception as e:
+        return OAuthStatusResponse(
+            service="Google OAuth",
+            status="错误",
+            message=str(e),
+            client_configured=False
+        )
 
 @router.get("/google/test-info")
 async def test_google_user_info(current_user: User = Depends(get_current_user)):

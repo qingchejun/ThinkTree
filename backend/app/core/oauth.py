@@ -16,7 +16,6 @@ class GoogleOAuthClient:
     def __init__(self):
         self.client_id = settings.google_client_id
         self.client_secret = settings.google_client_secret
-        self.discovery_url = "https://accounts.google.com/.well-known/openid_configuration"
         self._discovery_cache = None
     
     async def get_discovery_document(self) -> Dict[str, Any]:
