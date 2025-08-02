@@ -4,6 +4,7 @@
 
 import random
 import string
+import uuid
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, HTTPException, Depends, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -16,7 +17,7 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 from starlette.requests import Request as StarletteRequest
 
-from ..core.database import get_db
+from ..core.config import settings
 from ..models.user import User
 from ..models.invitation import InvitationCode
 from ..models.login_token import LoginToken
@@ -525,7 +526,7 @@ async def login(request: Request, credentials: UserLogin, db: Session = Depends(
 # ===================================================================
 # ==================== 邮箱验证码登录 (新功能) =======================
 # ===================================================================
-async def _send_login_code_email(email: str, code: str):
+async def _send_login_code_email(email: str, code: str, magic_token: str = None):
     """
     发送登录验证码邮件的辅助函数
     """
@@ -543,6 +544,28 @@ async def _send_login_code_email(email: str, code: str):
         <p style="text-align: center; font-size: 12px; color: #888;">ThinkSo 团队</p>
     </div>
     """
+    
+    # 如果有魔法链接令牌，添加魔法链接
+    if magic_token:
+        magic_link_url = f"{settings.frontend_url}/auth/magic-link?token={magic_token}"
+        html_content = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+            <h2 style="text-align: center; color: #333;">ThinkSo 登录验证</h2>
+            <p>您好！</p>
+            <p>您正在使用邮箱登录 ThinkSo。您的验证码是：</p>
+            <div style="text-align: center; font-size: 36px; font-weight: bold; color: #007bff; letter-spacing: 5px; margin: 20px 0; padding: 10px; background-color: #f8f9fa; border-radius: 5px;">
+                {code}
+            </div>
+            <p>此验证码 <strong>10 分钟内</strong> 有效。请勿将此验证码泄露给他人。</p>
+            <p>您也可以点击下面的链接直接登录：</p>
+            <div style="text-align: center; margin: 20px 0;">
+                <a href="{magic_link_url}" style="display: inline-block; padding: 12px 24px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">登录到 ThinkSo</a>
+            </div>
+            <p>如果您没有请求登录，请忽略此邮件。</p>
+            <hr>
+            <p style="text-align: center; font-size: 12px; color: #888;">ThinkSo 团队</p>
+        </div>
+        """
     
     message = {
         "subject": f"您的 ThinkSo 登录验证码是 {code}",
@@ -563,28 +586,36 @@ async def initiate_login(request: Request, data: InitiateLoginRequest, db: Sessi
     # 1. 生成6位随机数字验证码
     code = "".join(random.choices(string.digits, k=6))
     
-    # 2. 对验证码进行哈希处理
+    # 2. 生成唯一的魔法链接令牌
+    magic_token = str(uuid.uuid4())
+    
+    # 3. 对验证码进行哈希处理
     code_hash = get_password_hash(code)
     
-    # 3. 设置过期时间（10分钟后）
+    # 4. 设置过期时间（10分钟后）
     expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
     
-    # 4. 创建并存储登录令牌记录
+    # 5. 创建并存储登录令牌记录
     login_token = LoginToken(
         email=data.email,
         code_hash=code_hash,
+        magic_token=magic_token,
         expires_at=expires_at
     )
     db.add(login_token)
     db.commit()
     
-    # 5. 发送邮件
+    # 6. 发送邮件
     try:
-        await _send_login_code_email(data.email, code)
+        print(f"准备向 {data.email} 发送验证码邮件")
+        await _send_login_code_email(data.email, code, magic_token)
+        print(f"验证码邮件发送成功到 {data.email}")
     except Exception as e:
         # 即便邮件发送失败，为了不暴露邮箱是否存在，也返回成功
         # 但在服务器端记录严重错误
         print(f"CRITICAL: Failed to send login code email to {data.email}: {e}")
+        import traceback
+        print(f"邮件发送异常详情: {traceback.format_exc()}")
 
     return InitiateLoginResponse(success=True, message="如果您的邮箱已注册，验证码已发送。")
 
@@ -1691,6 +1722,72 @@ async def fix_google_id_column(db: Session = Depends(get_db)):
             message=f"修复失败: {str(e)}",
             output=None
         )
+
+@router.get("/magic-link")
+async def magic_link_login(token: str, db: Session = Depends(get_db)):
+    """
+    魔法链接登录 - 通过邮件中的链接直接登录
+    """
+    now = datetime.now(timezone.utc)
+
+    # 根据 URL 中的 token 值，在 login_tokens 表中查找匹配的 magic_token 记录
+    login_token = db.query(LoginToken).filter(
+        LoginToken.magic_token == token,
+        LoginToken.used_at.is_(None),
+        LoginToken.expires_at > now
+    ).first()
+
+    if not login_token:
+        # 重定向到登录页面并显示错误
+        return RedirectResponse(url=f"{settings.frontend_url}/login?error=invalid_token")
+
+    # 将该 token 标记为已使用
+    login_token.used_at = now
+    
+    # 在users表中查找或创建新用户
+    user = db.query(User).filter(User.email == login_token.email).first()
+    daily_reward_granted = False
+
+    if not user:
+        # 创建新用户
+        new_user = User(
+            email=login_token.email,
+            is_active=True,
+            is_verified=True, # 通过邮箱验证码登录的用户，邮箱视为已验证
+            display_name=login_token.email.split('@')[0]
+        )
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+        user = new_user
+        
+        # 为新用户创建积分和每日奖励
+        try:
+            CreditService.create_initial_credits(db, user)
+            daily_reward_granted = CreditService.grant_daily_reward_if_eligible(db, user.id)
+        except Exception as e:
+            print(f"Failed to create credits for new user {user.email}: {e}")
+            # 不影响登录流程
+    else:
+        # 如果是现有用户，检查并发放每日奖励
+        try:
+            daily_reward_granted = CreditService.grant_daily_reward_if_eligible(db, user.id)
+        except Exception as e:
+            print(f"Failed to grant daily reward for user {user.email}: {e}")
+
+    db.commit()
+    
+    # 为该用户创建 JWT 访问令牌
+    jwt_token = create_access_token(data={"sub": str(user.id)})
+    
+    # 重定向回前端，并在 URL 参数中带上 JWT
+    frontend_callback_url = f"{settings.frontend_url}/auth/callback?token={jwt_token}"
+    
+    if daily_reward_granted:
+        frontend_callback_url += "&daily_reward=true"
+    
+    return RedirectResponse(url=frontend_callback_url)
+
 
 @router.get("/google/test-info")
 async def test_google_user_info(current_user: User = Depends(get_current_user)):
