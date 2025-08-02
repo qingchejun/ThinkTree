@@ -1019,3 +1019,108 @@ async def get_redemption_codes_list(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="获取兑换码列表失败，请稍后重试"
         )
+
+
+# ========================================
+# 临时管理员设置端点 (一次性使用)
+# ⚠️ 使用后请立即删除此部分代码！
+# ========================================
+
+import os
+
+# 临时安全密钥 - 从环境变量获取
+TEMP_ADMIN_SECRET = os.getenv("TEMP_ADMIN_SECRET", "CHANGE_THIS_SECRET_KEY_2024")
+
+class TempAdminSetupResponse(BaseModel):
+    """临时管理员设置响应模型"""
+    success: bool
+    message: str
+    user_info: Optional[dict] = None
+    admin_permissions: Optional[List[str]] = None
+
+@router.post("/temp-setup-admin", response_model=TempAdminSetupResponse)
+async def temp_setup_admin(
+    email: str = Query(..., description="要设置为管理员的用户邮箱"),
+    secret: str = Query(..., description="安全密钥"),
+    db: Session = Depends(get_db)
+):
+    """
+    临时管理员设置端点
+    ⚠️ 仅用于一次性设置，使用后请删除此端点！
+    
+    使用方法:
+    POST /api/admin/temp-setup-admin?email=thinktree.app@gmail.com&secret=YOUR_SECRET
+    """
+    # 验证安全密钥
+    if secret != TEMP_ADMIN_SECRET:
+        logger.warning(f"临时管理员设置尝试失败：密钥错误，邮箱={email}")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, 
+            detail="Invalid secret key"
+        )
+    
+    try:
+        # 查找用户
+        user = db.query(User).filter(User.email == email).first()
+        
+        if not user:
+            logger.warning(f"临时管理员设置失败：用户不存在，邮箱={email}")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"User with email {email} not found. Please ensure the user is registered first."
+            )
+        
+        # 检查是否已经是管理员
+        if user.is_superuser:
+            logger.info(f"用户 {email} 已经是管理员")
+            return TempAdminSetupResponse(
+                success=True,
+                message=f"User {email} is already an admin",
+                user_info={
+                    "id": user.id,
+                    "email": user.email,
+                    "display_name": user.display_name,
+                    "is_superuser": user.is_superuser,
+                    "is_active": user.is_active,
+                    "is_verified": user.is_verified
+                }
+            )
+        
+        # 设置为管理员
+        user.is_superuser = True
+        user.is_active = True
+        user.is_verified = True
+        
+        db.commit()
+        
+        logger.info(f"✅ 成功将用户 {email} (ID: {user.id}) 设置为管理员")
+        
+        return TempAdminSetupResponse(
+            success=True,
+            message=f"Successfully promoted {email} to admin",
+            user_info={
+                "id": user.id,
+                "email": user.email,
+                "display_name": user.display_name,
+                "is_superuser": user.is_superuser,
+                "is_active": user.is_active,
+                "is_verified": user.is_verified
+            },
+            admin_permissions=[
+                "Access admin dashboard",
+                "Manage users",
+                "Manage invitation codes", 
+                "Generate redemption codes",
+                "View system statistics"
+            ]
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"临时管理员设置失败: {str(e)}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to set admin: {str(e)}"
+        )
