@@ -568,12 +568,30 @@ async def _send_login_code_email(email: str, code: str, magic_token: str = None)
         </div>
         """
     
-    message = {
-        "subject": f"您的 ThinkSo 登录验证码是 {code}",
-        "recipients": [email],
-        "body": html_content,
-        "subtype": "html"
-    }
+    # 纯文本版本
+    text_content = f"""
+    ThinkSo 登录验证
+    
+    您好！
+    
+    您正在使用邮箱登录 ThinkSo。您的验证码是：{code}
+    
+    此验证码 10 分钟内有效。请勿将此验证码泄露给他人。
+    
+    如果您没有请求登录，请忽略此邮件。
+    
+    ThinkSo 团队
+    """
+    
+    # 使用 fastapi_mail 的 MessageSchema 类
+    from fastapi_mail import MessageSchema, MessageType
+    message = MessageSchema(
+        subject=f"您的 ThinkSo 登录验证码是 {code}",
+        recipients=[email],
+        body=text_content,
+        html=html_content,
+        subtype=MessageType.html
+    )
     
     from ..utils.email_service import email_service
     await email_service.fm.send_message(message)
