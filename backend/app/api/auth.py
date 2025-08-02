@@ -1455,6 +1455,65 @@ async def run_database_migration():
             output=None
         )
 
+@router.post("/fix-google-id", response_model=MigrationResponse)
+async def fix_google_id_column(db: Session = Depends(get_db)):
+    """
+    直接修复google_id字段（紧急修复用）
+    """
+    try:
+        # 直接使用SQL添加google_id字段
+        sql_commands = [
+            # 检查字段是否存在
+            """
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name='users' AND column_name='google_id'
+            """,
+            # 如果不存在则添加字段
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id VARCHAR(100)",
+            # 添加唯一索引
+            "CREATE UNIQUE INDEX IF NOT EXISTS ix_users_google_id ON users (google_id)",
+            # 将password_hash改为可空
+            "ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL"
+        ]
+        
+        results = []
+        
+        for sql in sql_commands:
+            try:
+                if "SELECT" in sql:
+                    result = db.execute(text(sql))
+                    columns = [row[0] for row in result.fetchall()]
+                    if 'google_id' in columns:
+                        results.append("✅ google_id字段已存在")
+                        continue
+                    else:
+                        results.append("⚠️ google_id字段不存在，准备添加")
+                else:
+                    db.execute(text(sql))
+                    results.append(f"✅ 执行成功: {sql[:50]}...")
+            except Exception as e:
+                if "already exists" in str(e) or "duplicate" in str(e).lower():
+                    results.append(f"✅ 已存在: {sql[:50]}...")
+                else:
+                    results.append(f"❌ 失败: {sql[:50]}... - {str(e)}")
+        
+        db.commit()
+        
+        return MigrationResponse(
+            success=True,
+            message="Google ID字段修复完成",
+            output="\n".join(results)
+        )
+        
+    except Exception as e:
+        db.rollback()
+        return MigrationResponse(
+            success=False,
+            message=f"修复失败: {str(e)}",
+            output=None
+        )
+
 @router.get("/google/test-info")
 async def test_google_user_info(current_user: User = Depends(get_current_user)):
     """
