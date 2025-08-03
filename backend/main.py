@@ -84,6 +84,46 @@ async def root():
 async def health_check():
     return {"status": "healthy", "version": "3.0.0"}
 
+# 临时管理员设置端点 - 使用后请删除
+@app.post("/temp-set-admin/{email}")
+async def temp_set_admin(email: str):
+    """临时设置管理员权限 - 仅用于初始化"""
+    from sqlalchemy.orm import sessionmaker
+    from app.core.database import engine
+    
+    SessionLocal = sessionmaker(bind=engine)
+    db = SessionLocal()
+    
+    try:
+        # 查找用户
+        user = db.query(User).filter(User.email == email).first()
+        
+        if not user:
+            return {"error": f"用户 {email} 不存在，请先通过 Google OAuth 登录"}
+            
+        # 设置管理员权限
+        user.is_superuser = True
+        user.is_active = True
+        user.is_verified = True
+        
+        db.commit()
+        
+        return {
+            "success": True,
+            "message": f"用户 {email} 已设置为管理员",
+            "user_id": user.id,
+            "email": user.email,
+            "display_name": user.display_name,
+            "is_superuser": user.is_superuser,
+            "google_id": user.google_id
+        }
+        
+    except Exception as e:
+        db.rollback()
+        return {"error": f"设置失败: {str(e)}"}
+    finally:
+        db.close()
+
 if __name__ == "__main__":
     import uvicorn
     import logging
