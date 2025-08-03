@@ -533,28 +533,45 @@ async def login(request: Request, credentials: UserLogin, db: Session = Depends(
 # ===================================================================
 async def _send_login_code_email(email: str, code: str, magic_token: str = None):
     """
-    发送纯文本格式的登录验证码邮件
+    使用 Resend 发送魔法链接登录邮件
     """
     # 1. 准备邮件内容
     username = email.split('@')[0]
     
-    # 2. 构建纯文本正文
-    text_body = f"""Hi {username},
-
-{code} is your login code."""
+    # 2. 构建魔法链接 URL（指向后端 callback 端点）
+    # 注意：这应该指向后端的 callback 端点，而不是前端
+    backend_base_url = "https://thinktree-backend.onrender.com"  # 或使用环境变量
+    magic_link_url = f"{backend_base_url}/api/auth/callback?token={magic_token}" if magic_token else None
     
-    # 3. 创建纯文本邮件
-    from fastapi_mail import MessageSchema, MessageType
-    message = MessageSchema(
-        subject=f"👏 {code} is your login code.",
-        recipients=[email],
-        body=text_body,
-        subtype=MessageType.plain
-    )
-    
-    # 4. 发送邮件
+    # 3. 使用新的 Resend 魔法链接邮件服务
     from ..utils.email_service import email_service
-    await email_service.fm.send_message(message)
+    
+    if magic_link_url:
+        # 发送包含魔法链接的邮件
+        await email_service.send_magic_link_email(
+            user_email=email,
+            user_name=username,
+            login_code=code,
+            magic_link_url=magic_link_url
+        )
+    else:
+        # 如果没有 magic_token，回退到旧的邮件发送方式（但这种情况不应该发生）
+        # 旧的登录邮件发送逻辑（已替换为 Resend）
+        # text_body = f"""Hi {username},
+        # 
+        # {code} is your login code."""
+        # 
+        # from fastapi_mail import MessageSchema, MessageType
+        # message = MessageSchema(
+        #     subject=f"👏 {code} is your login code.",
+        #     recipients=[email],
+        #     body=text_body,
+        #     subtype=MessageType.plain
+        # )
+        # await email_service.fm.send_message(message)
+        
+        print(f"⚠️ 魔法链接令牌缺失，无法发送完整的登录邮件到 {email}")
+        return False
 
 @router.post("/initiate-login", response_model=InitiateLoginResponse)
 @limiter.limit("5/minute")

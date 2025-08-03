@@ -345,6 +345,58 @@ class EmailService:
             print(f"❌ Resend 欢迎邮件发送失败: {str(e)}")
             return False
     
+    async def send_magic_link_email(self, user_email: EmailStr, user_name: str, login_code: str, magic_link_url: str) -> bool:
+        """
+        使用 Resend 发送魔法链接登录邮件
+        """
+        print(f"--- DEBUG: Attempting to send magic link email to {user_email} ---")
+        
+        try:
+            # 检查是否配置了 Resend API 密钥
+            resend_api_key = os.getenv('RESEND_API_KEY')
+            if not resend_api_key:
+                print("--- DEBUG: FATAL - RESEND_API_KEY environment variable not found. ---")
+                print("⚠️ RESEND_API_KEY 环境变量未配置，跳过 Resend 魔法链接邮件发送")
+                return False
+            
+            # 初始化 Resend 客户端
+            resend.api_key = resend_api_key
+            
+            # HTML 邮件内容
+            html_content = f"""
+            <div style="font-family: Arial, sans-serif; line-height: 1.8; color: #333;">
+              <p>Hi {user_name},</p>
+              <p>{login_code} is your login code. You can also click below to login to your account：</p>
+              <p>
+                <a href="{magic_link_url}" style="display: inline-block; padding: 12px 24px; font-size: 16px; font-weight: bold; color: #ffffff; background-color: #007bff; text-decoration: none; border-radius: 5px;">
+                  Login to Thinkso
+                </a>
+              </p>
+              <p>- Thinkso.io</p>
+            </div>
+            """
+            
+            # 发送邮件
+            params = {
+                "from": "ThinkSo Login <noreply@thinkso.io>",
+                "to": [user_email],
+                "subject": f"👏 {login_code} is your login code.",
+                "html": html_content
+            }
+            
+            print("--- DEBUG: Calling Resend API... ---")
+            # 使用 Resend 发送邮件
+            response = resend.Emails.send(params)
+            print(f"--- DEBUG: Resend API call successful. Response: {response} ---")
+            
+            print(f"✅ Resend 魔法链接邮件发送成功到 {user_email}，Message ID: {response.get('id', 'N/A')}")
+            return True
+            
+        except Exception as e:
+            print(f"--- DEBUG: Resend API call FAILED. Error: {e} ---")
+            print(f"❌ Resend 魔法链接邮件发送失败: {str(e)}")
+            return False
+    
     async def send_password_reset_email(self, email: EmailStr, user_name: str, reset_link: str) -> bool:
         """发送密码重置邮件"""
         try:
