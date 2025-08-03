@@ -630,12 +630,10 @@ async def initiate_login(request: Request, data: InitiateLoginRequest, db: Sessi
             db.add(login_token)
             db.commit()
             
-            # 如果是新用户但没有invitation_code字段，返回错误
+            # 如果是新用户但没有invitation_code字段，暂时允许注册
             if not existing_user and invitation_code_to_store:
-                raise HTTPException(
-                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                    detail="邀请码功能正在维护中，请稍后重试"
-                )
+                print(f"Warning: 新用户 {data.email} 提供了邀请码但数据库未迁移，暂时允许注册")
+                # 暂时不阻止新用户注册
         else:
             raise e
     
