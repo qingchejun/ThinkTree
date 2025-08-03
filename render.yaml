@@ -36,17 +36,17 @@ services:
       - key: UPLOAD_DIR
         value: ./uploads
       - key: MAIL_FROM
-        value: hello@thinkso.io
+        value: thinktree.app@gmail.com
       - key: MAIL_PORT
         value: 587
       - key: MAIL_SERVER
-        value: smtp.sendgrid.net
+        value: smtp.gmail.com
       - key: MAIL_SSL_TLS
         value: false
       - key: MAIL_STARTTLS
         value: true
       - key: MAIL_USERNAME
-        value: apikey
+        value: thinktree.app@gmail.com
 
   # Next.js 前端服务
   - type: web
