@@ -72,38 +72,7 @@ def upgrade() -> None:
     except Exception as e:
         print(f"⚠️ 处理枚举类型时出现警告: {e}")
 
-    # 3. 确保share_token字段存在于mindmaps表中
-    try:
-        connection = op.get_bind()
-        field_exists = False
-        
-        # 检查字段是否已存在
-        if connection.dialect.name == 'postgresql':
-            result = connection.execute(sa.text("""
-                SELECT column_name 
-                FROM information_schema.columns 
-                WHERE table_name = 'mindmaps' 
-                AND column_name = 'share_token'
-            """))
-            field_exists = result.fetchone() is not None
-        else:
-            # SQLite fallback
-            result = connection.execute(sa.text("""
-                PRAGMA table_info(mindmaps)
-            """))
-            columns = [row[1] for row in result.fetchall()]
-            field_exists = 'share_token' in columns
-        
-        if not field_exists:
-            op.add_column('mindmaps', sa.Column('share_token', sa.String(length=64), nullable=True))
-            print("✅ share_token 字段已添加到 mindmaps 表")
-        else:
-            print("✅ share_token 字段已存在于 mindmaps 表")
-            
-    except Exception as e:
-        print(f"⚠️ 处理 share_token 字段时出现警告: {e}")
-
-    # 4. 确保credit相关表存在
+    # 3. 确保credit相关表存在
     try:
         connection = op.get_bind()
         

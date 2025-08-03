@@ -46,23 +46,7 @@ def upgrade() -> None:
         try:
             # 检查并创建必要的字段
             
-            # 1. 检查 mindmaps.share_token 字段
-            result = connection.execute(sa.text("""
-                SELECT column_name 
-                FROM information_schema.columns 
-                WHERE table_name = 'mindmaps' 
-                AND column_name = 'share_token'
-            """))
-            
-            if not result.fetchone():
-                connection.execute(sa.text("""
-                    ALTER TABLE mindmaps ADD COLUMN share_token VARCHAR(64)
-                """))
-                print("✅ share_token 字段已添加")
-            else:
-                print("✅ share_token 字段已存在")
-            
-            # 2. 检查 login_tokens.invitation_code 字段
+            # 1. 检查 login_tokens.invitation_code 字段
             result = connection.execute(sa.text("""
                 SELECT column_name 
                 FROM information_schema.columns 
@@ -77,25 +61,6 @@ def upgrade() -> None:
                 print("✅ invitation_code 字段已添加")
             else:
                 print("✅ invitation_code 字段已存在")
-            
-            # 3. 检查并创建必要的索引
-            try:
-                # 检查索引是否存在
-                result = connection.execute(sa.text("""
-                    SELECT indexname FROM pg_indexes 
-                    WHERE tablename = 'mindmaps' AND indexname = 'ix_mindmaps_share_token'
-                """))
-                
-                if not result.fetchone():
-                    connection.execute(sa.text("""
-                        CREATE UNIQUE INDEX ix_mindmaps_share_token ON mindmaps (share_token)
-                    """))
-                    print("✅ share_token 索引已创建")
-                else:
-                    print("✅ share_token 索引已存在")
-                    
-            except Exception as e:
-                print(f"⚠️ 索引创建警告: {e}")
             
             trans.commit()
             print("✅ 所有数据库结构修复完成")
