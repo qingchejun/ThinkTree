@@ -10,16 +10,24 @@ from alembic import context
 # 添加应用路径到 Python 路径
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-# 导入应用配置和模型
-from app.core.config import settings
+# 导入应用模型
 from app.core.database import Base
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
 
-# 动态设置数据库 URL
-config.set_main_option('sqlalchemy.url', settings.database_url_fixed)
+# 从环境变量中获取 DATABASE_URL
+database_url = os.environ.get("DATABASE_URL")
+if not database_url:
+    raise ValueError("DATABASE_URL 环境变量未设置")
+
+# 修复 Render 提供的 URL 格式，以兼容 Alembic
+if database_url.startswith("postgres://"):
+    database_url = database_url.replace("postgres://", "postgresql://", 1)
+
+# 将我们从环境变量中获取的 URL 设置为 Alembic 的配置
+config.set_main_option('sqlalchemy.url', database_url)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
