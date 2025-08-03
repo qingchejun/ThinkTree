@@ -229,22 +229,17 @@ export function AuthProvider({ children }) {
         } catch (error) {
           console.log('❌ 登录状态检查失败:', error)
         }
-          
-          // 用户数据已在上面设置，这里不需要额外处理
-        } else {
-          console.log('ℹ️ 未检测到登录状态')
+      } catch (error) {
+        console.error('💥 初始化过程中出错:', error)
+        if (mounted) {
+          setUser(null)
         }
-              } catch (error) {
-          console.error('💥 初始化过程中出错:', error)
-          if (mounted) {
-            setUser(null)
-          }
-        } finally {
-          if (mounted) {
-            console.log('🏁 认证状态初始化完成 - 设置isLoading=false')
-            setIsLoading(false)
-          }
+      } finally {
+        if (mounted) {
+          console.log('🏁 认证状态初始化完成 - 设置isLoading=false')
+          setIsLoading(false)
         }
+      }
     }
 
     initializeAuth()
