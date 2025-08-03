@@ -77,19 +77,19 @@ const LandingPage = () => {
         </div>
         
         {/* 主标题 - 产品的核心价值主张 */}
-        <h1 className="text-5xl md:text-7xl font-extrabold text-gray-900 leading-tight">
+        <h1 className="text-5xl md:text-7xl font-extrabold text-gray-900 leading-tight mb-16">
           一念所至，即刻成图
         </h1>
         
         {/* 主要CTA按钮 - 引导用户开始使用产品 */}
-        <div className="mt-8 flex justify-center">
+        <div className="mt-8 flex justify-center mb-16">
           <button onClick={() => setIsLoginModalOpen(true)} className="bg-gray-800 text-white px-12 py-4 rounded-lg font-bold text-xl shadow-lg hover:bg-black transition-all transform hover:scale-105">
             免费生成思维导图
           </button>
         </div>
 
         {/* 福利横幅 - 吸引用户注册的限时优惠信息 */}
-        <div className="mt-8 max-w-2xl mx-auto">
+        <div className="mt-0 max-w-2xl mx-auto">
           <div className="bg-gradient-to-r from-orange-50 to-yellow-50 border border-orange-200 rounded-2xl p-4 text-center">
             <p className="text-orange-800 font-medium">
               🎉 限时内测福利！注册即送 1000 积分，畅享10万字文档处理额度！
