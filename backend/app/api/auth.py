@@ -1625,27 +1625,24 @@ async def google_callback(request: StarletteRequest, db: Session = Depends(get_d
                 db.refresh(existing_user)
                 db_user = existing_user
             else:
-                # 创建新的 Google 用户
-                new_user = User(
-                    email=email,
-                    display_name=name,
-                    google_id=google_id,
-                    avatar_url=avatar_url,
-                    is_active=True,
-                    is_verified=True,  # Google 用户默认已验证邮箱
-                    password_hash=None  # Google 用户不需要密码
-                )
+                # 新的 Google 用户需要邀请码验证
+                # 临时存储 Google 用户信息到 session，重定向到邀请码验证页面
+                import urllib.parse
                 
-                db.add(new_user)
-                db.commit()
-                db.refresh(new_user)
-                db_user = new_user
+                # 构建包含 Google 用户信息的重定向 URL
+                google_data = {
+                    'google_id': google_id,
+                    'email': email,
+                    'name': name,
+                    'avatar_url': avatar_url or ''
+                }
                 
-                # 为新用户创建初始积分记录
-                try:
-                    CreditService.create_initial_credits(db, new_user)
-                except Exception as credit_error:
-                    print(f"为 Google 用户 {new_user.email} 创建初始积分失败: {credit_error}")
+                # URL 编码 Google 数据
+                encoded_data = urllib.parse.urlencode(google_data)
+                
+                # 重定向到前端的邀请码验证页面，携带 Google 用户信息
+                invitation_url = f"https://thinkso.io/register?source=google&{encoded_data}"
+                return RedirectResponse(url=invitation_url)
         
         # 4. 检查并发放每日奖励（仅对登录用户）
         daily_reward_granted = False
@@ -1691,6 +1688,15 @@ class GoogleUserInfo(BaseModel):
     name: str
     avatar_url: Optional[str] = None
     is_new_user: bool
+
+
+class GoogleRegisterRequest(BaseModel):
+    """Google 用户注册请求模型"""
+    google_id: str
+    email: EmailStr
+    name: str
+    avatar_url: Optional[str] = None
+    invitation_code: str
 
 class OAuthStatusResponse(BaseModel):
     """OAuth状态响应模型"""
