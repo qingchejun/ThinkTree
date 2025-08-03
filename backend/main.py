@@ -47,6 +47,7 @@ allowed_origins = [
     "http://localhost:3000",  # 本地开发
     "https://thinkso.io",  # 生产域名
     "https://www.thinkso.io",  # 支持www子域名
+    "https://thinktree-frontend.onrender.com",  # Render前端部署域名
 ]
 
 # 从环境变量获取额外的允许域名

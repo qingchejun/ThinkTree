@@ -86,12 +86,21 @@ const LoginModal = ({ isOpen, onClose }) => {
           setError(data.message || '发送验证码失败，请稍后重试');
         }
       } else {
-        const errorData = await response.json();
-        setError(errorData.detail || '发送验证码失败，请稍后重试');
+        try {
+          const errorData = await response.json();
+          setError(errorData.detail || '发送验证码失败，请稍后重试');
+        } catch (e) {
+          // 如果无法解析错误响应，显示HTTP状态
+          setError(`请求失败 (${response.status})，请稍后重试`);
+        }
       }
     } catch (error) {
       console.error('发送验证码失败:', error);
-      setError(error.response?.data?.detail || '网络错误，请检查连接后重试');
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        setError('无法连接到服务器，请检查网络连接');
+      } else {
+        setError('网络错误，请稍后重试');
+      }
     } finally {
       setIsEmailLoading(false);
     }
@@ -168,14 +177,22 @@ const LoginModal = ({ isOpen, onClose }) => {
           setCode(new Array(6).fill(""));
         }
       } else {
-        const errorData = await response.json();
-        setError(errorData.detail || '验证码不正确，请重试');
+        try {
+          const errorData = await response.json();
+          setError(errorData.detail || '验证码不正确，请重试');
+        } catch (e) {
+          setError(`验证失败 (${response.status})，请重试`);
+        }
         setCode(new Array(6).fill("")); // 清空验证码
         inputRefs.current[0]?.focus();
       }
     } catch (error) {
       console.error('验证失败:', error);
-      setError(error.response?.data?.detail || '验证码不正确，请重试');
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        setError('无法连接到服务器，请检查网络连接');
+      } else {
+        setError('网络错误，请重试');
+      }
       setCode(new Array(6).fill("")); // 清空验证码
       inputRefs.current[0]?.focus();
     } finally {
