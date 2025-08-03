@@ -4,11 +4,13 @@
 
 import secrets
 import random
+import os
 from typing import List, Optional
 from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
 from pydantic import EmailStr
 import jwt
 from datetime import datetime, timedelta
+import resend
 
 from ..core.config import settings
 
@@ -283,6 +285,64 @@ class EmailService:
             
         except Exception as e:
             print(f"发送欢迎邮件失败: {str(e)}")
+            return False
+    
+    async def send_welcome_email_resend(self, email: EmailStr, user_name: Optional[str] = None) -> bool:
+        """
+        使用 Resend 发送欢迎邮件
+        """
+        try:
+            # 检查是否配置了 Resend API 密钥
+            resend_api_key = os.getenv('RESEND_API_KEY')
+            if not resend_api_key:
+                print("⚠️ RESEND_API_KEY 环境变量未配置，跳过 Resend 欢迎邮件发送")
+                return False
+            
+            # 初始化 Resend 客户端
+            resend.api_key = resend_api_key
+            
+            # 设置显示名称
+            display_name = user_name if user_name else email.split('@')[0]
+            
+            # HTML 邮件内容
+            html_content = f"""
+            <h1>欢迎加入 ThinkSo！</h1>
+            <p>尊敬的 <strong>{display_name}</strong>，</p>
+            <p>我们很高兴能与您一起开启高效的思维整理之旅。</p>
+            <p>ThinkSo 是一款AI驱动的思维导图生成工具，能够帮助您：</p>
+            <ul>
+                <li>📄 智能解析文档内容</li>
+                <li>🗺️ 自动生成思维导图</li>
+                <li>💾 云端保存您的创作</li>
+                <li>🔗 轻松分享给团队</li>
+                <li>📥 多格式导出</li>
+            </ul>
+            <p>现在就开始体验 ThinkSo 的强大功能吧！</p>
+            <p>祝您使用愉快！</p>
+            <p>The ThinkSo Team</p>
+            <hr>
+            <p style="font-size: 12px; color: #666;">
+                此邮件由 ThinkSo 系统自动发送，请勿回复。<br>
+                © 2025 ThinkSo Team. All rights reserved.
+            </p>
+            """
+            
+            # 发送邮件
+            params = {
+                "from": "ThinkSo <hello@thinkso.io>",
+                "to": [email],
+                "subject": "欢迎来到 ThinkSo！ Welcome to ThinkSo!",
+                "html": html_content
+            }
+            
+            # 使用 Resend 发送邮件
+            response = resend.Emails.send(params)
+            
+            print(f"✅ Resend 欢迎邮件发送成功到 {email}，Message ID: {response.get('id', 'N/A')}")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Resend 欢迎邮件发送失败: {str(e)}")
             return False
     
     async def send_password_reset_email(self, email: EmailStr, user_name: str, reset_link: str) -> bool:

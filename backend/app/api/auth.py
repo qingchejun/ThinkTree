@@ -739,6 +739,16 @@ async def verify_code(request: Request, data: VerifyCodeRequest, db: Session = D
         except Exception as e:
             print(f"Failed to create credits for new user {user.email}: {e}")
             # 不影响登录流程
+        
+        # 为新用户发送 Resend 欢迎邮件
+        try:
+            await email_service.send_welcome_email_resend(
+                email=user.email,
+                user_name=user.display_name
+            )
+        except Exception as e:
+            print(f"Failed to send Resend welcome email to {user.email}: {e}")
+            # 不影响登录流程
     else:
         # 如果是现有用户，检查并发放每日奖励
         try:
@@ -1011,15 +1021,25 @@ async def verify_email(request: VerifyEmailRequest, db: Session = Depends(get_db
         db.commit()
         db.refresh(user)
         
-        # 发送欢迎邮件
+        # 发送欢迎邮件 - 使用 Resend 服务
         try:
-            await email_service.send_welcome_email(
+            await email_service.send_welcome_email_resend(
                 email=user.email,
                 user_name=user.display_name
             )
         except Exception as e:
-            print(f"发送欢迎邮件失败: {str(e)}")
+            print(f"发送 Resend 欢迎邮件失败: {str(e)}")
             # 不因为欢迎邮件失败而影响验证结果
+        
+        # 旧的欢迎邮件发送逻辑（已替换为 Resend）
+        # try:
+        #     await email_service.send_welcome_email(
+        #         email=user.email,
+        #         user_name=user.display_name
+        #     )
+        # except Exception as e:
+        #     print(f"发送欢迎邮件失败: {str(e)}")
+        #     # 不因为欢迎邮件失败而影响验证结果
         
         # 构造响应
         user_response = UserResponse(
@@ -1857,6 +1877,16 @@ async def magic_link_callback(token: str, db: Session = Depends(get_db)):
             daily_reward_granted = CreditService.grant_daily_reward_if_eligible(db, user.id)
         except Exception as e:
             print(f"Failed to create credits for new user {user.email}: {e}")
+            # 不影响登录流程
+        
+        # 为新用户发送 Resend 欢迎邮件
+        try:
+            await email_service.send_welcome_email_resend(
+                email=user.email,
+                user_name=user.display_name
+            )
+        except Exception as e:
+            print(f"Failed to send Resend welcome email to {user.email}: {e}")
             # 不影响登录流程
     else:
         # 如果是现有用户，检查并发放每日奖励
