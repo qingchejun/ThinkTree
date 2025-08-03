@@ -180,6 +180,7 @@ class ErrorBoundary extends React.Component {
 // ======================= 1. 子组件：顶部导航栏 ========================
 // ===================================================================
 const AppHeader = React.memo(({ user, credits, onLogout }) => {
+  const { isAdmin } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [currentAvatar, setCurrentAvatar] = useState('default');
   const [isClient, setIsClient] = useState(false);
@@ -271,6 +272,20 @@ const AppHeader = React.memo(({ user, credits, onLogout }) => {
                 <Link href="/settings?tab=billing" className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><CreditCard className="w-4 h-4 text-gray-500"/><span>用量与计费</span></Link>
                 <Link href="/settings" className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><Settings className="w-4 h-4 text-gray-500"/><span>账户设置</span></Link>
                 <Link href="/settings?tab=invitations" className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><ListChecks className="w-4 h-4 text-gray-500"/><span>邀请记录</span></Link>
+                
+                {/* 管理员菜单 - 仅管理员可见 */}
+                {isAdmin && (
+                  <>
+                    <div className="border-t my-1"></div>
+                    <Link href="/admin/dashboard" className="flex items-center space-x-3 px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50 font-medium">
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 1L3 5V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V5L12 1ZM12 7C13.1 7 14 7.9 14 9S13.1 11 12 11 10 10.1 10 9 10.9 7 12 7ZM18 15C16.59 15 15.1 14.65 13.81 14.04C13.53 14.32 13.28 14.63 13.09 14.97C14.08 15.29 15.06 15.5 16.02 15.57C17.17 15.64 18 16.56 18 17.71V18H6V17.71C6 16.56 6.83 15.64 7.98 15.57C9.96 15.4 11.81 14.8 13.09 14.03C13.28 13.37 13.53 12.68 13.81 11.96C15.1 11.35 16.59 11 18 11V15Z"/>
+                      </svg>
+                      <span>管理员后台</span>
+                    </Link>
+                  </>
+                )}
+                
                 <div className="border-t my-1"></div>
                 <button onClick={onLogout} className="w-full text-left flex items-center space-x-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50"><LogOut className="w-4 h-4"/><span>退出登录</span></button>
               </div>
