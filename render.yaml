@@ -8,7 +8,7 @@ services:
     region: singapore
     rootDir: backend # 关键：为后端服务设置根目录
     buildCommand: pip install -r requirements.txt # 简洁的构建命令 (因为已在 backend 目录)
-    startCommand: python init_db.py && uvicorn main:app --host 0.0.0.0 --port $PORT # 简洁、可靠的启动命令
+    startCommand: alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     envVars:
       - key: GEMINI_API_KEY
