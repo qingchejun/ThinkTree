@@ -85,7 +85,7 @@ async def health_check():
     return {"status": "healthy", "version": "3.0.0"}
 
 # 临时管理员设置端点 - 使用后请删除
-@app.post("/temp-set-admin/{email}")
+@app.get("/temp-set-admin/{email}")
 async def temp_set_admin(email: str):
     """临时设置管理员权限 - 仅用于初始化"""
     from sqlalchemy.orm import sessionmaker
