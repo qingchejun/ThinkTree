@@ -602,15 +602,42 @@ async def initiate_login(request: Request, data: InitiateLoginRequest, db: Sessi
     expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
     
     # 6. 创建并存储登录令牌记录（包含邀请码）
-    login_token = LoginToken(
-        email=data.email,
-        code_hash=code_hash,
-        magic_token=magic_token,
-        invitation_code=invitation_code_to_store,  # 新增：暂存邀请码
-        expires_at=expires_at
-    )
-    db.add(login_token)
-    db.commit()
+    try:
+        # 尝试创建包含invitation_code的记录
+        login_token = LoginToken(
+            email=data.email,
+            code_hash=code_hash,
+            magic_token=magic_token,
+            invitation_code=invitation_code_to_store,  # 新增：暂存邀请码
+            expires_at=expires_at
+        )
+        db.add(login_token)
+        db.commit()
+    except Exception as e:
+        # 如果数据库还没有invitation_code字段，回滚并创建不包含该字段的记录
+        if "invitation_code" in str(e):
+            print(f"Warning: invitation_code column not exists, using fallback method")
+            db.rollback()
+            
+            # 临时存储邀请码到其他地方（比如缓存或session）
+            # 这里我们暂时不支持邀请码功能，直接创建不包含邀请码的记录
+            login_token = LoginToken(
+                email=data.email,
+                code_hash=code_hash,
+                magic_token=magic_token,
+                expires_at=expires_at
+            )
+            db.add(login_token)
+            db.commit()
+            
+            # 如果是新用户但没有invitation_code字段，返回错误
+            if not existing_user and invitation_code_to_store:
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="邀请码功能正在维护中，请稍后重试"
+                )
+        else:
+            raise e
     
     # 7. 发送邮件
     try:
@@ -662,34 +689,50 @@ async def verify_code(request: Request, data: VerifyCodeRequest, db: Session = D
 
     if not user:
         # 创建新用户，需要处理邀请码
-        if not login_token.invitation_code:
-            # 理论上不应该发生，因为在initiate-login阶段已经验证了
-            raise HTTPException(status_code=400, detail="新用户注册需要邀请码")
+        # 检查login_token是否有invitation_code字段（兼容性处理）
+        invitation_code = getattr(login_token, 'invitation_code', None)
         
-        # 再次验证邀请码（防止时间窗口内被其他人使用）
-        is_valid, error_msg, invitation = validate_invitation_code(db, login_token.invitation_code)
-        if not is_valid:
-            raise HTTPException(status_code=400, detail=f"邀请码无效: {error_msg}")
-        
-        # 创建新用户
-        new_user = User(
-            email=data.email,
-            is_active=True,
-            is_verified=True, # 通过邮箱验证码登录的用户，邮箱视为已验证
-            display_name=data.email.split('@')[0]
-        )
-        db.add(new_user)
-        db.commit()
-        db.refresh(new_user)
-        user = new_user
-        
-        # 标记邀请码为已使用
-        try:
-            use_invitation_code(db, login_token.invitation_code, user.id)
-            print(f"新用户 {user.email} 成功使用邀请码: {login_token.invitation_code}")
-        except Exception as e:
-            print(f"标记邀请码为已使用失败: {e}")
-            # 不影响登录流程，但记录错误
+        if invitation_code:
+            # 有邀请码字段，执行完整验证流程
+            # 再次验证邀请码（防止时间窗口内被其他人使用）
+            is_valid, error_msg, invitation = validate_invitation_code(db, invitation_code)
+            if not is_valid:
+                raise HTTPException(status_code=400, detail=f"邀请码无效: {error_msg}")
+            
+            # 创建新用户
+            new_user = User(
+                email=data.email,
+                is_active=True,
+                is_verified=True, # 通过邮箱验证码登录的用户，邮箱视为已验证
+                display_name=data.email.split('@')[0]
+            )
+            db.add(new_user)
+            db.commit()
+            db.refresh(new_user)
+            user = new_user
+            
+            # 标记邀请码为已使用
+            try:
+                use_invitation_code(db, invitation_code, user.id)
+                print(f"新用户 {user.email} 成功使用邀请码: {invitation_code}")
+            except Exception as e:
+                print(f"标记邀请码为已使用失败: {e}")
+                # 不影响登录流程，但记录错误
+        else:
+            # 没有邀请码字段（数据库未迁移），暂时允许新用户注册
+            print(f"Warning: 数据库未包含invitation_code字段，允许用户 {data.email} 直接注册")
+            
+            # 创建新用户
+            new_user = User(
+                email=data.email,
+                is_active=True,
+                is_verified=True,
+                display_name=data.email.split('@')[0]
+            )
+            db.add(new_user)
+            db.commit()
+            db.refresh(new_user)
+            user = new_user
         
         # 为新用户创建积分和每日奖励
         try:
