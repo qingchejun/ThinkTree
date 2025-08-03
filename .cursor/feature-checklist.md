@@ -1,8 +1,8 @@
 ThinkSo 功能开发清单
 项目: ThinkSo - AI 驱动的思维导图生成工具
-当前版本: v3.2.2-stable
+当前版本: v3.2.3-stable
 目标版本: v3.3.0
-最后更新: 2025-07-26
+最后更新: 2025-08-03
 
 🎯 当前开发功能
 Feature: 用户中心基础功能补全
@@ -497,7 +497,56 @@ Google Cloud: 配置 OAuth 回调 URL 为 https://thinktree-backend.onrender.com
 [ ] 增强安全性: 增加"信任设备"管理功能和更长的登录有效期选项。
 [ ] 账户合并功能: 允许用户将多个社交账户关联到同一个主账户。
 [ ] 优化新用户引导: Google 登录用户的专属产品引导流程。
-[ ] 邮件魔法链接
+
+Feature: Resend 邮件服务集成
+Status: ✅ 已完成
+Owner: @thinkso-team
+Last Updated: 2025-08-03
+
+🎯 1. 目标与价值 (Objective & Value)
+将现有的邮件发送服务从 fastapi-mail 迁移到 Resend，提供更专业、可靠的邮件发送体验，包括欢迎邮件和魔法链接登录邮件。
+
+✅ 2. 验收标准 (Definition of Done)
+[x] Resend SDK 集成完成
+[x] 欢迎邮件 Resend 服务实现
+[x] 魔法链接登录邮件 Resend 服务实现
+[x] 环境变量配置和错误处理完善
+[x] 所有邮件发送功能测试通过
+[x] 生产环境部署验证
+
+📋 3. 任务分解 (Task Breakdown)
+后端 / API (Backend / API)
+[x] 依赖: 添加 resend>=0.6.1 到 requirements.txt
+[x] 环境: 添加 RESEND_API_KEY 环境变量配置
+[x] 服务: 实现 send_welcome_email_resend 函数
+[x] 服务: 实现 send_magic_link_email 函数
+[x] 集成: 在用户注册流程中集成 Resend 欢迎邮件
+[x] 集成: 在魔法链接登录流程中集成 Resend 邮件
+[x] 清理: 注释掉旧的 fastapi-mail 邮件发送逻辑
+
+邮件功能 (Email Features)
+[x] 欢迎邮件: 发送方 "ThinkSo Team <hello@thinkso.io>"
+[x] 欢迎邮件: 标题 "欢迎来到 ThinkSo！"
+[x] 魔法链接邮件: 发送方 "ThinkSo Login <noreply@thinkso.io>"
+[x] 魔法链接邮件: 包含 6 位登录码和一键登录按钮
+[x] 错误处理: RESEND_API_KEY 未配置时优雅降级
+[x] 调试: 详细的调试日志支持（已清理生产版本）
+
+💡 4. 注意事项与技术决策 (Notes & Technical Decisions)
+技术决策 (Technical Decisions)
+邮件服务选择: 采用 Resend 替代 fastapi-mail，提供更好的送达率和专业性
+向后兼容: 保留旧邮件服务作为备选方案，通过环境变量控制
+错误容错: 邮件发送失败不影响用户注册和登录流程
+
+已知取舍与风险 (Known Trade-offs & Risks)
+外部依赖: 依赖 Resend 服务的可用性，已通过环境变量检查缓解
+成本控制: Resend 按发送量计费，需要监控使用量
+
+🚀 5. 未来范围 / V2 (Future Scope / V2)
+[ ] 邮件模板可视化编辑器
+[ ] 邮件发送统计和分析
+[ ] 邮件退订管理功能
+[ ] 支持更多邮件类型（营销邮件、通知邮件等）
 
 Feature: YouTube 视频转换 (MVP)
 Status: 规划中
@@ -838,6 +887,7 @@ Webhook 安全: 必须强制验证所有接收到的 Stripe Webhook 事件的签
 [x] 思维导图创建认证保护 (仅登录用户可创建 - 修复登录状态检查 bug)
 [x] 思维导图保存功能 (修复 Boolean 字段类型错误)
 [x] 代码质量优化 (清理 console 调试信息)
+[x] Resend 邮件服务集成 (专业邮件发送 + 魔法链接登录)
 
 **高级功能**:
 [x] 邀请制注册系统 (邀请码 + 使用限制)
@@ -848,7 +898,8 @@ Webhook 安全: 必须强制验证所有接收到的 Stripe Webhook 事件的签
 
 📋 计划中的功能 (v3.3.0)
 [x] 用户中心基础 (个人资料管理 + 安全设置) - ✅ v3.2.2 已完成
-[ ] 积分系统 (用量计量 + 成本控制)
+[x] 积分系统 (用量计量 + 成本控制) - ✅ v3.2.3 已完成
+[x] Resend 邮件服务集成 (专业邮件发送) - ✅ v3.2.3 已完成
 [ ] 用户邀请返利 (积分奖励机制)
 [ ] 计费系统 (Stripe 集成 + 积分充值)
 
