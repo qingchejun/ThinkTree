@@ -1,16 +1,16 @@
-# Render 部署配置 (最终版)
+# Render 部署配置 (种子部署临时版)
 services:
   # FastAPI 后端服务
   - type: web
     name: thinktree-backend
     env: python
-    # 构建命令：必须先进入 backend 目录，才能找到 requirements.txt
+    # 构建命令保持不变
     buildCommand: cd backend && pip install -r requirements.txt
-    # 启动命令：
-    # 1. 必须先 cd backend 进入正确的目录。
-    # 2. 运行 python -c "..."，在代码中手动导入所有模型，确保 create_all() 能找到所有表。
-    # 3. 成功创建数据库表后，启动 uvicorn 服务。
-    startCommand: cd backend && python -c "import sys; import os; sys.path.append(os.getcwd()); from app.core.database import Base, engine; from app.models import User, Mindmap, InvitationCode, UserCredits, CreditTransaction, RedemptionCode, LoginToken; print('Imported all models. Creating database tables...'); Base.metadata.create_all(bind=engine); print('Tables created successfully.')" && uvicorn main:app --host 0.0.0.0 --port $PORT
+    # 启动命令已临时修改，用于“种子部署”，分为三步：
+    # 1. python init_db.py          -> 使用我们确认过的脚本，安全地创建所有数据库表
+    # 2. python scripts/generate_initial_codes.py -> 运行脚本，生成并打印第一个邀请码
+    # 3. uvicorn main:app ...       -> 在以上步骤成功后，启动应用服务
+    startCommand: cd backend && python init_db.py && python scripts/generate_initial_codes.py && uvicorn main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     envVars:
       - key: GEMINI_API_KEY
