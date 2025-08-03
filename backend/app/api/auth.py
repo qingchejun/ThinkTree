@@ -150,6 +150,7 @@ class UserLogin(BaseModel):
 class InitiateLoginRequest(BaseModel):
     """发起登录请求模型"""
     email: EmailStr
+    invitation_code: Optional[str] = None  # 新增：邀请码字段（新用户必填，老用户可选）
 
 class InitiateLoginResponse(BaseModel):
     """发起登录响应模型"""
@@ -559,31 +560,59 @@ async def _send_login_code_email(email: str, code: str, magic_token: str = None)
 @limiter.limit("5/minute")
 async def initiate_login(request: Request, data: InitiateLoginRequest, db: Session = Depends(get_db)):
     """
-    发起邮箱验证码登录流程，发送验证码邮件。
+    发起邮箱验证码登录流程，支持新用户邀请码验证。
     """
-    # 1. 生成6位随机数字验证码
+    # 1. 检查用户是否存在
+    existing_user = db.query(User).filter(User.email == data.email).first()
+    
+    if existing_user:
+        # 老用户：忽略邀请码，直接发送验证码
+        print(f"检测到已注册用户: {data.email}")
+        invitation_code_to_store = None  # 老用户不需要存储邀请码
+    else:
+        # 新用户：验证邀请码
+        print(f"检测到新用户: {data.email}")
+        
+        if not data.invitation_code or data.invitation_code.strip() == "":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="新用户注册需要邀请码"
+            )
+        
+        # 验证邀请码有效性（不消费）
+        is_valid, error_msg, invitation = validate_invitation_code(db, data.invitation_code)
+        if not is_valid:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"邀请码无效: {error_msg}"
+            )
+        
+        invitation_code_to_store = data.invitation_code  # 新用户需要暂存邀请码
+    
+    # 2. 生成6位随机数字验证码
     code = "".join(random.choices(string.digits, k=6))
     
-    # 2. 生成唯一的魔法链接令牌
+    # 3. 生成唯一的魔法链接令牌
     magic_token = str(uuid.uuid4())
     
-    # 3. 对验证码进行哈希处理
+    # 4. 对验证码进行哈希处理
     code_hash = get_password_hash(code)
     
-    # 4. 设置过期时间（10分钟后）
+    # 5. 设置过期时间（10分钟后）
     expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
     
-    # 5. 创建并存储登录令牌记录
+    # 6. 创建并存储登录令牌记录（包含邀请码）
     login_token = LoginToken(
         email=data.email,
         code_hash=code_hash,
         magic_token=magic_token,
+        invitation_code=invitation_code_to_store,  # 新增：暂存邀请码
         expires_at=expires_at
     )
     db.add(login_token)
     db.commit()
     
-    # 6. 发送邮件
+    # 7. 发送邮件
     try:
         print(f"准备向 {data.email} 发送验证码邮件")
         await _send_login_code_email(data.email, code, magic_token)
@@ -595,7 +624,7 @@ async def initiate_login(request: Request, data: InitiateLoginRequest, db: Sessi
         import traceback
         print(f"邮件发送异常详情: {traceback.format_exc()}")
 
-    return InitiateLoginResponse(success=True, message="如果您的邮箱已注册，验证码已发送。")
+    return InitiateLoginResponse(success=True, message="验证码已发送到您的邮箱，请查收。")
 
 
 @router.post("/verify-code", response_model=TokenResponse)
@@ -632,6 +661,16 @@ async def verify_code(request: Request, data: VerifyCodeRequest, db: Session = D
     daily_reward_granted = False
 
     if not user:
+        # 创建新用户，需要处理邀请码
+        if not login_token.invitation_code:
+            # 理论上不应该发生，因为在initiate-login阶段已经验证了
+            raise HTTPException(status_code=400, detail="新用户注册需要邀请码")
+        
+        # 再次验证邀请码（防止时间窗口内被其他人使用）
+        is_valid, error_msg, invitation = validate_invitation_code(db, login_token.invitation_code)
+        if not is_valid:
+            raise HTTPException(status_code=400, detail=f"邀请码无效: {error_msg}")
+        
         # 创建新用户
         new_user = User(
             email=data.email,
@@ -643,6 +682,14 @@ async def verify_code(request: Request, data: VerifyCodeRequest, db: Session = D
         db.commit()
         db.refresh(new_user)
         user = new_user
+        
+        # 标记邀请码为已使用
+        try:
+            use_invitation_code(db, login_token.invitation_code, user.id)
+            print(f"新用户 {user.email} 成功使用邀请码: {login_token.invitation_code}")
+        except Exception as e:
+            print(f"标记邀请码为已使用失败: {e}")
+            # 不影响登录流程，但记录错误
         
         # 为新用户创建积分和每日奖励
         try:

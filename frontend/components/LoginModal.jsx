@@ -29,6 +29,7 @@ import AuthContext from '../context/AuthContext';
 const LoginModal = ({ isOpen, onClose }) => {
   const [view, setView] = useState('initial'); // 'initial' | 'verify'
   const [email, setEmail] = useState('');
+  const [invitationCode, setInvitationCode] = useState(''); // 新增：邀请码状态
   const [code, setCode] = useState(new Array(6).fill(""));
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isEmailLoading, setIsEmailLoading] = useState(false);
@@ -71,7 +72,10 @@ const LoginModal = ({ isOpen, onClose }) => {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/initiate-login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
+        body: JSON.stringify({ 
+          email, 
+          invitation_code: invitationCode || null // 发送邀请码（可能为空）
+        })
       });
       
       if (response.ok) {
@@ -199,6 +203,7 @@ const LoginModal = ({ isOpen, onClose }) => {
   // 返回初始视图
   const handleGoBack = () => {
     setEmail('');
+    setInvitationCode(''); // 清除邀请码
     setCode(new Array(6).fill(""));
     setError('');
     setView('initial');
@@ -258,6 +263,23 @@ const LoginModal = ({ isOpen, onClose }) => {
                 className="w-full py-3 px-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black transition"
                 disabled={isEmailLoading}
               />
+              
+              {/* 邀请码输入框 */}
+              <div className="mt-4">
+                <input
+                  type="text"
+                  value={invitationCode}
+                  onChange={(e) => setInvitationCode(e.target.value.toUpperCase())}
+                  placeholder="邀请码（新用户必填）"
+                  className="w-full py-3 px-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black transition"
+                  disabled={isEmailLoading}
+                  maxLength={16}
+                />
+                <p className="text-gray-500 text-xs mt-1">
+                  💡 已注册用户可留空，新用户必须填写邀请码
+                </p>
+              </div>
+              
               {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
               <button
                 type="submit"
