@@ -329,9 +329,9 @@ class EmailService:
             
             # 发送邮件
             params = {
-                "from": "ThinkSo <hello@thinkso.io>",
+                "from": "ThinkSo Team <hello@thinkso.io>",
                 "to": [email],
-                "subject": "欢迎来到 ThinkSo！ Welcome to ThinkSo!",
+                "subject": "欢迎来到 ThinkSo！",
                 "html": html_content
             }
             
@@ -349,13 +349,10 @@ class EmailService:
         """
         使用 Resend 发送魔法链接登录邮件
         """
-        print(f"--- DEBUG: Attempting to send magic link email to {user_email} ---")
-        
         try:
             # 检查是否配置了 Resend API 密钥
             resend_api_key = os.getenv('RESEND_API_KEY')
             if not resend_api_key:
-                print("--- DEBUG: FATAL - RESEND_API_KEY environment variable not found. ---")
                 print("⚠️ RESEND_API_KEY 环境变量未配置，跳过 Resend 魔法链接邮件发送")
                 return False
             
@@ -384,16 +381,13 @@ class EmailService:
                 "html": html_content
             }
             
-            print("--- DEBUG: Calling Resend API... ---")
             # 使用 Resend 发送邮件
             response = resend.Emails.send(params)
-            print(f"--- DEBUG: Resend API call successful. Response: {response} ---")
             
             print(f"✅ Resend 魔法链接邮件发送成功到 {user_email}，Message ID: {response.get('id', 'N/A')}")
             return True
             
         except Exception as e:
-            print(f"--- DEBUG: Resend API call FAILED. Error: {e} ---")
             print(f"❌ Resend 魔法链接邮件发送失败: {str(e)}")
             return False
     
