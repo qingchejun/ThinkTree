@@ -5,13 +5,29 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import LandingPage from '../components/LandingPage';
 
 export default function HomePage() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  // 获取URL参数
+  const invitationCode = searchParams.get('invitation_code');
+  const autoRegister = searchParams.get('auto_register') === 'true';
+
+  // 清理URL参数（在显示弹窗后）
+  useEffect(() => {
+    if (!isLoading && !user && (invitationCode || autoRegister)) {
+      // 延迟清理URL，确保参数已经被使用
+      const timer = setTimeout(() => {
+        router.replace('/', undefined, { shallow: true });
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [invitationCode, autoRegister, isLoading, user, router]);
 
   // 如果用户已登录，跳转到工作台
   useEffect(() => {
@@ -31,7 +47,12 @@ export default function HomePage() {
 
   // 未登录用户显示营销页面
   if (!user) {
-    return <LandingPage />;
+    return (
+      <LandingPage 
+        invitationCode={invitationCode}
+        autoRegister={autoRegister}
+      />
+    );
   }
 
   // 已登录用户会被上面的 useEffect 重定向，这里返回加载状态

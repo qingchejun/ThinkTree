@@ -37,15 +37,29 @@ def main():
         # 生成新的邀请码
         code = generate_invitation_code()
         
+        # 首先创建一个系统用户来生成邀请码
+        from app.models.user import User
+        system_user = db.query(User).filter(User.email == "system@thinktree.internal").first()
+        if not system_user:
+            # 创建系统用户
+            system_user = User(
+                email="system@thinktree.internal",
+                display_name="System",
+                is_active=True,
+                is_verified=True,
+                is_superuser=True
+            )
+            db.add(system_user)
+            db.commit()
+            db.refresh(system_user)
+        
         # 创建邀请码记录
         invitation = InvitationCode(
             code=code,
-            created_by=None,  # 系统生成，没有创建者
+            generated_by_user_id=system_user.id,  # 使用系统用户ID
             description="系统初始化邀请码 - 用于首次注册管理员账户",
-            max_uses=1,  # 一次性使用
-            current_uses=0,
-            expires_at=None,  # 永不过期
-            is_active=True
+            is_used=False,
+            expires_at=None  # 永不过期
         )
         
         # 保存到数据库
@@ -56,7 +70,7 @@ def main():
         print("=" * 50)
         print(f"🎫 邀请码: {code}")
         print(f"📝 描述: {invitation.description}")
-        print(f"🔢 最大使用次数: {invitation.max_uses}")
+        print(f"🔢 使用状态: {'已使用' if invitation.is_used else '未使用'}")
         print(f"⏰ 创建时间: {invitation.created_at}")
         print(f"🚫 过期时间: 永不过期")
         print("=" * 50)

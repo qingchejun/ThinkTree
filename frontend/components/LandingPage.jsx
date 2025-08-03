@@ -27,13 +27,20 @@
  * - CTA按钮已连接到相应的路由（登录/注册页面）
  * - 内容和文案需要根据产品发展进行更新
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Sparkles, Cpu, FileStack, Users, BrainCircuit, FileOutput, Infinity, UploadCloud, Eye, PlusCircle } from 'lucide-react';
 import LoginModal from './LoginModal';
 
-const LandingPage = () => {
+const LandingPage = ({ invitationCode, autoRegister }) => {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+
+  // 如果有autoRegister参数，自动打开登录弹窗
+  useEffect(() => {
+    if (autoRegister) {
+      setIsLoginModalOpen(true);
+    }
+  }, [autoRegister]);
   return (
     <div id="loggedOutView">
       {/* 
@@ -255,7 +262,12 @@ const LandingPage = () => {
       </footer>
 
       {/* 登录浮窗 */}
-      <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
+      <LoginModal 
+        isOpen={isLoginModalOpen} 
+        onClose={() => setIsLoginModalOpen(false)}
+        initialInvitationCode={invitationCode}
+        autoOpenRegister={autoRegister}
+      />
     </div>
   );
 };

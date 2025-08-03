@@ -26,10 +26,10 @@ import React, { useState, useContext, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AuthContext from '../context/AuthContext'; 
 
-const LoginModal = ({ isOpen, onClose }) => {
+const LoginModal = ({ isOpen, onClose, initialInvitationCode, autoOpenRegister }) => {
   const [view, setView] = useState('initial'); // 'initial' | 'verify'
   const [email, setEmail] = useState('');
-  const [invitationCode, setInvitationCode] = useState(''); // 新增：邀请码状态
+  const [invitationCode, setInvitationCode] = useState(initialInvitationCode || ''); // 新增：邀请码状态
   const [code, setCode] = useState(new Array(6).fill(""));
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isEmailLoading, setIsEmailLoading] = useState(false);
@@ -45,6 +45,13 @@ const LoginModal = ({ isOpen, onClose }) => {
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  // 处理邀请码初始化
+  useEffect(() => {
+    if (initialInvitationCode) {
+      setInvitationCode(initialInvitationCode);
+    }
+  }, [initialInvitationCode]);
 
   useEffect(() => {
     if (view === 'verify') {
@@ -288,6 +295,13 @@ const LoginModal = ({ isOpen, onClose }) => {
               
               {/* 邀请码输入框 */}
               <div className="mt-4">
+                {initialInvitationCode && (
+                  <div className="mb-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="text-green-700 text-sm font-medium">
+                      🎉 您已通过邀请链接访问，邀请码已自动填入！
+                    </p>
+                  </div>
+                )}
                 <input
                   type="text"
                   value={invitationCode}
