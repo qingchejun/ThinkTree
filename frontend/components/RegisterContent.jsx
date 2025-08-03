@@ -11,7 +11,6 @@ export default function RegisterContent() {
   useEffect(() => {
     // 从 useSearchParams Hook 获取邀请码（这会正确处理客户端导航）
     const codeFromUrl = searchParams.get('invitation_code') || '';
-    console.log('🔍 RegisterContent - 检测到邀请码:', codeFromUrl);
     
     if (codeFromUrl) {
       setInvitationCode(codeFromUrl);
@@ -26,7 +25,6 @@ export default function RegisterContent() {
 
     // 重定向到首页，并传递参数
     const redirectUrl = `/?${params.toString()}`;
-    console.log('🔄 重定向到:', redirectUrl);
     router.replace(redirectUrl);
   }, [searchParams, router]);
 

@@ -1,5 +1,6 @@
 /**
- * 根页面 (/) - ThinkSo v3.2.2
+ * 根页面 (/) - ThinkSo v3.2.3-stable
+ * 可通过邀请链接注册，稳定版
  * 根据用户登录状态智能显示营销页面或跳转到工作台
  */
 import React, { Suspense } from 'react';

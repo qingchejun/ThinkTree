@@ -1,7 +1,7 @@
 {
   "name": "thinktree-frontend",
-  "version": "1.0.0",
-  "description": "ThinkSo Frontend - AI驱动的思维导图生成工具",
+  "version": "3.2.3-stable",
+  "description": "ThinkSo Frontend - AI驱动的思维导图生成工具，可通过邀请链接注册，稳定版",
   "private": true,
   "scripts": {
     "dev": "next dev",

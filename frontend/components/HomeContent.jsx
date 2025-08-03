@@ -17,12 +17,6 @@ export default function HomeContent() {
     const codeFromUrl = searchParams.get('invitation_code') || '';
     const autoRegisterFromUrl = searchParams.get('auto_register') === 'true';
     
-    console.log('🔍 HomeContent - 检测到URL参数:', {
-      invitation_code: codeFromUrl,
-      auto_register: autoRegisterFromUrl,
-      searchParams: Object.fromEntries(searchParams.entries())
-    });
-    
     setInvitationCode(codeFromUrl);
     setAutoRegister(autoRegisterFromUrl);
   }, [searchParams]);
@@ -30,10 +24,8 @@ export default function HomeContent() {
   // 清理URL参数（在弹窗打开后延迟清理）
   useEffect(() => {
     if (!isLoading && !user && (invitationCode || autoRegister)) {
-      console.log('🧹 准备清理URL参数，延迟2秒');
       // 延迟清理URL，确保LandingPage组件有足够时间处理参数并打开弹窗
       const timer = setTimeout(() => {
-        console.log('🧹 执行URL参数清理');
         router.replace('/', undefined, { shallow: true });
       }, 2000);
       return () => clearTimeout(timer);
@@ -43,7 +35,6 @@ export default function HomeContent() {
   // 如果用户已登录，跳转到工作台
   useEffect(() => {
     if (!isLoading && user) {
-      console.log('👤 用户已登录，重定向到工作台');
       router.push('/dashboard');
     }
   }, [user, isLoading, router]);
@@ -59,7 +50,6 @@ export default function HomeContent() {
 
   // 未登录用户显示营销页面
   if (!user) {
-    console.log('🎯 渲染LandingPage，参数:', { invitationCode, autoRegister });
     return (
       <LandingPage 
         invitationCode={invitationCode}

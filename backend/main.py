@@ -22,8 +22,8 @@ limiter = Limiter(key_func=get_remote_address)
 # 创建FastAPI应用实例
 app = FastAPI(
     title="ThinkSo API",
-    description="ThinkSo 思维导图生成 API",
-    version="3.0.0"
+    description="ThinkSo 思维导图生成 API - 可通过邀请链接注册，稳定版",
+    version="3.2.3-stable"
 )
 
 # 添加rate limiting中间件
@@ -78,11 +78,11 @@ app.include_router(redemption.router, prefix="/api/codes", tags=["redemption"])
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to ThinkSo API v3.0.0"}
+    return {"message": "Welcome to ThinkSo API v3.2.3-stable", "feature": "邀请链接注册支持"}
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "version": "3.0.0"}
+    return {"status": "healthy", "version": "3.2.3-stable", "feature": "邀请链接注册支持"}
 
 
 if __name__ == "__main__":
