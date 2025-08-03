@@ -273,13 +273,13 @@ const Header = ({ title, subtitle, showCreateButton = false }) => {
               <div className="flex items-center space-x-4">
                 <Button
                   variant="ghost"
-                  onClick={() => router.push('/login')}
+                  onClick={() => router.push('/')}
                 >
                   登录
                 </Button>
                 <Button
                   variant="primary"
-                  onClick={() => router.push('/register')}
+                  onClick={() => router.push('/')}
                 >
                   注册
                 </Button>

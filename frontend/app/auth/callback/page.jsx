@@ -39,7 +39,7 @@ function AuthCallbackContent() {
           setStatus('error');
           setMessage(`登录失败: ${error}`);
           setTimeout(() => {
-            router.push('/login');
+            router.push('/');
           }, 3000);
           return;
         }
@@ -49,7 +49,7 @@ function AuthCallbackContent() {
           setStatus('error');
           setMessage('未收到认证信息，即将返回登录页面...');
           setTimeout(() => {
-            router.push('/login');
+            router.push('/');
           }, 2000);
           return;
         }
@@ -75,7 +75,7 @@ function AuthCallbackContent() {
           setStatus('error');
           setMessage(loginResult.error || '登录处理失败，请重试');
           setTimeout(() => {
-            router.push('/login');
+            router.push('/');
           }, 3000);
         }
         
@@ -84,7 +84,7 @@ function AuthCallbackContent() {
         setStatus('error');
         setMessage('登录过程中发生错误，请重试');
         setTimeout(() => {
-          router.push('/login');
+          router.push('/');
         }, 3000);
       }
     };
@@ -128,7 +128,7 @@ function AuthCallbackContent() {
             <h2 className="text-xl font-semibold text-gray-900 mb-2">登录失败</h2>
             <p className="text-gray-600 mb-4">{message}</p>
             <button
-              onClick={() => router.push('/login')}
+              onClick={() => router.push('/')}
               className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
             >
               返回登录页面

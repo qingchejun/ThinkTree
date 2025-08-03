@@ -187,7 +187,7 @@ export default function CreatePage() {
                       {!user && (
                         <Button
                           variant="secondary"
-                          onClick={() => router.push('/login')}
+                          onClick={() => router.push('/')}
                           size="sm"
                         >
                           🔒 登录后保存

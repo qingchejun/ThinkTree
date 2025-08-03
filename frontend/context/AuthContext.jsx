@@ -126,10 +126,7 @@ export function AuthProvider({ children }) {
         console.log('开始处理登录, token:', accessToken?.substring(0, 20) + '...')
       }
       
-      // 存储令牌到 localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('access_token', accessToken)
-      }
+      // 不再存储到 localStorage，只保存到状态
       setToken(accessToken)
       
       // 获取用户信息 - 使用唯一ID避免重复请求，跳过超时控制避免AbortController冲突
@@ -164,25 +161,30 @@ export function AuthProvider({ children }) {
     setUser(null)
     setToken(null)
     
-    // 清除 localStorage
+    // 清除 HttpOnly Cookie
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('access_token')
+      document.cookie = "thinktree_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
     }
     
-    // 跳转到登录页面
+    // 跳转到首页
     if (typeof window !== 'undefined') {
-      router.push('/login')
+      router.push('/')
     }
   }
 
   // 刷新用户信息
   const refreshUser = async () => {
-    if (token) {
-      const userData = await fetchUserProfile(token, { 
-        requestId: `refresh_${Date.now()}`,
-        timeoutMs: 8000 
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/profile`, {
+        credentials: 'include'
       })
-      setUser(userData)
+      
+      if (response.ok) {
+        const userData = await response.json()
+        setUser(userData)
+      }
+    } catch (error) {
+      console.error('刷新用户信息失败:', error)
     }
   }
 
@@ -206,45 +208,43 @@ export function AuthProvider({ children }) {
       console.log('🔄 开始初始化认证状态')
       
       try {
-        // 检查 localStorage 中的令牌
-        const storedToken = localStorage.getItem('access_token')
-        console.log('🔍 存储的token:', storedToken ? '存在' : '不存在')
+        // 不再从 localStorage 读取，直接调用 profile 接口检查登录状态
+        console.log('🔍 检查登录状态')
         
-        if (storedToken && mounted) {
-          console.log('🔧 设置token到状态')
-          setToken(storedToken)
-          
-          // 验证令牌并获取用户信息
-          console.log('📞 调用fetchUserProfile')
-          const userData = await fetchUserProfile(storedToken, { 
-            requestId: `init_${Date.now()}`,
-            timeoutMs: 5000 // 缩短超时时间
+        // 直接调用 profile 接口，如果返回 401 则视为未登录
+        try {
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/profile`, {
+            credentials: 'include'
           })
           
-          if (userData && mounted) {
-            console.log('✅ 初始化时设置用户数据:', userData)
+          if (response.ok) {
+            const userData = await response.json()
+            console.log('✅ 检测到有效登录状态:', userData)
             setUser(userData)
-          } else if (mounted) {
-            // 令牌无效，清除所有数据
-            console.log('❌ 令牌无效，清除数据')
-            setToken(null)
-            localStorage.removeItem('access_token')
+            // 从响应头或 Cookie 中获取 token（如果需要的话）
+            // 这里暂时不设置 token，因为 Cookie 会自动携带
+          } else {
+            console.log('❌ 未检测到有效登录状态')
           }
-        } else if (!storedToken) {
-          console.log('ℹ️ 没有存储的token')
+        } catch (error) {
+          console.log('❌ 登录状态检查失败:', error)
         }
-      } catch (error) {
-        console.error('💥 初始化过程中出错:', error)
-        if (mounted) {
-          setToken(null)
-          setUser(null)
+          
+          // 用户数据已在上面设置，这里不需要额外处理
+        } else {
+          console.log('ℹ️ 未检测到登录状态')
         }
-      } finally {
-        if (mounted) {
-          console.log('🏁 认证状态初始化完成 - 设置isLoading=false')
-          setIsLoading(false)
+              } catch (error) {
+          console.error('💥 初始化过程中出错:', error)
+          if (mounted) {
+            setUser(null)
+          }
+        } finally {
+          if (mounted) {
+            console.log('🏁 认证状态初始化完成 - 设置isLoading=false')
+            setIsLoading(false)
+          }
         }
-      }
     }
 
     initializeAuth()

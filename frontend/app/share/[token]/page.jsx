@@ -208,7 +208,7 @@ export default function SharePage() {
                     📖 只读分享
                   </div>
                   <button
-                    onClick={() => router.push('/register')}
+                    onClick={() => router.push('/')}
                     className="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
                   >
                     🚀 创建我的思维导图
@@ -247,13 +247,13 @@ export default function SharePage() {
                 </p>
                 <div className="flex items-center justify-center space-x-4">
                   <button
-                    onClick={() => router.push('/register')}
+                    onClick={() => router.push('/')}
                     className="bg-indigo-600 text-white px-6 py-3 rounded-md font-medium hover:bg-indigo-700"
                   >
                     🚀 免费注册
                   </button>
                   <button
-                    onClick={() => router.push('/login')}
+                    onClick={() => router.push('/')}
                     className="bg-white text-indigo-600 border border-indigo-600 px-6 py-3 rounded-md font-medium hover:bg-indigo-50"
                   >
                     已有账号？登录

@@ -12,6 +12,7 @@ async function apiCall(endpoint, options = {}) {
     headers: {
       'Content-Type': 'application/json',
     },
+    credentials: 'include',
   }
   
   const config = { 
@@ -46,6 +47,7 @@ export async function uploadFile(file, token) {
       headers: {
         'Authorization': `Bearer ${token}`
       },
+      credentials: 'include',
       body: formData,
     })
     

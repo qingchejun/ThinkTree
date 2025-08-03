@@ -9,7 +9,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, HTTPException, Depends, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import text, desc
 from pydantic import BaseModel, EmailStr
@@ -329,12 +329,13 @@ class RegisterResponse(BaseModel):
     daily_reward_granted: Optional[bool] = False  # 是否发放了每日奖励
 
 
-@router.post("/register", response_model=RegisterResponse)
+@router.post("/register", response_model=RegisterResponse, include_in_schema=False)
 @limiter.limit("10/minute")
 async def register(request: Request, user_data: UserRegister, db: Session = Depends(get_db)):
     """
-    用户注册 - 需要邀请码，注册后发送验证邮件
+    传统邮箱+密码注册接口已停用
     """
+    raise HTTPException(status_code=status.HTTP_410_GONE, detail="传统邮箱+密码注册接口已停用")
     # ... (existing register endpoint remains unchanged)
     # reCAPTCHA验证 (如果启用)
     if is_recaptcha_enabled():
@@ -454,12 +455,13 @@ async def register(request: Request, user_data: UserRegister, db: Session = Depe
         )
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post("/login", response_model=TokenResponse, include_in_schema=False)
 @limiter.limit("10/minute")
 async def login(request: Request, credentials: UserLogin, db: Session = Depends(get_db)):
     """
-    用户登录
+    传统邮箱+密码登录接口已停用
     """
+    raise HTTPException(status_code=status.HTTP_410_GONE, detail="传统邮箱+密码登录接口已停用")
     # ... (existing login endpoint remains unchanged)
     # 查找用户
     user = db.query(User).filter(User.email == credentials.email).first()
@@ -676,12 +678,22 @@ async def verify_code(request: Request, data: VerifyCodeRequest, db: Session = D
         invitation_quota=user.invitation_quota
     )
 
-    return TokenResponse(
+    response_body = TokenResponse(
         access_token=access_token,
         token_type="bearer",
         user=user_response,
         daily_reward_granted=daily_reward_granted
+    ).dict()
+    response = JSONResponse(content=response_body)
+    response.set_cookie(
+        key="thinktree_token",
+        value=access_token,
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        max_age=1800
     )
+    return response
 
 # ===================================================================
 # ======================== 现有路由 (部分) ==========================
@@ -949,7 +961,7 @@ async def verify_email(request: VerifyEmailRequest, db: Session = Depends(get_db
         )
 
 
-@router.post("/request-password-reset", response_model=PasswordResetResponse)
+@router.post("/request-password-reset", response_model=PasswordResetResponse, include_in_schema=False)
 @limiter.limit("10/minute")
 async def request_password_reset(
     request: Request,
@@ -957,8 +969,9 @@ async def request_password_reset(
     db: Session = Depends(get_db)
 ):
     """
-    请求密码重置 - 发送重置链接到用户邮箱 (WITH DEBUG LOGGING)
+    传统邮箱+密码密码重置接口已停用
     """
+    raise HTTPException(status_code=status.HTTP_410_GONE, detail="传统密码重置接口已停用")
     import traceback
     import logging
     
@@ -1079,7 +1092,7 @@ async def request_password_reset(
         )
 
 
-@router.post("/reset-password", response_model=PasswordResetResponse)
+@router.post("/reset-password", response_model=PasswordResetResponse, include_in_schema=False)
 async def reset_password(
     request: PasswordResetExecute,
     db: Session = Depends(get_db)
@@ -1162,8 +1175,9 @@ async def reset_password(
         )
 
 
-@router.post("/check-password-strength", response_model=PasswordStrengthResponse)
+@router.post("/check-password-strength", response_model=PasswordStrengthResponse, include_in_schema=False)
 async def check_password_strength(request: PasswordStrengthRequest):
+    raise HTTPException(status_code=status.HTTP_410_GONE, detail="密码强度检查接口已停用")
     """
     检查密码强度 - 供前端实时验证使用
     """
@@ -1224,15 +1238,16 @@ async def verify_early_user(
     }
 
 
-@router.put("/password", response_model=PasswordUpdateResponse)
+@router.put("/password", response_model=PasswordUpdateResponse, include_in_schema=False)
 async def update_password(
     request: PasswordUpdateRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
-    更新用户密码
+    传统邮箱+密码修改接口已停用
     """
+    raise HTTPException(status_code=status.HTTP_410_GONE, detail="传统密码修改接口已停用")
     # 验证新密码和确认密码是否一致
     if request.new_password != request.confirm_password:
         raise HTTPException(
@@ -1384,7 +1399,7 @@ async def login_via_google(request: StarletteRequest):
     try:
         from ..core.oauth import get_google_oauth_client
         from ..core.config import settings
-        from fastapi.responses import RedirectResponse
+        from fastapi.responses import RedirectResponse, JSONResponse
         
         # 检查 Google OAuth 配置
         if not settings.google_client_id or not settings.google_client_secret:
@@ -1523,7 +1538,17 @@ async def google_callback(request: StarletteRequest, db: Session = Depends(get_d
         if daily_reward_granted:
             frontend_callback_url += "&daily_reward=true"
         
-        return RedirectResponse(url=frontend_callback_url)
+        # 设置 HttpOnly Cookie 并重定向
+        response = RedirectResponse(url=frontend_callback_url)
+        response.set_cookie(
+            key="thinktree_token",
+            value=jwt_token,
+            httponly=True,
+            secure=True,
+            samesite="lax",
+            max_age=1800
+        )
+        return response
         
     except HTTPException:
         raise

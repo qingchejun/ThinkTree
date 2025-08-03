@@ -429,7 +429,7 @@ const CreationHub = () => {
   // 路由保护
   useEffect(() => {
     if (!isAuthLoading && !user) {
-      router.push('/login');
+      router.push('/');
     }
   }, [user, isAuthLoading, router]);
 
@@ -526,7 +526,7 @@ const CreationHub = () => {
   // 处理登出
   const handleLogout = () => {
     logout();
-    router.push('/login');
+    router.push('/');
   };
 
   if (isAuthLoading || isDataLoading) {

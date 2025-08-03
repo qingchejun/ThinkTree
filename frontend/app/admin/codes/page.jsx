@@ -108,7 +108,7 @@ const AdminCodesPageComponent = () => {
   }
 
   if (!user) {
-    router.push('/login');
+    router.push('/');
     return null;
   }
 

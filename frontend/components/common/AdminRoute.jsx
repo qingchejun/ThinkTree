@@ -14,7 +14,7 @@ const AdminRoute = ({ children }) => {
         if (typeof window !== 'undefined') {
           router.push('/login?redirect=' + encodeURIComponent(window.location.pathname));
         } else {
-          router.push('/login');
+          router.push('/');
         }
         return;
       }

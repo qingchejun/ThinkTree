@@ -51,7 +51,7 @@ export default function ViewMindmapPage() {
   // 路由保护 - 未登录用户重定向到登录页
   useEffect(() => {
     if (!isLoading && !user) {
-      router.push('/login')
+      router.push('/')
       return
     }
   }, [user, isLoading, router])

@@ -497,6 +497,7 @@ Google Cloud: 配置 OAuth 回调 URL 为 https://thinktree-backend.onrender.com
 [ ] 增强安全性: 增加"信任设备"管理功能和更长的登录有效期选项。
 [ ] 账户合并功能: 允许用户将多个社交账户关联到同一个主账户。
 [ ] 优化新用户引导: Google 登录用户的专属产品引导流程。
+[ ] 邮件魔法链接
 
 Feature: YouTube 视频转换 (MVP)
 Status: 规划中

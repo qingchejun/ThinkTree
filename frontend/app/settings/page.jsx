@@ -3,15 +3,18 @@ import { useState, useContext, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AuthContext from '@/context/AuthContext';
 import Header from '@/components/common/Header';
-import { getProfile, updateProfile, generateInvitationCode, getUserInvitations, updatePassword, getCreditHistory } from '@/lib/api';
+import { getProfile, updateProfile, generateInvitationCode, getUserInvitations, getCreditHistory } from '@/lib/api';
 import Toast from '@/components/common/Toast';
-import PasswordInput from '@/components/common/PasswordInput';
 import RedemptionCodeForm from '@/components/common/RedemptionCodeForm';
 import RedemptionHistory from '@/components/common/RedemptionHistory';
 import AvatarSelector, { getCurrentAvatar, getAvatarUrl } from '@/components/common/AvatarSelector';
 import { Button } from '../../components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
+// 占位：无密码体系，复用 Input 以避免未定义引用
+const PasswordInput = Input;
+// 停用旧密码相关API占位，防止未定义错误
+const updatePassword = async () => ({ success: false, message: '已停用' });
 import Image from 'next/image';
 
 const settingsNavItems = [
@@ -20,12 +23,6 @@ const settingsNavItems = [
     name: '个人资料',
     icon: '👤',
     path: '/settings/profile'
-  },
-  {
-    id: 'security',
-    name: '账户与安全',
-    icon: '🔒',
-    path: '/settings/security'
   },
   {
     id: 'billing',
@@ -221,7 +218,7 @@ const SettingsContent = () => {
 
   useEffect(() => {
     if (!loading && !user) {
-      router.push('/login');
+      router.push('/');
     } else if (user && token) {
       loadProfileData();
       loadInvitations();
@@ -361,7 +358,21 @@ const SettingsContent = () => {
         );
 
       case 'security':
-        const handlePasswordUpdate = async (e) => {
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle>账户安全</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-text-secondary">
+                ThinkTree 已采用邮件验证码与 Google OAuth 无密码登录，无需管理密码。
+              </p>
+            </CardContent>
+          </Card>
+        );
+        /* 旧密码修改逻辑已隐藏 */
+        /*
+const handlePasswordUpdate = async (e) => {
           e.preventDefault();
           
           // 基本验证
@@ -464,6 +475,7 @@ const SettingsContent = () => {
           </Card>
         );
 
+      */
       case 'billing':
         return (
           <Card>
