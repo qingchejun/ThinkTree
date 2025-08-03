@@ -24,13 +24,13 @@ export default function HomePage({ searchParams }) {
     setAutoRegister(autoRegisterFromUrl);
   }, [searchParams]);
 
-  // 清理URL参数（在显示弹窗后）
+  // 清理URL参数（在弹窗打开后延迟清理）
   useEffect(() => {
     if (!isLoading && !user && (invitationCode || autoRegister)) {
-      // 延迟清理URL，确保参数已经被使用
+      // 更长的延迟，确保LandingPage组件有足够时间处理参数并打开弹窗
       const timer = setTimeout(() => {
         router.replace('/', undefined, { shallow: true });
-      }, 500);
+      }, 2000); // 增加到2秒，确保弹窗有足够时间打开
       return () => clearTimeout(timer);
     }
   }, [invitationCode, autoRegister, isLoading, user, router]);

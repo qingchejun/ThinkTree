@@ -35,12 +35,14 @@ import LoginModal from './LoginModal';
 const LandingPage = ({ invitationCode, autoRegister }) => {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
-  // 如果有autoRegister参数，自动打开登录弹窗
+  // 如果有autoRegister参数或邀请码，自动打开登录弹窗
   useEffect(() => {
-    if (autoRegister) {
+    console.log('LandingPage useEffect - autoRegister:', autoRegister, 'invitationCode:', invitationCode);
+    if (autoRegister || invitationCode) {
+      console.log('🎯 自动打开登录弹窗');
       setIsLoginModalOpen(true);
     }
-  }, [autoRegister]);
+  }, [autoRegister, invitationCode]);
   return (
     <div id="loggedOutView">
       {/* 
