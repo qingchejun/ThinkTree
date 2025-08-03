@@ -69,6 +69,9 @@ const LoginModal = ({ isOpen, onClose }) => {
     setError('');
 
     try {
+      console.log('发起登录请求:', { email, invitation_code: invitationCode || null });
+      console.log('API URL:', process.env.NEXT_PUBLIC_API_URL);
+      
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/initiate-login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -77,6 +80,8 @@ const LoginModal = ({ isOpen, onClose }) => {
           invitation_code: invitationCode || null // 发送邀请码（可能为空）
         })
       });
+      
+      console.log('响应状态:', response.status, response.statusText);
       
       if (response.ok) {
         const data = await response.json();

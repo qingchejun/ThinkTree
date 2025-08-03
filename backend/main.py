@@ -55,6 +55,9 @@ extra_origins = os.getenv("ALLOWED_ORIGINS", "").split(",")
 extra_origins = [origin.strip() for origin in extra_origins if origin.strip()]
 allowed_origins.extend(extra_origins)
 
+# 打印CORS配置以便调试
+print(f"CORS allowed origins: {allowed_origins}")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
