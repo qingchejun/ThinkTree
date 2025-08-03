@@ -260,8 +260,8 @@ export function AuthProvider({ children }) {
     refreshUser,
     showDailyRewardToast,
     setShowDailyRewardToast,
-    // 辅助状态
-    isAuthenticated: !!user && !!token,
+    // 辅助状态 - 修复：支持HttpOnly Cookie认证，只要有用户信息即视为已认证
+    isAuthenticated: !!user,
     isAdmin: !!user && user.is_superuser
   }
 
@@ -271,7 +271,7 @@ export function AuthProvider({ children }) {
       hasUser: !!user,
       hasToken: !!token,
       isLoading,
-      isAuthenticated: !!user && !!token,
+      isAuthenticated: !!user, // 修复：与上面的逻辑保持一致
       isAdmin: !!user && user.is_superuser,
       userEmail: user?.email
     })
