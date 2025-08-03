@@ -38,13 +38,10 @@ def upgrade() -> None:
     op.execute('DROP TYPE IF EXISTS transactiontype CASCADE')
     op.execute('DROP TYPE IF EXISTS redemptioncodestatus CASCADE')
 
-    # ### 现在，按正确的顺序创建所有表和类型 ###
+    # ### 现在，按正确的顺序创建所有表 ###
+    # 注意：枚举类型将由 SQLAlchemy 在创建表时自动创建
 
-    # 1. 创建自定义枚举类型
-    sa.Enum('ACTIVE', 'REDEEMED', 'EXPIRED', name='redemptioncodestatus').create(op.get_bind())
-    sa.Enum('INITIAL_GRANT', 'MANUAL_GRANT', 'DEDUCTION', 'REFUND', 'DAILY_REWARD', name='transactiontype').create(op.get_bind())
-
-    # 2. 创建没有依赖的父表 (users)
+    # 1. 创建没有依赖的父表 (users)
     op.create_table('users',
         sa.Column('id', sa.INTEGER(), autoincrement=True, nullable=False),
         sa.Column('email', sa.VARCHAR(length=255), nullable=False),
@@ -64,7 +61,7 @@ def upgrade() -> None:
     op.create_index(op.f('ix_users_google_id'), 'users', ['google_id'], unique=True)
     op.create_index(op.f('ix_users_id'), 'users', ['id'], unique=False)
 
-    # 3. 创建没有外键依赖的表 (login_tokens)
+    # 2. 创建没有外键依赖的表 (login_tokens)
     op.create_table('login_tokens',
         sa.Column('id', sa.INTEGER(), autoincrement=True, nullable=False),
         sa.Column('email', sa.VARCHAR(length=255), nullable=False),
@@ -80,7 +77,7 @@ def upgrade() -> None:
     op.create_index(op.f('ix_login_tokens_id'), 'login_tokens', ['id'], unique=False)
     op.create_index(op.f('ix_login_tokens_magic_token'), 'login_tokens', ['magic_token'], unique=True)
 
-    # 4. 创建依赖 users 表的子表
+    # 3. 创建依赖 users 表的子表
     op.create_table('user_credits',
         sa.Column('user_id', sa.INTEGER(), nullable=False),
         sa.Column('balance', sa.INTEGER(), nullable=False),
