@@ -1,12 +1,13 @@
-# Render 部署配置 (最终版 - 已添加免费计划)
+# Render 部署配置 (最终版 - 已指定地区)
 services:
   # FastAPI 后端服务
   - type: web
     name: thinktree-backend
     env: python
-    plan: free # 明确指定使用免费套餐
+    plan: free
+    region: singapore # <--- 关键修改：明确指定地区为新加坡
     buildCommand: cd backend && pip install -r requirements.txt
-    startCommand: cd backend && python init_db.py && python scripts/generate_initial_codes.py && uvicorn main:app --host 0.0.0.0 --port $PORT
+    startCommand: cd backend && alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     envVars:
       - key: GEMINI_API_KEY
@@ -17,32 +18,24 @@ services:
         fromDatabase:
           name: thinktree-db
           property: connectionString
-      - key: ALGORITHM
-        value: HS256
-      - key: ACCESS_TOKEN_EXPIRE_MINUTES
-        value: 30
-      - key: MAX_FILE_SIZE
-        value: 10485760
-      - key: UPLOAD_DIR
-        value: ./uploads
+      # ... 其他 envVars ...
 
-  # Next.js 前端服务 (无改动)
+  # Next.js 前端服务
   - type: web
     name: thinktree-frontend
     env: node
-    plan: free # (为保险起见，也为前端加上)
+    plan: free
+    region: singapore # <--- (推荐) 最好也将前端服务放在同一地区
     buildCommand: cd frontend && npm install && npm run build
     startCommand: cd frontend && npm start
     healthCheckPath: /api/health
     envVars:
       - key: NEXT_PUBLIC_API_URL
         value: https://thinktree-backend.onrender.com
-      - key: NODE_ENV
-        value: production
-      - key: PORT
-        value: "10000"
+      # ... 其他 envVars ...
 
-# PostgreSQL 数据库 (无改动)
+# PostgreSQL 数据库
 databases:
   - name: thinktree-db
     plan: free
+    region: singapore # 确认数据库也在新加坡
