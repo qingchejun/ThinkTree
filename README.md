@@ -27,7 +27,7 @@
 - 🎨 **现代 UI**: 基于 Tailwind CSS 的美观界面
 - ☁️ **云端部署**: Render 平台稳定运行，随时随地访问
 - 🎫 **邀请制注册**: 邀请码验证 + 邮箱激活双重保障，高质量用户 (v3.2.0 ✅)
-- 📧 **邮件验证系统**: Gmail SMTP + HTML 模板，自动发送验证和重置邮件 (v3.2.0 ✅)
+- 📧 **邮件系统**: Resend API + HTML 模板，自动发送欢迎和登录验证邮件 (v3.2.0 ✅)
 - 🔑 **密码重置**: 15 分钟安全令牌 + 邮件重置 + 防枚举攻击保护 (v3.2.0 ✅)
 - 👤 **完整认证体系**: 注册/登录/密码重置，JWT 令牌认证保护 (v3.2.0 ✅)
 - 🛡️ **权限保护**: 思维导图创建需登录，API 认证中间件保护 (v3.2.0 ✅)
@@ -66,7 +66,7 @@
 - PostgreSQL (云端数据库)
 - SQLAlchemy ORM + Alembic (数据库迁移)
 - JWT + bcrypt (认证加密)
-- fastapi-mail + Gmail SMTP (邮件系统)
+- Resend API (邮件系统)
 - slowapi (速率限制)
 - authlib (Google OAuth 2.0)
 - Google Gemini AI API

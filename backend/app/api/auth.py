@@ -417,11 +417,12 @@ async def register(request: Request, user_data: UserRegister, db: Session = Depe
         # 标记邀请码为已使用
         use_invitation_code(db, user_data.invitation_code, new_user.id)
         
-        # 发送验证邮件
-        email_sent = await email_service.send_verification_email(
-            email=new_user.email,
-            user_name=new_user.display_name
-        )
+        # 注释掉旧的邮件验证方法，现在使用魔法链接登录代替
+        # email_sent = await email_service.send_verification_email(
+        #     email=new_user.email,
+        #     user_name=new_user.display_name
+        # )
+        email_sent = True  # 暂时设为True，因为已使用魔法链接登录
         
         if not email_sent:
             # 邮件发送失败，但用户已创建，给出提示
@@ -1174,12 +1175,14 @@ async def request_password_reset(
         logger.info(f"🔍 DEBUG: 邮件服务实例类型: {type(email_service)}")
         
         try:
-            logger.info(f"🔍 DEBUG: 调用邮件服务 send_password_reset_email...")
-            email_sent = await email_service.send_password_reset_email(
-                email=user.email,
-                user_name=user.display_name or user.email.split('@')[0],
-                reset_link=reset_link
-            )
+            logger.info(f"🔍 DEBUG: 密码重置功能暂时禁用（未实现Resend版本）")
+            # TODO: 实现密码重置邮件的Resend版本
+            # email_sent = await email_service.send_password_reset_email(
+            #     email=user.email,
+            #     user_name=user.display_name or user.email.split('@')[0],
+            #     reset_link=reset_link
+            # )
+            email_sent = False  # 暂时设为False，提示用户功能暂不可用
             logger.info(f"🔍 DEBUG: 邮件服务返回结果: {email_sent}")
             
             if email_sent:

@@ -58,15 +58,10 @@ class Settings(BaseSettings):
         "https://thinkso.io"
     ]
     
-    # 邮件配置
-    mail_username: str = os.getenv("MAIL_USERNAME", "")
-    mail_password: str = os.getenv("MAIL_PASSWORD", "")
-    mail_from: str = os.getenv("MAIL_FROM", "noreply@thinktree.com")
+    # Resend 邮件服务配置
+    resend_api_key: str = os.getenv("RESEND_API_KEY", "")
+    mail_from: str = os.getenv("MAIL_FROM", "noreply@thinkso.io")
     mail_from_name: str = os.getenv("MAIL_FROM_NAME", "ThinkSo")
-    mail_port: int = int(os.getenv("MAIL_PORT", "587"))
-    mail_server: str = os.getenv("MAIL_SERVER", "smtp.gmail.com")
-    mail_tls: bool = os.getenv("MAIL_STARTTLS", os.getenv("MAIL_TLS", "true")).lower() == "true"
-    mail_ssl: bool = os.getenv("MAIL_SSL_TLS", os.getenv("MAIL_SSL", "false")).lower() == "true"
     
     # 前端URL配置 (用于邮箱验证链接)
     frontend_url: str = os.getenv("FRONTEND_URL", "https://thinkso.io")

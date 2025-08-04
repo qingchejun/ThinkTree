@@ -19,7 +19,7 @@ services:
         sync: false
       - key: GOOGLE_CLIENT_SECRET
         sync: false
-      - key: MAIL_PASSWORD
+      - key: RESEND_API_KEY
         sync: false
       - key: RECAPTCHA_SECRET_KEY
         sync: false
@@ -35,18 +35,6 @@ services:
         value: 10485760
       - key: UPLOAD_DIR
         value: ./uploads
-      - key: MAIL_FROM
-        value: thinktree.app@gmail.com
-      - key: MAIL_PORT
-        value: 587
-      - key: MAIL_SERVER
-        value: smtp.gmail.com
-      - key: MAIL_SSL_TLS
-        value: false
-      - key: MAIL_STARTTLS
-        value: true
-      - key: MAIL_USERNAME
-        value: thinktree.app@gmail.com
 
   # Next.js 前端服务
   - type: web
