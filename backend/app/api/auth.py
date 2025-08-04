@@ -533,44 +533,63 @@ async def login(request: Request, credentials: UserLogin, db: Session = Depends(
 # ===================================================================
 async def _send_login_code_email(email: str, code: str, magic_token: str = None):
     """
-    使用 Resend 发送魔法链接登录邮件
+    发送登录验证码邮件，支持 Resend 和 Gmail SMTP 回退
     """
     # 1. 准备邮件内容
     username = email.split('@')[0]
     
     # 2. 构建魔法链接 URL（指向后端 callback 端点）
-    # 注意：这应该指向后端的 callback 端点，而不是前端
     backend_base_url = "https://thinktree-backend.onrender.com"  # 或使用环境变量
     magic_link_url = f"{backend_base_url}/api/auth/callback?token={magic_token}" if magic_token else None
     
-    # 3. 使用新的 Resend 魔法链接邮件服务
+    # 3. 使用邮件服务
     from ..utils.email_service import email_service
+    import os
     
-    if magic_link_url:
-        # 发送包含魔法链接的邮件
-        await email_service.send_magic_link_email(
-            user_email=email,
-            user_name=username,
-            login_code=code,
-            magic_link_url=magic_link_url
-        )
-    else:
-        # 如果没有 magic_token，回退到旧的邮件发送方式（但这种情况不应该发生）
-        # 旧的登录邮件发送逻辑（已替换为 Resend）
-        # text_body = f"""Hi {username},
-        # 
-        # {code} is your login code."""
-        # 
-        # from fastapi_mail import MessageSchema, MessageType
-        # message = MessageSchema(
-        #     subject=f"👏 {code} is your login code.",
-        #     recipients=[email],
-        #     body=text_body,
-        #     subtype=MessageType.plain
-        # )
-        # await email_service.fm.send_message(message)
+    # 首先尝试使用 Resend（如果配置了 API Key）
+    resend_api_key = os.getenv('RESEND_API_KEY')
+    if resend_api_key and magic_link_url:
+        try:
+            print(f"🚀 尝试使用 Resend 发送邮件到 {email}")
+            success = await email_service.send_magic_link_email(
+                user_email=email,
+                user_name=username,
+                login_code=code,
+                magic_link_url=magic_link_url
+            )
+            if success:
+                print(f"✅ Resend 邮件发送成功到 {email}")
+                return True
+            else:
+                print(f"⚠️ Resend 邮件发送失败，将回退到 Gmail SMTP")
+        except Exception as e:
+            print(f"⚠️ Resend 邮件发送异常: {e}，将回退到 Gmail SMTP")
+    
+    # 回退到 Gmail SMTP 发送简单验证码邮件
+    try:
+        print(f"📧 使用 Gmail SMTP 发送验证码邮件到 {email}")
         
-        print(f"⚠️ 魔法链接令牌缺失，无法发送完整的登录邮件到 {email}")
+        # 构建简单的邮件内容
+        text_body = f"""Hi {username},
+
+{code} is your login code.
+
+- ThinkSo Team"""
+        
+        from fastapi_mail import MessageSchema, MessageType
+        message = MessageSchema(
+            subject=f"👏 {code} is your login code",
+            recipients=[email],
+            body=text_body,
+            subtype=MessageType.plain
+        )
+        
+        await email_service.fm.send_message(message)
+        print(f"✅ Gmail SMTP 邮件发送成功到 {email}")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Gmail SMTP 邮件发送也失败: {e}")
         return False
 
 @router.post("/initiate-login", response_model=InitiateLoginResponse)
@@ -657,12 +676,15 @@ async def initiate_login(request: Request, data: InitiateLoginRequest, db: Sessi
     # 7. 发送邮件
     try:
         print(f"准备向 {data.email} 发送验证码邮件")
-        await _send_login_code_email(data.email, code, magic_token)
-        print(f"验证码邮件发送成功到 {data.email}")
+        email_sent = await _send_login_code_email(data.email, code, magic_token)
+        if email_sent:
+            print(f"✅ 验证码邮件发送成功到 {data.email}")
+        else:
+            print(f"⚠️ 验证码邮件发送失败到 {data.email}，但继续返回成功响应")
     except Exception as e:
         # 即便邮件发送失败，为了不暴露邮箱是否存在，也返回成功
         # 但在服务器端记录严重错误
-        print(f"CRITICAL: Failed to send login code email to {data.email}: {e}")
+        print(f"❌ CRITICAL: Failed to send login code email to {data.email}: {e}")
         import traceback
         print(f"邮件发送异常详情: {traceback.format_exc()}")
 

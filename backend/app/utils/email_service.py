@@ -353,7 +353,7 @@ class EmailService:
             # 检查是否配置了 Resend API 密钥
             resend_api_key = os.getenv('RESEND_API_KEY')
             if not resend_api_key:
-                print("⚠️ RESEND_API_KEY 环境变量未配置，跳过 Resend 魔法链接邮件发送")
+                print("⚠️ RESEND_API_KEY 环境变量未配置，无法使用 Resend 服务")
                 return False
             
             # 初始化 Resend 客户端
