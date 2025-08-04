@@ -59,22 +59,6 @@ export default function MindmapsPage() {
     const fetchMindmaps = async () => {
       if (!token || !user) return
 
-      // 开发环境模拟数据
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🚀 开发模式：模拟获取思维导图列表');
-        setLoading(true);
-        setTimeout(() => {
-          const mockMindmaps = [
-            { id: '1', title: '我的第一个项目', description: '这是一个关于产品路线图的思维导图，包含了Q1到Q4的规划。', updated_at: new Date().toISOString() },
-            { id: '2', title: '团队头脑风暴', description: '记录了上次市场营销会议的所有创意点子，非常宝贵。', updated_at: new Date().toISOString() },
-            { id: '3', title: '学习React笔记', description: '深入学习React Hooks和状态管理的个人笔记，持续更新中。', updated_at: new Date().toISOString() },
-            { id: '4', title: '旅行计划', description: '计划一次去东南亚的旅行，包括预算、行程和必去景点。', updated_at: new Date().toISOString() },
-          ];
-          setMindmaps(mockMindmaps);
-          setLoading(false);
-        }, 1000); // 模拟1秒加载
-        return;
-      }
 
       // 生产环境真实请求
       try {

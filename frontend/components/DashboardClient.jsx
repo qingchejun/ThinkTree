@@ -329,7 +329,7 @@ CreationPanel.displayName = 'CreationPanel';
 // ===================================================================
 // ======================= 3. 子组件：最近项目 ========================
 // ===================================================================
-const RecentProjects = React.memo(({ mindmaps, onCardClick, onCreateNew }) => {
+const RecentProjects = React.memo(({ mindmaps, onCardClick, onCreateNew, loading = false }) => {
     const router = useRouter();
 
     const handleCardClick = (id) => {
@@ -362,7 +362,25 @@ const RecentProjects = React.memo(({ mindmaps, onCardClick, onCreateNew }) => {
           )}
         </div>
 
-        {mindmaps && mindmaps.length > 0 ? (
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            {/* 新建导图卡片 */}
+            <div className="cursor-pointer group bg-gray-50 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center p-6 h-full min-h-[200px]">
+              <PlusCircle className="w-12 h-12 text-green-500 transition-colors mb-3"/>
+              <h3 className="font-semibold text-gray-600 transition-colors text-lg">新建导图</h3>
+            </div>
+            {/* 加载骨架屏 */}
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} className="bg-white rounded-xl border overflow-hidden min-h-[200px] animate-pulse">
+                <div className="bg-gray-200 h-32"></div>
+                <div className="p-4">
+                  <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                  <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : mindmaps && mindmaps.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
             {/* 创建新项目卡片 */}
             <div onClick={onCreateNew} 
@@ -418,11 +436,13 @@ RecentProjects.displayName = 'RecentProjects';
 // ======================= 4. 主组件：创作中心 ========================
 // ===================================================================
 const DashboardClient = ({ initialData }) => {
-  const { logout, isLoading } = useAuth();
+  const { logout, isLoading, user, token } = useAuth();
   const router = useRouter();
   const { apiCall } = useApi();
 
-  const { user, projects } = initialData || { user: null, projects: [] };
+  // 状态管理
+  const [projects, setProjects] = useState([]);
+  const [projectsLoading, setProjectsLoading] = useState(true);
 
   const { loading: createMindMapLoading, execute: createMindMap } = useAsync(async (data) => {
     return await apiCall('/api/mindmaps/', {
@@ -430,6 +450,44 @@ const DashboardClient = ({ initialData }) => {
       body: JSON.stringify(data),
     });
   });
+
+  // 获取用户思维导图列表
+  useEffect(() => {
+    const fetchProjects = async () => {
+      if (!token || !user) {
+        setProjects([]);
+        setProjectsLoading(false);
+        return;
+      }
+
+      try {
+        setProjectsLoading(true);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/mindmaps/`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          // 只显示前3个项目，其余的可以通过"查看全部"链接查看
+          setProjects((data || []).slice(0, 3));
+        } else {
+          console.error('获取思维导图列表失败:', response.status);
+          setProjects([]);
+        }
+      } catch (err) {
+        console.error('获取思维导图列表失败:', err);
+        setProjects([]);
+      } finally {
+        setProjectsLoading(false);
+      }
+    };
+
+    fetchProjects();
+  }, [token, user]);
 
   const handleCreateMindMap = async (creationData) => {
     try {
@@ -464,7 +522,7 @@ const DashboardClient = ({ initialData }) => {
       <div className="min-h-screen bg-gray-50">
         <main className="container mx-auto px-6 py-8">
           <CreationPanel onCreate={handleCreateMindMap} loading={createMindMapLoading} />
-          <RecentProjects mindmaps={projects} onCardClick={(id) => router.push(`/mindmap/${id}`)} onCreateNew={() => router.push('/create')} />
+          <RecentProjects mindmaps={projects} onCardClick={(id) => router.push(`/mindmap/${id}`)} onCreateNew={() => router.push('/create')} loading={projectsLoading} />
         </main>
       </div>
     </ErrorBoundary>
