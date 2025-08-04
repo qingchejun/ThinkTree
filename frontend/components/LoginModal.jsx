@@ -80,10 +80,15 @@ const LoginModal = ({ isOpen, onClose, initialInvitationCode, autoOpenRegister }
     setError('');
 
     try {
-      console.log('发起登录请求:', { email, invitation_code: invitationCode || null });
-      console.log('API URL:', process.env.NEXT_PUBLIC_API_URL);
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const fullUrl = `${apiUrl}/api/auth/initiate-login`;
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/initiate-login`, {
+      console.log('🔍 [调试] 发起登录请求:', { email, invitation_code: invitationCode || null });
+      console.log('🔍 [调试] API URL:', apiUrl);
+      console.log('🔍 [调试] 完整请求URL:', fullUrl);
+      console.log('🔍 [调试] 环境:', process.env.NODE_ENV);
+      
+      const response = await fetch(fullUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 

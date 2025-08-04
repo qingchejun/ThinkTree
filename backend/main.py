@@ -65,9 +65,20 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allow_headers=[
+        "Accept",
+        "Accept-Language",
+        "Content-Language",
+        "Content-Type",
+        "Authorization",
+        "X-Requested-With",
+        "Origin",
+        "Access-Control-Request-Method",
+        "Access-Control-Request-Headers",
+    ],
     expose_headers=["*"],
+    max_age=600,  # 预检请求缓存10分钟
 )
 
 # 注册路由
@@ -86,6 +97,11 @@ async def root():
 @app.get("/health")
 async def health_check():
     return {"status": "healthy", "version": "3.2.3-stable", "feature": "邀请链接注册支持"}
+
+@app.options("/{full_path:path}")
+async def options_handler(request: Request):
+    """处理所有OPTIONS预检请求"""
+    return {"message": "OK"}
 
 
 if __name__ == "__main__":
