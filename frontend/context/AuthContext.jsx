@@ -31,6 +31,8 @@ export function AuthProvider({ children }) {
 
   // 标记是否已完成首次认证检查
   const [authInitialized, setAuthInitialized] = useState(false);
+  // 防止并发认证检查
+  const [authCheckInProgress, setAuthCheckInProgress] = useState(false);
 
   // 首次挂载时设置isClient
   useEffect(() => {
@@ -94,9 +96,11 @@ export function AuthProvider({ children }) {
         return userData
       } else {
         console.error('❌ 获取用户信息失败:', response.status, response.statusText)
-        // 令牌无效，清除存储的数据
+        // 令牌无效，清除存储的数据和状态
         if (response.status === 401 && typeof window !== 'undefined') {
           localStorage.removeItem('access_token')
+          setToken(null)
+          setUser(null)
         }
         return null
       }
@@ -162,12 +166,16 @@ export function AuthProvider({ children }) {
   // 退出登录函数
   const logout = (router = null) => {
     if (process.env.NODE_ENV === 'development') {
-      console.log('用户退出登录')
+      console.log('🚪 用户退出登录')
     }
     
     // 清除状态
     setUser(null)
     setToken(null)
+    
+    // 重置认证标志，防止重新初始化
+    setAuthInitialized(false)
+    setAuthCheckInProgress(false)
     
     // 清除 localStorage 中的 token
     if (typeof window !== 'undefined') {
@@ -212,22 +220,49 @@ export function AuthProvider({ children }) {
   // 统一的认证状态初始化
   useEffect(() => {
     const initializeAuth = async () => {
-      // 防止重复执行
-      if (authInitialized) return;
+      // 防止重复执行和并发执行
+      if (authInitialized || authCheckInProgress) return;
       setAuthInitialized(true);
+      setAuthCheckInProgress(true);
 
       console.log('🔄 开始初始化认证状态');
 
-      // 检查真实的登录状态（开发和生产环境都使用真实认证）
+      // 检查真实的登录状态
       try {
         console.log('🔍 检查真实登录状态');
+        
+        // 首先检查localStorage中的token
+        const storedToken = localStorage.getItem('access_token');
+        if (storedToken) {
+          console.log('📦 在localStorage中找到token');
+          setToken(storedToken);
+          
+          // 使用token获取用户信息
+          const userData = await fetchUserProfile(storedToken, { 
+            skipTimeout: true, 
+            requestId: 'auth_init' 
+          });
+          
+          if (userData) {
+            console.log('✅ 通过localStorage token检测到有效登录状态:', userData);
+            setUser(userData);
+            return; // 成功获取用户信息，直接返回
+          } else {
+            console.log('🚫 localStorage token无效，清除并尝试Cookie');
+            localStorage.removeItem('access_token');
+            setToken(null);
+          }
+        }
+        
+        // 如果localStorage没有token或token无效，尝试HttpOnly Cookie
+        console.log('🍪 尝试使用HttpOnly Cookie检查登录状态');
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/profile`, {
           credentials: 'include'
         });
 
         if (response.ok) {
           const userData = await response.json();
-          console.log('✅ 检测到有效登录状态:', userData);
+          console.log('✅ 通过Cookie检测到有效登录状态:', userData);
           setUser(userData);
         } else {
           console.log('❌ 未检测到有效登录状态');
@@ -241,13 +276,39 @@ export function AuthProvider({ children }) {
       } finally {
         console.log('🏁 认证状态检查完成');
         setIsLoading(false);
+        setAuthCheckInProgress(false);
       }
     };
 
     if (isClient) {
       initializeAuth();
     }
-  }, [isClient, authInitialized]);
+  }, [isClient, authInitialized, authCheckInProgress]);
+
+  // 监听localStorage变化，确保多标签页同步
+  useEffect(() => {
+    if (!isClient) return;
+
+    const handleStorageChange = (e) => {
+      if (e.key === 'access_token') {
+        console.log('📡 检测到localStorage token变化:', e.newValue ? '有token' : '无token');
+        
+        if (!e.newValue && user) {
+          // token被删除，清理用户状态
+          console.log('🚪 token被删除，清理用户状态');
+          setUser(null);
+          setToken(null);
+        } else if (e.newValue && !user) {
+          // 有新token但当前无用户，重新验证
+          console.log('🔄 检测到新token，重新验证用户');
+          setAuthInitialized(false); // 触发重新初始化
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [isClient, user]);
 
   // 提供给子组件的值
   const contextValue = {
@@ -270,14 +331,18 @@ export function AuthProvider({ children }) {
 
   // 开发环境调试日志 - 只在客户端执行
   if (process.env.NODE_ENV === 'development' && isClient) {
-    console.log('AuthContext状态更新:', {
+    const currentTimestamp = new Date().toLocaleTimeString()
+    console.log(`📊 [${currentTimestamp}] AuthContext状态更新:`, {
       hasUser: !!user,
       hasToken: !!token,
       isLoading,
+      authInitialized,
+      authCheckInProgress,
       isAuthenticated: !!user, // 修复：与上面的逻辑保持一致
       isAdmin: !!user && user.is_superuser,
       userEmail: user?.email,
-      credits: user?.credits || 0
+      credits: user?.credits || 0,
+      localStorageToken: typeof window !== 'undefined' ? !!localStorage.getItem('access_token') : 'N/A'
     })
   }
 
