@@ -18,21 +18,25 @@ const Sidebar = () => {
       href: '/mindmaps',
       icon: <LayoutDashboard className="w-5 h-5 text-blue-500" />,
       label: '全部',
+      available: true,
     },
     {
       href: '/mindmaps/favorites',
-      icon: <Star className="w-5 h-5 text-yellow-500" />,
+      icon: <Star className="w-5 h-5 text-gray-400" />,
       label: '收藏',
+      available: false, // 暂未实现
     },
     {
       href: '/mindmaps/recent',
-      icon: <Clock className="w-5 h-5 text-green-500" />,
+      icon: <Clock className="w-5 h-5 text-gray-400" />,
       label: '最近打开',
+      available: false, // 暂未实现
     },
     {
       href: '/mindmaps/trash',
-      icon: <Trash2 className="w-5 h-5 text-red-500" />,
+      icon: <Trash2 className="w-5 h-5 text-gray-400" />,
       label: '回收站',
+      available: false, // 暂未实现
     },
   ];
 
@@ -48,19 +52,38 @@ const Sidebar = () => {
         我的导图
       </h2>
       <nav className="space-y-2">
-        {navItems.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={`flex items-center space-x-3 px-4 py-2 rounded-lg transition-colors ${
-              pathname === item.href
-                ? 'bg-gray-200 text-gray-900 font-semibold'
-                : 'text-gray-600 hover:bg-gray-200'
-            } ${isCollapsed ? 'justify-center' : ''}`}>
-            {item.icon}
-            {!isCollapsed && <span>{item.label}</span>}
-          </Link>
-        ))}
+        {navItems.map((item) => {
+          if (item.available) {
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center space-x-3 px-4 py-2 rounded-lg transition-colors ${
+                  pathname === item.href
+                    ? 'bg-gray-200 text-gray-900 font-semibold'
+                    : 'text-gray-600 hover:bg-gray-200'
+                } ${isCollapsed ? 'justify-center' : ''}`}>
+                {item.icon}
+                {!isCollapsed && <span>{item.label}</span>}
+              </Link>
+            )
+          } else {
+            return (
+              <div
+                key={item.href}
+                className={`flex items-center space-x-3 px-4 py-2 rounded-lg cursor-not-allowed opacity-50 ${isCollapsed ? 'justify-center' : ''}`}
+                title="功能开发中">
+                {item.icon}
+                {!isCollapsed && (
+                  <span className="text-gray-400">
+                    {item.label}
+                    <span className="text-xs ml-1">(开发中)</span>
+                  </span>
+                )}
+              </div>
+            )
+          }
+        })}
       </nav>
     </aside>
   );

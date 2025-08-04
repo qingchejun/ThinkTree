@@ -278,7 +278,7 @@ export default function MindmapsPage() {
                           variant="default" 
                           size="sm" 
                           className="bg-black text-white hover:bg-gray-800 text-xs px-1.5 h-5"
-                          onClick={() => router.push(`/editor/${mindmap.id}`)}
+                          onClick={() => router.push(`/mindmap/${mindmap.id}`)}
                         >
                           查看
                         </Button>
