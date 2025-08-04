@@ -96,7 +96,7 @@ const LandingPage = ({ invitationCode, autoRegister }) => {
         </div>
 
         {/* 福利横幅 - 吸引用户注册的限时优惠信息 */}
-        <div className="mt-0 max-w-2xl mx-auto">
+        <div className="-mt-8 max-w-2xl mx-auto">
           <div className="bg-gradient-to-r from-orange-50 to-yellow-50 border border-orange-200 rounded-2xl p-4 text-center">
             <p className="text-orange-800 font-medium">
               🎉 限时内测福利！注册即送 1000 积分，畅享10万字文档处理额度！
@@ -114,7 +114,7 @@ const LandingPage = ({ invitationCode, autoRegister }) => {
           {/* 区域标题和描述 */}
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900">强大功能，简单操作</h2>
-            <p className="text-lg text-gray-600 mt-4 max-w-2xl mx-auto">集成了最先进的 AI 技术，为您提供最佳的思维导图创建体验</p>
+            <p className="text-lg text-gray-600 mt-8 max-w-2xl mx-auto">集成了最先进的 AI 技术，为您提供最佳的思维导图创建体验</p>
           </div>
           
           {/* 功能卡片网格 - 响应式3列布局 */}
