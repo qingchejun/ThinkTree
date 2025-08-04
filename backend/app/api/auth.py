@@ -533,63 +533,46 @@ async def login(request: Request, credentials: UserLogin, db: Session = Depends(
 # ===================================================================
 async def _send_login_code_email(email: str, code: str, magic_token: str = None):
     """
-    发送登录验证码邮件，支持 Resend 和 Gmail SMTP 回退
+    使用 Resend 发送登录验证码邮件
     """
     # 1. 准备邮件内容
     username = email.split('@')[0]
     
     # 2. 构建魔法链接 URL（指向后端 callback 端点）
-    backend_base_url = "https://thinktree-backend.onrender.com"  # 或使用环境变量
+    backend_base_url = "https://thinktree-backend.onrender.com"
     magic_link_url = f"{backend_base_url}/api/auth/callback?token={magic_token}" if magic_token else None
     
-    # 3. 使用邮件服务
+    # 3. 使用 Resend 邮件服务
     from ..utils.email_service import email_service
-    import os
     
-    # 首先尝试使用 Resend（如果配置了 API Key）
-    resend_api_key = os.getenv('RESEND_API_KEY')
-    if resend_api_key and magic_link_url:
-        try:
-            print(f"🚀 尝试使用 Resend 发送邮件到 {email}")
-            success = await email_service.send_magic_link_email(
-                user_email=email,
-                user_name=username,
-                login_code=code,
-                magic_link_url=magic_link_url
-            )
-            if success:
-                print(f"✅ Resend 邮件发送成功到 {email}")
-                return True
-            else:
-                print(f"⚠️ Resend 邮件发送失败，将回退到 Gmail SMTP")
-        except Exception as e:
-            print(f"⚠️ Resend 邮件发送异常: {e}，将回退到 Gmail SMTP")
+    if not magic_link_url:
+        print(f"❌ 魔法链接令牌缺失，无法发送登录邮件到 {email}")
+        return False
     
-    # 回退到 Gmail SMTP 发送简单验证码邮件
     try:
-        print(f"📧 使用 Gmail SMTP 发送验证码邮件到 {email}")
+        import time
+        start_time = time.time()
+        print(f"📧 [开始] 使用 Resend 发送登录邮件到 {email}")
         
-        # 构建简单的邮件内容
-        text_body = f"""Hi {username},
-
-{code} is your login code.
-
-- ThinkSo Team"""
-        
-        from fastapi_mail import MessageSchema, MessageType
-        message = MessageSchema(
-            subject=f"👏 {code} is your login code",
-            recipients=[email],
-            body=text_body,
-            subtype=MessageType.plain
+        success = await email_service.send_magic_link_email(
+            user_email=email,
+            user_name=username,
+            login_code=code,
+            magic_link_url=magic_link_url
         )
         
-        await email_service.fm.send_message(message)
-        print(f"✅ Gmail SMTP 邮件发送成功到 {email}")
-        return True
+        end_time = time.time()
+        duration = round(end_time - start_time, 2)
         
+        if success:
+            print(f"✅ [完成] Resend 邮件发送成功到 {email}，耗时 {duration}s")
+            return True
+        else:
+            print(f"❌ [失败] Resend 邮件发送失败到 {email}，耗时 {duration}s")
+            return False
+            
     except Exception as e:
-        print(f"❌ Gmail SMTP 邮件发送也失败: {e}")
+        print(f"❌ [异常] Resend 邮件发送异常到 {email}: {e}")
         return False
 
 @router.post("/initiate-login", response_model=InitiateLoginResponse)

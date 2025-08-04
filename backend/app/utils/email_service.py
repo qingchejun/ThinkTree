@@ -350,10 +350,10 @@ class EmailService:
         使用 Resend 发送魔法链接登录邮件
         """
         try:
-            # 检查是否配置了 Resend API 密钥
+            # 获取 Resend API 密钥
             resend_api_key = os.getenv('RESEND_API_KEY')
             if not resend_api_key:
-                print("⚠️ RESEND_API_KEY 环境变量未配置，无法使用 Resend 服务")
+                print("❌ RESEND_API_KEY 环境变量未配置")
                 return False
             
             # 初始化 Resend 客户端
