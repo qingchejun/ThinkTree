@@ -457,7 +457,7 @@ const DashboardClient = ({ initialData }) => {
       <div className="min-h-screen bg-gray-50">
         <main className="container mx-auto px-6 py-8">
           <CreationPanel onCreate={handleCreateMindMap} loading={createMindMapLoading} />
-          <RecentProjects mindmaps={projects} onCardClick={(id) => router.push(`/mindmap/${id}`)} onCreateNew={() => router.push('/mindmap/new')} />
+          <RecentProjects mindmaps={projects} onCardClick={(id) => router.push(`/mindmap/${id}`)} onCreateNew={() => router.push('/create')} />
         </main>
       </div>
     </ErrorBoundary>
