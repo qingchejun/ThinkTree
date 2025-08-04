@@ -2,48 +2,39 @@
 import { useState, useContext, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AuthContext from '@/context/AuthContext';
-import Header from '@/components/common/Header';
+
 import { getProfile, updateProfile, generateInvitationCode, getUserInvitations, getCreditHistory } from '@/lib/api';
 import Toast from '@/components/common/Toast';
 import RedemptionCodeForm from '@/components/common/RedemptionCodeForm';
 import RedemptionHistory from '@/components/common/RedemptionHistory';
-import AvatarSelector, { getCurrentAvatar, getAvatarUrl } from '@/components/common/AvatarSelector';
-import { Button } from '../../components/ui/Button';
-import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
-import { Input } from '../../components/ui/Input';
+import AvatarSelector, { getCurrentAvatar } from '@/components/common/AvatarSelector';
+import AvatarDisplay from '@/components/common/AvatarDisplay';
+import { Button } from '@/components/ui/Button';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
+import { Input } from '@/components/ui/Input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
+import { Label } from "@/components/ui/Label";
+import { User, CreditCard, Gift } from 'lucide-react';
 // 占位：无密码体系，复用 Input 以避免未定义引用
 const PasswordInput = Input;
 // 停用旧密码相关API占位，防止未定义错误
 const updatePassword = async () => ({ success: false, message: '已停用' });
 import Image from 'next/image';
 
-const settingsNavItems = [
-  {
-    id: 'profile',
-    name: '个人资料',
-    icon: '👤',
-    path: '/settings/profile'
-  },
-  {
-    id: 'billing',
-    name: '用量与计费',
-    icon: '💳',
-    path: '/settings/billing'
-  },
-  {
-    id: 'invitations',
-    name: '邀请好友',
-    icon: '👥',
-    path: '/settings/invitations'
-  }
-];
+
 
 // 分离出使用 useSearchParams 的组件
+const settingsNavItems = [
+  { id: 'profile', name: '个人资料', icon: User, iconColor: 'text-blue-500' },
+  { id: 'billing', name: '用量计费', icon: CreditCard, iconColor: 'text-green-500' },
+  { id: 'invitations', name: '邀请好友', icon: Gift, iconColor: 'text-orange-500' },
+];
+
 const SettingsContent = () => {
-  const { user, token, loading, refreshUser } = useContext(AuthContext);
+  const { user, token, loading, refreshUser, isAuthenticated } = useContext(AuthContext);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [activeTab, setActiveTab] = useState('profile');
+    const activeTab = searchParams.get('tab') || 'profile';
   const [profileData, setProfileData] = useState(null);
   const [invitations, setInvitations] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -208,24 +199,31 @@ const SettingsContent = () => {
     }
   };
 
-  // 处理 URL 参数中的 tab
-  useEffect(() => {
-    const tab = searchParams.get('tab');
-    if (tab && ['profile', 'security', 'billing', 'invitations'].includes(tab)) {
-      setActiveTab(tab);
-    }
-  }, [searchParams]);
+
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.push('/');
-    } else if (user && token) {
-      loadProfileData();
-      loadInvitations();
-      loadCreditHistory(); // 加载积分历史
+    if (loading) {
+      return; // Wait until the auth state is resolved
+    }
+
+    if (!isAuthenticated) {
+      router.push('/dashboard');
+      return;
+    }
+
+    // If authenticated, proceed to load data.
+    if (process.env.NODE_ENV === 'development' && user?.id === 'mock-user-id') {
+      console.log('开发模式：使用模拟数据，跳过API加载');
+      return;
+    }
+    
+    if (user && token) {
+        loadProfileData();
+        loadInvitations();
+        loadCreditHistory();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, token, loading, router]);
+  }, [user, token, loading, isAuthenticated, router]);
 
   if (loading) {
     return (
@@ -246,8 +244,35 @@ const SettingsContent = () => {
     return null;
   }
 
+  const handleGenerateInvitation = async () => {
+    try {
+      setIsLoading(true);
+      const response = await generateInvitationCode(token, '用户设置页面生成');
+      if (response.success) {
+        showToast('邀请码生成成功！');
+        loadInvitations(); // 重新加载邀请码列表
+        loadProfileData(); // 重新加载资料以更新剩余配额
+      } else {
+        showToast(response.message || '生成邀请码失败', 'error');
+      }
+    } catch (error) {
+      console.error('生成邀请码失败:', error);
+      let errorMessage = '生成邀请码失败，请稍后重试';
+      
+      if (error.message && error.message.includes('验证邮箱')) {
+        errorMessage = '请先验证您的邮箱，然后再生成邀请码';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      showToast(errorMessage, 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // 保存个人资料
-  const handleSaveProfile = async () => {
+    const handleSaveProfile = async () => {
     try {
       setIsLoading(true);
       const response = await updateProfile({ display_name: displayName }, token);
@@ -279,482 +304,240 @@ const SettingsContent = () => {
     }
   };
 
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'profile':
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle>个人资料</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                {/* 头像选择 */}
-                <div>
-                  <label className="block text-sm font-medium text-text-primary mb-2">
-                    头像
-                  </label>
-                  <div className="flex items-center space-x-4">
-                    <Image
-                      width={80}
-                      height={80}
-                      src={getAvatarUrl(tempAvatar)}
-                      alt="用户头像"
-                      className="w-20 h-20 rounded-full object-cover border-2 border-gray-200"
-                    />
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={() => setIsAvatarSelectorOpen(true)}
-                      className="text-sm"
-                    >
-                      更换头像
-                    </Button>
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-text-primary mb-2">
-                    邮箱地址
-                  </label>
-                  <Input
-                    type="email"
-                    value={profileData?.email || user?.email || ''}
-                    disabled
-                    className="bg-background-secondary text-text-tertiary"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-text-primary mb-2">
-                    显示名称
-                  </label>
-                  <Input
-                    type="text"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    placeholder="输入您的显示名称"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-text-primary mb-2">
-                    注册时间
-                  </label>
-                  <Input
-                    type="text"
-                    value={profileData ? new Date(profileData.created_at).toLocaleString() : '加载中...'}
-                    disabled
-                    className="bg-background-secondary text-text-tertiary"
-                  />
-                </div>
-                <Button 
-                  onClick={handleSaveProfile}
-                  disabled={isLoading}
-                >
-                  {isLoading ? '保存中...' : '保存更改'}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        );
 
-      case 'security':
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle>账户安全</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-text-secondary">
-                ThinkTree 已采用邮件验证码与 Google OAuth 无密码登录，无需管理密码。
-              </p>
-            </CardContent>
-          </Card>
-        );
-        /* 旧密码修改逻辑已隐藏 */
-        /*
-const handlePasswordUpdate = async (e) => {
-          e.preventDefault();
-          
-          // 基本验证
-          if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
-            showToast('请填写所有密码字段', 'error');
-            return;
-          }
-          
-          if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-            showToast('新密码和确认密码不一致', 'error');
-            return;
-          }
-          
-          if (passwordForm.newPassword.length < 8) {
-            showToast('新密码长度不能少于8位', 'error');
-            return;
-          }
-          
-          try {
-            setIsLoading(true);
-            const response = await updatePassword(
-              token, 
-              passwordForm.currentPassword, 
-              passwordForm.newPassword, 
-              passwordForm.confirmPassword
-            );
-            
-            if (response.success) {
-              showToast('密码更新成功');
-              // 清空表单
-              setPasswordForm({
-                currentPassword: '',
-                newPassword: '',
-                confirmPassword: ''
-              });
-            } else {
-              showToast(response.message || '密码更新失败', 'error');
-            }
-          } catch (error) {
-            console.error('密码更新失败:', error);
-            showToast(error.message || '密码更新失败，请稍后重试', 'error');
-          } finally {
-            setIsLoading(false);
-          }
-        };
 
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle>账户与安全</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-medium text-text-primary mb-4">修改密码</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-text-primary mb-2">
-                        当前密码
-                      </label>
-                      <PasswordInput
-                        value={passwordForm.currentPassword}
-                        onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
-                        placeholder="请输入当前密码"
-                        className="border border-border-primary bg-transparent px-3 py-2 text-sm placeholder:text-text-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-text-primary mb-2">
-                        新密码
-                      </label>
-                      <PasswordInput
-                        value={passwordForm.newPassword}
-                        onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
-                        placeholder="请输入新密码（至少8位）"
-                        className="border border-border-primary bg-transparent px-3 py-2 text-sm placeholder:text-text-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-text-primary mb-2">
-                        确认新密码
-                      </label>
-                      <PasswordInput
-                        value={passwordForm.confirmPassword}
-                        onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
-                        placeholder="请再次输入新密码"
-                        className="border border-border-primary bg-transparent px-3 py-2 text-sm placeholder:text-text-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2"
-                      />
-                    </div>
-                    <Button 
-                      onClick={handlePasswordUpdate}
-                      disabled={isLoading}
-                    >
-                      {isLoading ? '更新中...' : '更新密码'}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        );
 
-      */
-      case 'billing':
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle>用量与计费</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                {/* 当前积分余额显示 */}
-                <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
-                  <h3 className="text-lg font-medium text-blue-900 mb-2">当前积分余额</h3>
-                  <p className="text-3xl font-bold text-blue-600">
-                    {currentBalance}
-                  </p>
-                  <p className="text-sm text-blue-700 mt-1">积分 (每100字符消耗1积分)</p>
-                </div>
 
-                {/* 兑换码功能 */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <RedemptionCodeForm 
-                    onRedemptionSuccess={handleRedemptionSuccess}
-                    onRedemptionError={handleRedemptionError}
-                  />
-                  <RedemptionHistory />
-                </div>
-
-                {/* 使用统计 */}
-                <div>
-                  <h3 className="text-lg font-medium text-text-primary mb-4">使用统计</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Card className="bg-background-secondary">
-                      <CardContent className="pt-6">
-                        <p className="text-sm text-text-secondary">账户状态</p>
-                        <p className="text-2xl font-bold text-text-primary">
-                          {profileData && profileData.is_verified ? '已验证' : '未验证'}
-                        </p>
-                        <p className="text-sm text-text-tertiary">邮箱验证</p>
-                      </CardContent>
-                    </Card>
-                    <Card className="bg-background-secondary">
-                      <CardContent className="pt-6">
-                        <p className="text-sm text-text-secondary">交易记录</p>
-                        <p className="text-2xl font-bold text-text-primary">
-                          {creditPagination.total_count || 0}
-                        </p>
-                        <p className="text-sm text-text-tertiary">总交易数</p>
-                      </CardContent>
-                    </Card>
-                  </div>
-                </div>
-
-                {/* 积分历史记录 */}
-                <div>
-                  <h3 className="text-lg font-medium text-text-primary mb-4">积分历史记录</h3>
-                  
-                  {creditLoading && creditHistory.length === 0 ? (
-                    /* 加载状态 */
-                    <div className="text-center py-12">
-                      <div className="animate-spin rounded-full h-8 w-8 border-4 border-brand-primary border-t-transparent mx-auto mb-4"></div>
-                      <p className="text-text-secondary">加载中...</p>
-                    </div>
-                  ) : creditHistory.length === 0 ? (
-                    /* 空状态 */
-                    <div className="text-center py-12 bg-background-secondary rounded-lg">
-                      <div className="text-4xl mb-4">📊</div>
-                      <p className="text-text-secondary text-lg mb-2">暂无积分记录</p>
-                      <p className="text-text-tertiary text-sm">开始使用思维导图功能后，积分交易记录将显示在这里</p>
-                    </div>
-                  ) : (
-                    /* 积分历史列表 */
-                    <div className="space-y-3">
-                      {creditHistory.map((transaction) => (
-                        <Card key={transaction.id} className="border border-border-secondary">
-                          <CardContent className="py-4">
-                            <div className="flex items-center justify-between">
-                              <div className="flex-1">
-                                <div className="flex items-center justify-between mb-1">
-                                  <span className="text-sm font-medium text-text-primary">
-                                    {formatTransactionType(transaction.type)}
-                                  </span>
-                                  <span className={`text-sm ${getAmountStyle(transaction.type)}`}>
-                                    {getAmountText(transaction.type, transaction.amount)}
-                                  </span>
-                                </div>
-                                <p className="text-sm text-text-secondary mb-1">
-                                  {transaction.description}
-                                </p>
-                                <p className="text-xs text-text-tertiary">
-                                  {formatDate(transaction.created_at)}
-                                </p>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                      
-                      {/* 加载更多按钮 */}
-                      {creditPagination.has_next && (
-                        <div className="text-center pt-4">
-                          <Button
-                            onClick={() => loadCreditHistory(creditPagination.current_page + 1, true)}
-                            disabled={creditLoading}
-                            variant="outline"
-                          >
-                            {creditLoading ? '加载中...' : '加载更多'}
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        );
-
-      case 'invitations':
-        const handleGenerateInvitation = async () => {
-          try {
-            setIsLoading(true);
-            const response = await generateInvitationCode(token, '用户设置页面生成');
-            if (response.success) {
-              showToast('邀请码生成成功！');
-              loadInvitations(); // 重新加载邀请码列表
-              loadProfileData(); // 重新加载资料以更新剩余配额
-            } else {
-              showToast('生成邀请码失败', 'error');
-            }
-          } catch (error) {
-            console.error('生成邀请码失败:', error);
-            let errorMessage = '生成邀请码失败，请稍后重试';
-            
-            // 检查是否是邮箱验证问题
-            if (error.message && error.message.includes('验证邮箱')) {
-              errorMessage = '请先验证您的邮箱，然后再生成邀请码';
-            } else if (error.message) {
-              errorMessage = error.message;
-            }
-            
-            showToast(errorMessage, 'error');
-          } finally {
-            setIsLoading(false);
-          }
-        };
-
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle>邀请好友</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                <div className="bg-green-50 p-6 rounded-lg border border-green-200">
-                  <h3 className="text-lg font-medium text-green-900 mb-2">邀请配额</h3>
-                  <p className="text-3xl font-bold text-green-600">
-                    {profileData ? profileData.invitation_remaining : '加载中...'}
-                  </p>
-                  <p className="text-sm text-green-700 mt-1">
-                    剩余邀请码 (总配额: {profileData ? profileData.invitation_quota : '...'})
-                  </p>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Card className="bg-background-secondary">
-                    <CardContent className="pt-6">
-                      <p className="text-sm text-text-secondary">已生成</p>
-                      <p className="text-2xl font-bold text-text-primary">
-                        {profileData ? profileData.invitation_used : '...'}
-                      </p>
-                      <p className="text-sm text-text-tertiary">邀请码</p>
-                    </CardContent>
-                  </Card>
-                  <Card className="bg-background-secondary">
-                    <CardContent className="pt-6">
-                      <p className="text-sm text-text-secondary">总配额</p>
-                      <p className="text-2xl font-bold text-text-primary">
-                        {profileData ? profileData.invitation_quota : '...'}
-                      </p>
-                      <p className="text-sm text-text-tertiary">邀请码</p>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                <div>
-                  <h3 className="text-lg font-medium text-text-primary mb-4">生成邀请码</h3>
-                  <Button 
-                    onClick={handleGenerateInvitation}
-                    disabled={isLoading || (profileData && profileData.invitation_remaining <= 0)}
-                    variant="secondary"
-                  >
-                    {isLoading ? '生成中...' : '生成新的邀请码'}
-                  </Button>
-                  {profileData && profileData.invitation_remaining <= 0 && (
-                    <p className="text-sm text-red-600 mt-2">已达到邀请码生成上限</p>
-                  )}
-                </div>
-                
-                <div>
-                  <h3 className="text-lg font-medium text-text-primary mb-4">我的邀请码</h3>
-                  {invitations.length > 0 ? (
-                    <div className="space-y-2">
-                      {invitations.map((invitation, index) => (
-                        <Card key={index} className="border border-border-secondary">
-                          <CardContent className="py-3">
-                            <div className="flex items-center justify-between">
-                              <span className="font-mono text-sm text-text-primary">{invitation.code}</span>
-                              <span className={`text-sm ${invitation.is_used ? 'text-green-600' : 'text-text-tertiary'}`}>
-                                {invitation.is_used ? '已使用' : '未使用'}
-                              </span>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-text-tertiary text-sm">暂无邀请码</p>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        );
-
-      default:
-        return (
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center py-12">
-                <p className="text-text-secondary">功能开发中...</p>
-              </div>
-            </CardContent>
-          </Card>
-        );
-    }
-  };
 
   return (
-    <div className="min-h-screen bg-background-secondary">
-      {/* 头部导航 */}
-      <Header 
-        title="⚙️ 账户设置"
-        subtitle="管理您的个人资料和账户偏好设置"
-      />
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* 左侧导航栏 */}
-          <div className="lg:w-64 flex-shrink-0">
-            <Card>
-              <CardContent className="p-4">
-                <nav>
-                  <ul className="space-y-2">
-                    {settingsNavItems.map((item) => (
-                      <li key={item.id}>
-                        <Button
-                          onClick={() => setActiveTab(item.id)}
-                          variant="ghost"
-                          className={`w-full justify-start ${
-                            activeTab === item.id
-                              ? 'bg-background-secondary text-brand-primary'
-                              : 'text-text-secondary hover:text-text-primary'
-                          }`}
-                        >
-                          <span className="mr-3 text-lg">{item.icon}</span>
-                          {item.name}
-                        </Button>
-                      </li>
-                    ))}
-                  </ul>
-                </nav>
-              </CardContent>
-            </Card>
-          </div>
+    <div className="min-h-screen bg-background-secondary text-text-primary">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <Tabs value={activeTab} onValueChange={(value) => router.push(`/settings?tab=${value}`)} className="w-full">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            {/* 左侧导航 */}
+            <aside className="md:col-span-1">
+              <TabsList className="flex flex-col items-start justify-start h-full space-y-1 bg-transparent p-0">
+                {settingsNavItems.map((item) => (
+                  <TabsTrigger
+                    key={item.id}
+                    value={item.id}
+                    className="w-full flex items-center justify-start px-4 py-2 text-sm font-medium rounded-md transition-colors duration-150 data-[state=active]:bg-brand-primary data-[state=active]:text-white text-text-secondary hover:bg-background-tertiary"
+                  >
+                    <item.icon className={`mr-3 w-4 h-4 ${item.iconColor}`} />
+                    {item.name}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </aside>
 
-          {/* 右侧内容区域 */}
-          <div className="flex-1">
-            {renderContent()}
+            {/* 右侧内容区 */}
+            <main className="md:col-span-3">
+                <TabsContent value="profile">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>个人资料</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-6">
+                      <div>
+                        <Label>头像</Label>
+                        <div className="flex items-center space-x-4 mt-2">
+                          <AvatarDisplay 
+                            avatarId={tempAvatar}
+                            size={80}
+                            className="border-2 border-gray-200"
+                          />
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={() => setIsAvatarSelectorOpen(true)}
+                            className="text-sm"
+                          >
+                            更换头像
+                          </Button>
+                        </div>
+                      </div>
+                      <div>
+                        <Label htmlFor="email">邮箱地址</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          value={profileData?.email || user?.email || ''}
+                          disabled
+                          className="bg-background-secondary text-text-tertiary mt-2"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="displayName">显示名称</Label>
+                        <Input
+                          id="displayName"
+                          type="text"
+                          value={displayName}
+                          onChange={(e) => setDisplayName(e.target.value)}
+                          placeholder="输入您的显示名称"
+                          className="mt-2"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="registrationDate">注册时间</Label>
+                        <Input
+                          id="registrationDate"
+                          type="text"
+                          value={profileData ? new Date(profileData.created_at).toLocaleString() : '加载中...'}
+                          disabled
+                          className="bg-background-secondary text-text-tertiary mt-2"
+                        />
+                      </div>
+                      <Button 
+                        onClick={handleSaveProfile}
+                        disabled={isLoading}
+                      >
+                        {isLoading ? '保存中...' : '保存更改'}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              <TabsContent value="invitations">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>邀请好友</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-6">
+                      <div className="bg-green-50 p-6 rounded-lg border border-green-200">
+                        <h3 className="text-lg font-medium text-green-900 mb-2">邀请配额</h3>
+                        <p className="text-3xl font-bold text-green-600">
+                          {profileData ? profileData.invitation_remaining : '加载中...'}
+                        </p>
+                        <p className="text-sm text-green-700 mt-1">
+                          剩余邀请码 (总配额: {profileData ? profileData.invitation_quota : '...'})
+                        </p>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Card className="bg-background-secondary">
+                          <CardContent className="pt-6">
+                            <p className="text-sm text-text-secondary">已生成</p>
+                            <p className="text-2xl font-bold text-text-primary">
+                              {profileData ? profileData.invitation_used : '...'}
+                            </p>
+                            <p className="text-sm text-text-tertiary">邀请码</p>
+                          </CardContent>
+                        </Card>
+                        <Card className="bg-background-secondary">
+                          <CardContent className="pt-6">
+                            <p className="text-sm text-text-secondary">总配额</p>
+                            <p className="text-2xl font-bold text-text-primary">
+                              {profileData ? profileData.invitation_quota : '...'}
+                            </p>
+                            <p className="text-sm text-text-tertiary">邀请码</p>
+                          </CardContent>
+                        </Card>
+                      </div>
+
+                      <div>
+                        <h3 className="text-lg font-medium text-text-primary mb-4">生成邀请码</h3>
+                        <Button 
+                          onClick={handleGenerateInvitation}
+                          disabled={isLoading || (profileData && profileData.invitation_remaining <= 0)}
+                          variant="secondary"
+                        >
+                          {isLoading ? '生成中...' : '生成新的邀请码'}
+                        </Button>
+                        {profileData && profileData.invitation_remaining <= 0 && (
+                          <p className="text-sm text-red-600 mt-2">已达到邀请码生成上限</p>
+                        )}
+                      </div>
+                      
+                      <div>
+                        <h3 className="text-lg font-medium text-text-primary mb-4">我的邀请码</h3>
+                        {invitations.length > 0 ? (
+                          <div className="space-y-2">
+                            {invitations.map((invitation, index) => (
+                              <Card key={index} className="border border-border-secondary">
+                                <CardContent className="py-3">
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-mono text-sm text-text-primary">{invitation.code}</span>
+                                    <span className={`text-sm ${invitation.is_used ? 'text-green-600' : 'text-text-tertiary'}`}>
+                                      {invitation.is_used ? '已使用' : '未使用'}
+                                    </span>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-text-tertiary text-sm">暂无邀请码</p>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+                <TabsContent value="billing">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>用量计费</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-6">
+                        <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
+                          <h3 className="text-lg font-medium text-blue-900 mb-2">当前积分余额</h3>
+                          <p className="text-3xl font-bold text-blue-600">
+                            {currentBalance}
+                          </p>
+                          <p className="text-sm text-blue-700 mt-1">积分 (每100字符消耗1积分)</p>
+                        </div>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                          <RedemptionCodeForm 
+                            onRedemptionSuccess={handleRedemptionSuccess}
+                            onRedemptionError={handleRedemptionError}
+                          />
+                          <RedemptionHistory />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-medium text-text-primary mb-4">积分历史</h3>
+                          {creditLoading && !creditHistory.length ? (
+                            <p>加载中...</p>
+                          ) : creditHistory.length > 0 ? (
+                            <div className="space-y-4">
+                              {creditHistory.map((item) => (
+                                <div key={item.id} className="flex justify-between items-center p-3 bg-background-tertiary rounded-md">
+                                  <div>
+                                    <p className="font-semibold">{formatTransactionType(item.transaction_type)}</p>
+                                    <p className="text-sm text-text-secondary">{formatDate(item.created_at)}</p>
+                                  </div>
+                                  <p className={getAmountStyle(item.transaction_type)}>{getAmountText(item.transaction_type, item.amount)}</p>
+                                </div>
+                              ))}
+                              {creditPagination.has_next && (
+                                <Button onClick={() => loadCreditHistory(creditPagination.current_page + 1, true)} disabled={creditLoading}>
+                                  {creditLoading ? '加载中...' : '加载更多'}
+                                </Button>
+                              )}
+                            </div>
+                          ) : (
+                            <p>暂无积分历史记录。</p>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+                <TabsContent value="invitations">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>邀请好友</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p>邀请功能暂未开放。</p>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              </main>
           </div>
-        </div>
+        </Tabs>
       </div>
       
       {/* Toast 通知 */}

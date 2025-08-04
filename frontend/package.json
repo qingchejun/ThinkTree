@@ -15,6 +15,10 @@
   "dependencies": {
     "@headlessui/react": "^1.7.17",
     "@heroicons/react": "^2.0.18",
+    "@radix-ui/react-label": "^2.1.7",
+    "@radix-ui/react-select": "^2.2.5",
+    "@radix-ui/react-switch": "^1.2.5",
+    "@radix-ui/react-tabs": "^1.1.12",
     "@reactflow/background": "^11.3.7",
     "@reactflow/controls": "^11.2.7",
     "@reactflow/core": "^11.10.1",

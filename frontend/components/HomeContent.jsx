@@ -3,10 +3,12 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
+import { useModal } from '../context/ModalContext';
 import LandingPage from './LandingPage';
 
 export default function HomeContent() {
   const { user, isLoading } = useAuth();
+  const { openLoginModal } = useModal();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [invitationCode, setInvitationCode] = useState('');
@@ -54,6 +56,7 @@ export default function HomeContent() {
       <LandingPage 
         invitationCode={invitationCode}
         autoRegister={autoRegister}
+        onLoginClick={openLoginModal}
       />
     );
   }

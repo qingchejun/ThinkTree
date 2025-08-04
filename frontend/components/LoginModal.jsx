@@ -26,7 +26,11 @@ import React, { useState, useContext, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AuthContext from '../context/AuthContext'; 
 
-const LoginModal = ({ isOpen, onClose, initialInvitationCode, autoOpenRegister }) => {
+const LoginModal = ({ isOpen, onClose, initialInvitationCode, autoOpenRegister }) => {// 调试日志 - 仅在开发环境显示
+  if (process.env.NODE_ENV === 'development') {
+    console.log('LoginModal: isOpen =', isOpen, 'onClose =', typeof onClose);
+  }
+  
   const [view, setView] = useState('initial'); // 'initial' | 'verify'
   const [email, setEmail] = useState('');
   const [invitationCode, setInvitationCode] = useState(initialInvitationCode || ''); // 新增：邀请码状态

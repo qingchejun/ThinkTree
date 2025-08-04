@@ -1,18 +1,49 @@
 /**
  * 头像选择器组件
  * 提供用户头像选择功能，支持本地存储用户选择
+ * 使用 lucide-react 图标替代 PNG 图片，提升加载速度
  */
 'use client';
 
 import { useState, useEffect } from 'react';
-import Image from 'next/image';
+import { CircleUser, CircleUserRound, User, UserRound } from 'lucide-react';
 
 const AVATAR_OPTIONS = [
-  { id: 'default', src: '/default-avatar.png', name: '默认头像' },
-  { id: 'female2', src: '/avatar-female2.png', name: '女性头像 1' },
-  { id: 'male1', src: '/avatar-male1.png', name: '男性头像 1' },
-  { id: 'male2', src: '/avatar-male2.png', name: '男性头像 2' },
-  { id: 'male3', src: '/avatar-male3.png', name: '男性头像 3' }
+  { 
+    id: 'default', 
+    icon: CircleUser, 
+    name: '默认头像', 
+    color: '#6b7280',
+    bgColor: '#f3f4f6'
+  },
+  { 
+    id: 'female1', 
+    icon: CircleUserRound, 
+    name: '女性头像 1', 
+    color: '#ec4899',
+    bgColor: '#fdf2f8'
+  },
+  { 
+    id: 'female2', 
+    icon: User, 
+    name: '女性头像 2', 
+    color: '#8b5cf6',
+    bgColor: '#f5f3ff'
+  },
+  { 
+    id: 'male1', 
+    icon: UserRound, 
+    name: '男性头像 1', 
+    color: '#3b82f6',
+    bgColor: '#eff6ff'
+  },
+  { 
+    id: 'male2', 
+    icon: CircleUser, 
+    name: '男性头像 2', 
+    color: '#10b981',
+    bgColor: '#ecfdf5'
+  }
 ];
 
 export default function AvatarSelector({ isOpen, onClose, onSelect, currentAvatar }) {
@@ -53,36 +84,38 @@ export default function AvatarSelector({ isOpen, onClose, onSelect, currentAvata
 
         {/* 头像网格 */}
         <div className="grid grid-cols-3 gap-4 mb-6">
-          {AVATAR_OPTIONS.map((avatar) => (
-            <div key={avatar.id} className="text-center">
-              <button
-                onClick={() => handleSelect(avatar.id)}
-                className={`relative w-20 h-20 rounded-full overflow-hidden border-4 transition-all duration-200 ${
-                  selectedAvatar === avatar.id
-                    ? 'border-blue-500 shadow-lg scale-105'
-                    : 'border-gray-200 hover:border-gray-300 hover:scale-102'
-                }`}
-              >
-                <Image
-                  src={avatar.src}
-                  alt={avatar.name}
-                  width={80}
-                  height={80}
-                  className="w-full h-full object-cover"
-                />
-                {selectedAvatar === avatar.id && (
-                  <div className="absolute inset-0 bg-blue-500 bg-opacity-20 flex items-center justify-center">
-                    <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
+          {AVATAR_OPTIONS.map((avatar) => {
+            const IconComponent = avatar.icon;
+            return (
+              <div key={avatar.id} className="text-center">
+                <button
+                  onClick={() => handleSelect(avatar.id)}
+                  className={`relative w-20 h-20 rounded-full flex items-center justify-center border-4 transition-all duration-200 ${
+                    selectedAvatar === avatar.id
+                      ? 'border-blue-500 shadow-lg scale-105'
+                      : 'border-gray-200 hover:border-gray-300 hover:scale-102'
+                  }`}
+                  style={{ backgroundColor: avatar.bgColor }}
+                >
+                  <IconComponent 
+                    size={40} 
+                    color={avatar.color}
+                    strokeWidth={1.5}
+                  />
+                  {selectedAvatar === avatar.id && (
+                    <div className="absolute inset-0 bg-blue-500 bg-opacity-20 rounded-full flex items-center justify-center">
+                      <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </button>
-              <p className="text-xs text-gray-500 mt-2 truncate">{avatar.name}</p>
-            </div>
-          ))}
+                  )}
+                </button>
+                <p className="text-xs text-gray-500 mt-2 truncate">{avatar.name}</p>
+              </div>
+            );
+          })}
         </div>
 
         {/* 操作按钮 */}
@@ -113,8 +146,13 @@ export function getCurrentAvatar() {
   return 'default';
 }
 
-// 工具函数：根据头像ID获取头像URL
-export function getAvatarUrl(avatarId) {
+// 工具函数：根据头像ID获取头像配置
+export function getAvatarConfig(avatarId) {
   const avatar = AVATAR_OPTIONS.find(option => option.id === avatarId);
-  return avatar ? avatar.src : '/default-avatar.png';
+  return avatar || AVATAR_OPTIONS[0]; // 默认返回第一个头像
+}
+
+// 兼容性函数：保持原有的getAvatarUrl函数名，但返回头像配置
+export function getAvatarUrl(avatarId) {
+  return getAvatarConfig(avatarId);
 }

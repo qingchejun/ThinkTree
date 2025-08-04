@@ -48,12 +48,19 @@ export default function MarkmapView({ mindmapData }) {
         if (svgRef.current) {
           const options = {
             color: (d) => {
-              const colors = ['#1e40af', '#2563eb', '#3b82f6', '#60a5fa', '#93c5fd']
+              // 使用 Tailwind CSS 主题中的颜色
+              const colors = ['#1A1A1A', '#6B7280', '#9CA3AF', '#E5E7EB', '#F3F4F6']
               return colors[d.depth % colors.length]
             },
             paddingX: 8,
             spacingHorizontal: 80,
             spacingVertical: 20,
+            // 可以在这里添加更多样式选项，例如字体大小、粗细等
+            style: (id) => `
+              #${id} {
+                font-family: 'Inter', sans-serif;
+              }
+            `,
           }
           
           mmRef.current = Markmap.create(svgRef.current, options)

@@ -27,47 +27,20 @@
  * - 产品营销和推广
  * - SEO优化的入口页面
  */
-import React, { useState, useEffect } from 'react';
+'use client';
+import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { Sparkles, Cpu, FileStack, Users, BrainCircuit, FileOutput, Infinity, UploadCloud, Eye, PlusCircle } from 'lucide-react';
-import LoginModal from './LoginModal';
 
-const LandingPage = ({ invitationCode, autoRegister }) => {
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-
-  // 如果有autoRegister参数或邀请码，自动打开登录弹窗
+const LandingPage = ({ invitationCode, autoRegister, onLoginClick }) => {
+  // 自动触发登录弹窗的逻辑
   useEffect(() => {
-    if (autoRegister || invitationCode) {
-      setIsLoginModalOpen(true);
+    if ((autoRegister || invitationCode) && onLoginClick) {
+      onLoginClick();
     }
-  }, [autoRegister, invitationCode]);
+  }, [autoRegister, invitationCode, onLoginClick]);
   return (
     <div id="loggedOutView">
-      {/* 
-        顶部导航栏 - 未登录用户的导航
-        包含：品牌logo、登录和注册入口
-      */}
-      <header className="bg-white/80 backdrop-blur-lg sticky top-0 z-40 border-b border-gray-100">
-        <div className="container mx-auto px-6 py-4 flex justify-between items-center">
-          {/* 左侧：品牌logo和产品名称 */}
-          <div className="flex items-center space-x-2">
-            <svg width="32" height="32" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
-              <path fill="#111827" d="M128 24a104 104 0 1 0 104 104A104.11 104.11 0 0 0 128 24Zm-8 152v-56H88a8 8 0 0 1 0-16h32V88a8 8 0 0 1 16 0v16h16a8 8 0 0 1 0 16h-16v56h32a8 8 0 0 1 0 16h-32v16a8 8 0 0 1-16 0v-16H96a8 8 0 0 1 0-16h24Z" />
-            </svg>
-            <span className="text-2xl font-bold text-gray-900">ThinkSo</span>
-          </div>
-          
-          {/* 右侧：只保留登录按钮 */}
-          <div className="flex items-center space-x-4">
-            <button 
-              onClick={() => setIsLoginModalOpen(true)} 
-              className="bg-gray-800 text-white px-6 py-2 rounded-lg font-semibold hover:bg-black transition-all"
-            >
-              登录
-            </button>
-          </div>
-        </div>
-      </header>
 
       {/* 
         Hero区域（英雄区域）- 页面的主要焦点区域
@@ -90,7 +63,14 @@ const LandingPage = ({ invitationCode, autoRegister }) => {
         
         {/* 主要CTA按钮 - 引导用户开始使用产品 */}
         <div className="mt-8 flex justify-center mb-16">
-          <button onClick={() => setIsLoginModalOpen(true)} className="bg-gray-800 text-white px-12 py-4 rounded-lg font-bold text-xl shadow-lg hover:bg-black transition-all transform hover:scale-105">
+          <button onClick={() => {
+            console.log('LandingPage: 主要CTA按钮被点击');
+            if (onLoginClick) {
+              onLoginClick();
+            } else {
+              console.error('LandingPage: onLoginClick 函数未定义');
+            }
+          }} className="bg-gray-800 text-white px-12 py-4 rounded-lg font-bold text-xl shadow-lg hover:bg-black transition-all transform hover:scale-105">
             免费生成思维导图
           </button>
         </div>
@@ -248,7 +228,14 @@ const LandingPage = ({ invitationCode, autoRegister }) => {
       <section className="py-20 bg-gray-900 text-white">
         <div className="container mx-auto px-6 text-center">
           <h2 className="text-4xl font-bold">ThinkSo，让思维更灵动。</h2>
-          <button onClick={() => setIsLoginModalOpen(true)} className="mt-8 inline-block bg-white text-black px-8 py-4 rounded-lg font-bold text-lg shadow-lg hover:bg-gray-200 transition-all transform hover:scale-105">
+          <button onClick={() => {
+            console.log('LandingPage: 底部CTA按钮被点击');
+            if (onLoginClick) {
+              onLoginClick();
+            } else {
+              console.error('LandingPage: onLoginClick 函数未定义');
+            }
+          }} className="mt-8 inline-block bg-white text-black px-8 py-4 rounded-lg font-bold text-lg shadow-lg hover:bg-gray-200 transition-all transform hover:scale-105">
             立即免费试用
           </button>
         </div>
@@ -260,14 +247,6 @@ const LandingPage = ({ invitationCode, autoRegister }) => {
           <p>&copy; 2025 ThinkSo. All rights reserved.</p>
         </div>
       </footer>
-
-      {/* 登录浮窗 */}
-      <LoginModal 
-        isOpen={isLoginModalOpen} 
-        onClose={() => setIsLoginModalOpen(false)}
-        initialInvitationCode={invitationCode}
-        autoOpenRegister={autoRegister}
-      />
     </div>
   );
 };

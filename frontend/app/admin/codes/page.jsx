@@ -3,7 +3,7 @@ import React, { useState, useContext, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import AuthContext from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
-import Header from '@/components/common/Header';
+
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -233,10 +233,7 @@ const AdminCodesPageComponent = () => {
 
   return (
     <div className="min-h-screen bg-background-secondary">
-      <Header 
-        title="🎫 兑换码管理"
-        subtitle="管理员专属：批量生成积分兑换码"
-      />
+
       
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -370,7 +367,7 @@ const AdminCodesPageComponent = () => {
                   
                   <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
                     <p className="text-sm text-blue-800">
-                      💡 提示：兑换码已生成并保存到数据库，用户可以在设置页面的「用量与计费」中使用这些兑换码获取积分。
+                      💡 提示：兑换码已生成并保存到数据库，用户可以在设置页面的「用量计费」中使用这些兑换码获取积分。
                     </p>
                   </div>
                 </div>

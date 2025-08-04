@@ -8,7 +8,7 @@ import { createContext, useContext, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
 // 创建认证上下文
-const AuthContext = createContext({
+export const AuthContext = createContext({
   user: null,
   token: null,
   isLoading: true,
@@ -20,15 +20,21 @@ const AuthContext = createContext({
 
 // 认证提供者组件
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
-  const [token, setToken] = useState(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [showDailyRewardToast, setShowDailyRewardToast] = useState(null)
   const [isClient, setIsClient] = useState(false)
+
   const router = useRouter()
 
-  // 防止重复请求的标志
-  const [pendingRequests, setPendingRequests] = useState(new Set())
+  // 标记是否已完成首次认证检查
+  const [authInitialized, setAuthInitialized] = useState(false);
+
+  // 首次挂载时设置isClient
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // 获取用户信息
   const fetchUserProfile = async (authToken, options = {}) => {
@@ -126,7 +132,8 @@ export function AuthProvider({ children }) {
         console.log('开始处理登录, token:', accessToken?.substring(0, 20) + '...')
       }
       
-      // 不再存储到 localStorage，只保存到状态
+      // 存储到 localStorage 和状态
+      localStorage.setItem('access_token', accessToken);
       setToken(accessToken)
       
       // 获取用户信息 - 使用唯一ID避免重复请求，跳过超时控制避免AbortController冲突
@@ -152,7 +159,7 @@ export function AuthProvider({ children }) {
   }
 
   // 退出登录函数
-  const logout = () => {
+  const logout = (router = null) => {
     if (process.env.NODE_ENV === 'development') {
       console.log('用户退出登录')
     }
@@ -161,14 +168,27 @@ export function AuthProvider({ children }) {
     setUser(null)
     setToken(null)
     
+    // 清除 localStorage 中的 token
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('access_token')
+    }
+    
     // 清除 HttpOnly Cookie
     if (typeof window !== 'undefined') {
       document.cookie = "thinktree_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
     }
     
-    // 跳转到主站首页
+    // 根据环境变量决定跳转地址
     if (typeof window !== 'undefined') {
-      window.location.href = 'https://thinkso.io'
+      const redirectUrl = process.env.NEXT_PUBLIC_LOGOUT_REDIRECT_URL || 
+        (process.env.NODE_ENV === 'development' ? '/' : 'https://thinkso.io')
+      
+      // 在开发环境下，如果提供了router且跳转到本地路径，使用Next.js路由
+      if (process.env.NODE_ENV === 'development' && router && redirectUrl === '/') {
+        router.push('/')
+      } else {
+        window.location.href = redirectUrl
+      }
     }
   }
 
@@ -188,72 +208,52 @@ export function AuthProvider({ children }) {
     }
   }
 
-  // 初始化客户端状态
+  // 统一的认证状态初始化
   useEffect(() => {
-    setIsClient(true)
-  }, [])
-
-  // 组件挂载时检查持久化的登录状态
-  useEffect(() => {
-    // 确保在客户端执行
-    if (!isClient) {
-      return
-    }
-    
-    console.log('🚀 useEffect被调用 - 开始认证检查')
-    
-    let mounted = true
-    
     const initializeAuth = async () => {
-      console.log('🔄 开始初始化认证状态')
-      
+      // 防止重复执行
+      if (authInitialized) return;
+      setAuthInitialized(true);
+
+      console.log('🔄 开始初始化认证状态');
+
+      // 检查真实的登录状态（开发和生产环境都使用真实认证）
       try {
-        // 不再从 localStorage 读取，直接调用 profile 接口检查登录状态
-        console.log('🔍 检查登录状态')
-        
-        // 直接调用 profile 接口，如果返回 401 则视为未登录
-        try {
-          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/profile`, {
-            credentials: 'include'
-          })
-          
-          if (response.ok) {
-            const userData = await response.json()
-            console.log('✅ 检测到有效登录状态:', userData)
-            setUser(userData)
-            // 从响应头或 Cookie 中获取 token（如果需要的话）
-            // 这里暂时不设置 token，因为 Cookie 会自动携带
-          } else {
-            console.log('❌ 未检测到有效登录状态')
-          }
-        } catch (error) {
-          console.log('❌ 登录状态检查失败:', error)
+        console.log('🔍 检查真实登录状态');
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/profile`, {
+          credentials: 'include'
+        });
+
+        if (response.ok) {
+          const userData = await response.json();
+          console.log('✅ 检测到有效登录状态:', userData);
+          setUser(userData);
+        } else {
+          console.log('❌ 未检测到有效登录状态');
+          setUser(null);
+          setToken(null);
         }
       } catch (error) {
-        console.error('💥 初始化过程中出错:', error)
-        if (mounted) {
-          setUser(null)
-        }
+        console.error('💥 登录状态检查失败:', error);
+        setUser(null);
+        setToken(null);
       } finally {
-        if (mounted) {
-          console.log('🏁 认证状态初始化完成 - 设置isLoading=false')
-          setIsLoading(false)
-        }
+        console.log('🏁 认证状态检查完成');
+        setIsLoading(false);
       }
-    }
+    };
 
-    initializeAuth()
-    
-    return () => {
-      mounted = false
+    if (isClient) {
+      initializeAuth();
     }
-  }, [isClient])
+  }, [isClient, authInitialized]);
 
   // 提供给子组件的值
   const contextValue = {
     user,
     token,
     isLoading,
+    loading: isLoading,
     isClient,
     login,
     logout,

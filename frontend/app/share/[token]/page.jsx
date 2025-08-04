@@ -93,30 +93,10 @@ export default function SharePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
-              <button
-                onClick={() => router.push('/')}
-                className="flex items-center space-x-2 text-indigo-600 hover:text-indigo-700"
-              >
+              <div className="flex items-center space-x-2">
                 <span className="text-2xl">🌳</span>
-                <span className="text-xl font-bold">ThinkSo</span>
-              </button>
-              <div className="text-sm text-gray-500">
-                公开分享的思维导图
+                <span className="text-xl font-bold text-gray-800">ThinkSo</span>
               </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <a
-                href="/register"
-                className="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
-              >
-                注册
-              </a>
-              <a
-                href="/login"
-                className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700"
-              >
-                登录
-              </a>
             </div>
           </div>
         </div>
@@ -174,91 +154,18 @@ export default function SharePage() {
                   {mindmap.description && (
                     <p className="text-gray-600 mb-4">{mindmap.description}</p>
                   )}
-                  <div className="flex items-center space-x-6 text-sm text-gray-500">
-                    <div>
-                      <span className="font-medium">作者:</span> {mindmap.author?.display_name || '匿名用户'}
-                    </div>
-                    <div>
-                      <span className="font-medium">创建时间:</span> {formatDate(mindmap.created_at)}
-                    </div>
-                    {mindmap.updated_at !== mindmap.created_at && (
-                      <div>
-                        <span className="font-medium">更新时间:</span> {formatDate(mindmap.updated_at)}
-                      </div>
-                    )}
-                  </div>
-                  {mindmap.tags && mindmap.tags.length > 0 && (
-                    <div className="mt-4">
-                      <div className="flex flex-wrap gap-2">
-                        <span className="text-sm font-medium text-gray-700">标签:</span>
-                        {mindmap.tags.map((tag, index) => (
-                          <span
-                            key={index}
-                            className="inline-block bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <div className="ml-6 flex flex-col space-y-2">
-                  <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
-                    📖 只读分享
-                  </div>
-                  <button
-                    onClick={() => router.push('/')}
-                    className="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
-                  >
-                    🚀 创建我的思维导图
-                  </button>
                 </div>
               </div>
             </div>
 
             {/* 思维导图展示区 */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-gray-900">思维导图</h2>
-                  <div className="text-sm text-gray-500">
-                    💡 可以拖拽、缩放和点击节点展开/折叠
-                  </div>
-                </div>
-              </div>
-              <div className="h-[calc(100vh-280px)]">
+              <div className="h-[calc(100vh-200px)]">
                 {stableMindmapData && (
                   <SimpleMarkmapBasic
                     mindmapData={stableMindmapData}
                   />
                 )}
-              </div>
-            </div>
-
-            {/* 底部行动区 */}
-            <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-6 text-center">
-              <div className="max-w-2xl mx-auto">
-                <h3 className="text-lg font-semibold text-indigo-900 mb-2">
-                  喜欢这个思维导图？
-                </h3>
-                <p className="text-indigo-700 mb-4">
-                  加入 ThinkSo，使用 AI 创建你自己的专业思维导图
-                </p>
-                <div className="flex items-center justify-center space-x-4">
-                  <button
-                    onClick={() => router.push('/')}
-                    className="bg-indigo-600 text-white px-6 py-3 rounded-md font-medium hover:bg-indigo-700"
-                  >
-                    🚀 免费注册
-                  </button>
-                  <button
-                    onClick={() => router.push('/')}
-                    className="bg-white text-indigo-600 border border-indigo-600 px-6 py-3 rounded-md font-medium hover:bg-indigo-50"
-                  >
-                    已有账号？登录
-                  </button>
-                </div>
               </div>
             </div>
           </div>

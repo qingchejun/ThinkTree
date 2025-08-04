@@ -1,34 +1,34 @@
 /* Markmap 思维导图样式 */
 .markmap > g > path {
   fill: none;
-  stroke: #999;
+  stroke: #E5E7EB; /* border.primary */
   stroke-width: 1.5px;
 }
 
 .markmap-node > circle {
-  fill: #fff;
-  stroke: #999;
+  fill: #FFFFFF; /* background.primary */
+  stroke: #E5E7EB; /* border.primary */
   stroke-width: 1.5px;
 }
 
 .markmap-node > text {
-  fill: #333;
+  fill: #1A1A1A; /* text.primary */
   font-size: 12px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 .markmap-node:hover > circle {
-  stroke: #333;
+  stroke: #1A1A1A; /* text.primary */
   stroke-width: 2px;
 }
 
 .markmap-link {
   fill: none;
-  stroke: #999;
+  stroke: #E5E7EB; /* border.primary */
   stroke-width: 1.5px;
 }
 
 .markmap-link:hover {
-  stroke: #333;
+  stroke: #1A1A1A; /* text.primary */
   stroke-width: 2px;
 }

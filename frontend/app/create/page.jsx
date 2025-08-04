@@ -4,25 +4,50 @@
  */
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import SimpleMarkmapBasic from '../../components/mindmap/SimpleMarkmapBasic'
-import FileUpload from '../../components/upload/FileUpload'
-import { useAuth } from '../../context/AuthContext'
-// 移除ToastManager，使用内联提示样式
-import Header from '../../components/common/Header'
-import { Button } from '../../components/ui/Button'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../components/ui/Card'
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import SimpleMarkmapBasic from '../../components/mindmap/SimpleMarkmapBasic';
+import FileUpload from '../../components/upload/FileUpload';
+import { useAuth } from '../../context/AuthContext';
+
+import { Button } from '@/components/ui/Button';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/Card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
+import { Textarea } from "@/components/ui/Textarea";
+import { Input } from "@/components/ui/Input";
+import { Switch } from "@/components/ui/Switch";
+import { Label } from "@/components/ui/Label";
+
 
 export default function CreatePage() {
-  const { user, token, isLoading } = useAuth()
-  const router = useRouter()
-  const [uploadLoading, setUploadLoading] = useState(false)
-  const [mindmapData, setMindmapData] = useState(null)
-  const [error, setError] = useState(null)
-  const [uploadInfo, setUploadInfo] = useState(null)
-  const [showSaveModal, setShowSaveModal] = useState(false)
-  const [saveLoading, setSaveLoading] = useState(false)
+  const { user, token, isLoading } = useAuth();
+  const router = useRouter();
+  const [mindmapData, setMindmapData] = useState(null);
+  const [error, setError] = useState(null);
+  const [uploadLoading, setUploadLoading] = useState(false);
+  const [saveLoading, setSaveLoading] = useState(false);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+
+  // 新状态
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [isPublic, setIsPublic] = useState(false);
+  const [markdownContent, setMarkdownContent] = useState('');
+  const [activeTab, setActiveTab] = useState('file');
+
+  const handleGenerateFromText = () => {
+    if (!markdownContent.trim()) {
+      setError('请输入Markdown内容');
+      return;
+    }
+    setError(null);
+    setMindmapData({
+      data: {
+        title: title || '未命名思维导图',
+        markdown: markdownContent,
+      },
+    });
+  };
 
   // 认证检查 - 未登录用户重定向到登录页
   useEffect(() => {
@@ -51,46 +76,45 @@ export default function CreatePage() {
   }
 
   const handleUploadStart = () => {
-    setUploadLoading(true)
-    setError(null)
-    setMindmapData(null)
-    setUploadInfo(null)
-  }
+    setError(null);
+    setMindmapData(null);
+    setUploadLoading(true);
+  };
 
   const handleUploadSuccess = (result) => {
-    setMindmapData(result)
-    setUploadInfo({
-      filename: result.filename,
-      fileType: result.file_type,
-      contentPreview: result.content_preview
-    })
-    setUploadLoading(false)
-    setError(null)
-  }
+    setMindmapData(result);
+    setError(null);
+    setUploadLoading(false);
+    // 切换到预览，并传递标题
+    if (result.data && result.data.title) {
+      setTitle(result.data.title);
+    }
+  };
 
   const handleUploadError = (errorMessage) => {
-    setError(errorMessage)
-    setUploadLoading(false)
-    setMindmapData(null)
-    setUploadInfo(null)
-  }
+    setError(errorMessage);
+    setMindmapData(null);
+    setUploadLoading(false);
+  };
 
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!user) {
-      // 通过错误状态显示提示，而不是使用Toast
-      setError('请先登录才能保存思维导图')
-      return
-    }
-    setShowSaveModal(true)
-  }
-
-  const handleSaveConfirm = async (title, description) => {
-    if (!mindmapData?.data?.markdown) {
-      return { success: false, error: '没有可保存的思维导图内容' }
+      setError('请先登录才能保存思维导图');
+      return;
     }
 
-    setSaveLoading(true)
+    const contentToSave = activeTab === 'file' ? mindmapData?.data?.markdown : markdownContent;
+    const titleToSave = activeTab === 'file' ? (mindmapData?.data?.title || '未命名思维导图') : (title || '未命名思维导图');
+    const descriptionToSave = description;
+    const isPublicToSave = isPublic;
+
+    if (!contentToSave) {
+      setError('没有可保存的思维导图内容');
+      return;
+    }
+
+    setSaveLoading(true);
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/mindmaps/`, {
         method: 'POST',
@@ -99,69 +123,93 @@ export default function CreatePage() {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          title: title.trim(),
-          content: mindmapData.data.markdown,
-          description: description.trim() || null,
-          is_public: false
+          title: titleToSave.trim(),
+          content: contentToSave,
+          description: descriptionToSave.trim() || null,
+          is_public: isPublicToSave
         })
-      })
+      });
 
       if (response.ok) {
-        const savedMindmap = await response.json()
-        // 不再使用ToastManager，而是在模态框内显示成功状态
-        return { success: true, savedMindmap }
+        const savedMindmap = await response.json();
+        router.push(`/mindmap/${savedMindmap.id}`);
       } else {
-        const errorData = await response.json()
-        throw new Error(errorData.detail || '保存失败')
+        const errorData = await response.json();
+        throw new Error(errorData.detail || '保存失败');
       }
     } catch (error) {
-      return { success: false, error: error.message }
+      setError(error.message);
     } finally {
-      setSaveLoading(false)
+      setSaveLoading(false);
     }
-  }
+  };
+
+
 
   return (
     <div className="min-h-screen bg-background-secondary">
-      {/* 头部导航 */}
-      <Header 
-        title="🎨 思维导图创建"
-        subtitle="上传文档或输入文本，AI智能生成专业思维导图"
-      />
+      <div className="bg-background-primary border-b border-border-primary py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h1 className="text-2xl font-bold text-text-primary">🎨 思维导图创建</h1>
+          <p className="text-sm text-text-secondary mt-1">上传文档或输入文本，AI智能生成专业思维导图</p>
+        </div>
+      </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
-          {/* 左侧：文件上传区 */}
+          {/* 左侧：创建选项区 */}
           <div className="lg:col-span-1">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  📤 上传文档或输入文本
-                </CardTitle>
-                <CardDescription>
-                  支持多种文件格式，AI智能解析生成思维导图
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <FileUpload
-                  onUploadStart={handleUploadStart}
-                  onUploadSuccess={handleUploadSuccess}
-                  onUploadError={handleUploadError}
-                  token={token}
-                />
-
-                {/* 上传信息显示 */}
-                {uploadInfo && (
-                  <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
-                    <h4 className="text-sm font-medium text-green-800">
-                      ✅ 文件处理成功
-                    </h4>
-                  </div>
-                )}
-
-              </CardContent>
-            </Card>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="file">文件上传</TabsTrigger>
+                <TabsTrigger value="text">文本输入</TabsTrigger>
+              </TabsList>
+              <TabsContent value="file">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>文件上传</CardTitle>
+                    <CardDescription>支持多种文件格式，AI智能解析生成思维导图</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <FileUpload
+                      onUploadStart={handleUploadStart}
+                      onUploadSuccess={handleUploadSuccess}
+                      onUploadError={handleUploadError}
+                      token={token}
+                      disabled={uploadLoading}
+                    />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              <TabsContent value="text">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>文本输入</CardTitle>
+                    <CardDescription>直接输入Markdown内容创建思维导图</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="title">标题</Label>
+                      <Input id="title" placeholder="请输入思维导图标题" value={title} onChange={(e) => setTitle(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="description">描述 (可选)</Label>
+                      <Input id="description" placeholder="请输入描述信息" value={description} onChange={(e) => setDescription(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="markdown">Markdown 内容</Label>
+                      <Textarea id="markdown" placeholder="# 标题\n- 分支1\n  - 子分支1\n- 分支2" rows={10} value={markdownContent} onChange={(e) => setMarkdownContent(e.target.value)} />
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Switch id="is-public" checked={isPublic} onCheckedChange={setIsPublic} />
+                      <Label htmlFor="is-public">设为公开</Label>
+                    </div>
+                    <Button onClick={handleGenerateFromText} className="w-full">生成思维导图</Button>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
           </div>
 
           {/* 右侧：思维导图展示区 */}
@@ -177,8 +225,8 @@ export default function CreatePage() {
                     <div className="flex items-center space-x-4">
                       {user && (
                         <Button
-                          onClick={handleSave}
-                          disabled={saveLoading}
+                          onClick={() => setShowSaveModal(true)}
+                          disabled={saveLoading || (activeTab === 'file' && !mindmapData) || (activeTab === 'text' && !markdownContent.trim())}
                           size="sm"
                         >
                           {saveLoading ? '保存中...' : '💾 保存'}
@@ -195,11 +243,7 @@ export default function CreatePage() {
                       )}
                       <div className="text-sm text-text-secondary flex items-center space-x-2">
                         <span>Markmap 思维导图</span>
-                        {uploadInfo && (
-                          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                            📄 {uploadInfo.fileType?.split('/')[1]?.toUpperCase() || 'FILE'}
-                          </span>
-                        )}
+
                       </div>
                     </div>
                   </div>
@@ -272,169 +316,30 @@ export default function CreatePage() {
 
       </div>
 
-      {/* 保存对话框 */}
-      {showSaveModal && <SaveModal 
-        onSave={handleSaveConfirm}
-        onCancel={() => setShowSaveModal(false)}
-        isLoading={saveLoading}
-        defaultTitle={mindmapData?.data?.title || uploadInfo?.filename || '思维导图'}
-      />}
-    </div>
-  )
-}
-
-// 保存对话框组件
-function SaveModal({ onSave, onCancel, isLoading, defaultTitle }) {
-  const [title, setTitle] = useState(defaultTitle)
-  const [description, setDescription] = useState('')
-  const [saveResult, setSaveResult] = useState(null) // { success: boolean, savedMindmap?: object, error?: string }
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    if (!title.trim()) {
-      setSaveResult({ success: false, error: '请输入思维导图标题' })
-      return
-    }
-    
-    const result = await onSave(title, description)
-    setSaveResult(result)
-    
-    // 如果保存成功，3秒后自动关闭模态框
-    if (result?.success) {
-      setTimeout(() => {
-        onCancel()
-        setSaveResult(null)
-      }, 2000)
-    }
-  }
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <Card className="max-w-md w-full mx-4">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>💾 保存思维导图</CardTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onCancel}
-              disabled={isLoading}
-              className="h-8 w-8 p-0"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {saveResult?.success ? (
-            // 保存成功状态
-            <div className="py-8 text-center">
-              <div className="text-green-500 text-5xl mb-4">✅</div>
-              <h3 className="text-lg font-semibold text-text-primary mb-2">
-                思维导图保存成功！
-              </h3>
-              <p className="text-text-secondary mb-1">
-                「{saveResult.savedMindmap?.title}」已成功保存
-              </p>
-              <p className="text-sm text-text-tertiary">
-                2秒后自动关闭...
-              </p>
-            </div>
-          ) : saveResult?.error ? (
-            // 保存失败状态
-            <div className="py-6 text-center">
-              <div className="text-red-500 text-4xl mb-4">❌</div>
-              <h3 className="text-lg font-semibold text-text-primary mb-2">
-                保存失败
-              </h3>
-              <p className="text-red-600 mb-4">{saveResult.error}</p>
-              
-              <div className="flex justify-end space-x-3">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => setSaveResult(null)}
-                >
-                  重试
-                </Button>
-                <Button
-                  type="button"
-                  onClick={onCancel}
-                >
-                  关闭
-                </Button>
+      {showSaveModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle>确认保存</CardTitle>
+              <CardDescription>您确定要保存这个思维导图吗？</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <p><span className="font-semibold">标题：</span>{activeTab === 'file' ? (mindmapData?.data?.title || '未命名思维导图') : (title || '未命名思维导图')}</p>
+                <p><span className="font-semibold">描述：</span>{description || '无'}</p>
+                <p><span className="font-semibold">公开状态：</span>{isPublic ? '公开' : '私有'}</p>
               </div>
-            </div>
-          ) : (
-            // 正常表单状态
-            <form onSubmit={handleSubmit}>
-              <div className="mb-4">
-                <label htmlFor="title" className="block text-sm font-medium text-text-primary mb-2">
-                  标题 <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  id="title"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  disabled={isLoading}
-                  className="w-full px-3 py-2 border border-border-primary rounded-md focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent disabled:opacity-50"
-                  placeholder="请输入思维导图标题"
-                  maxLength={200}
-                  required
-                />
-                <p className="text-xs text-text-tertiary mt-1">{title.length}/200 字符</p>
-              </div>
+            </CardContent>
+            <CardFooter className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setShowSaveModal(false)}>取消</Button>
+              <Button onClick={handleSave} disabled={saveLoading}>
+                {saveLoading ? '保存中...' : '确认保存'}
+              </Button>
+            </CardFooter>
+          </Card>
+        </div>
+      )}
 
-              <div className="mb-6">
-                <label htmlFor="description" className="block text-sm font-medium text-text-primary mb-2">
-                  描述 (可选)
-                </label>
-                <textarea
-                  id="description"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  disabled={isLoading}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-border-primary rounded-md focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent disabled:opacity-50"
-                  placeholder="描述这个思维导图的内容或用途..."
-                  maxLength={500}
-                />
-                <p className="text-xs text-text-tertiary mt-1">{description.length}/500 字符</p>
-              </div>
-
-              <div className="flex justify-end space-x-3">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={onCancel}
-                  disabled={isLoading}
-                >
-                  取消
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={isLoading || !title.trim()}
-                >
-                  {isLoading ? (
-                    <>
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      保存中...
-                    </>
-                  ) : (
-                    '保存'
-                  )}
-                </Button>
-              </div>
-            </form>
-          )}
-        </CardContent>
-      </Card>
     </div>
   )
 }

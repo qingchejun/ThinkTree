@@ -223,7 +223,7 @@ export async function getCreditHistory(token, page = 1, limit = 20) {
     limit: limit.toString()
   });
   
-  return await apiCall(`/api/auth/credits/history?${params}`, {
+  return await apiCall(`/api/credits/history?${params}`, {
     headers: {
       'Authorization': `Bearer ${token}`
     }

@@ -2,7 +2,7 @@
 import { useState, useEffect, useContext } from 'react';
 import { useRouter } from 'next/navigation';
 import AuthContext from '../../../context/AuthContext';
-import Header from '../../../components/common/Header';
+
 import AdminRoute from '../../../components/common/AdminRoute';
 // 移除ToastManager，使用内联提示样式
 
@@ -313,10 +313,7 @@ const AdminUsers = () => {
     <AdminRoute>
       <div className="min-h-screen bg-gray-50">
         {/* 头部导航 */}
-        <Header 
-          title="👥 用户管理"
-          subtitle="管理系统中的所有用户"
-        />
+
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* 操作栏 */}

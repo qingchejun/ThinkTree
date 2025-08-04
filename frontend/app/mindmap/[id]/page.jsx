@@ -11,6 +11,7 @@ import SimpleMarkmapBasic from '../../../components/mindmap/SimpleMarkmapBasic'
 import ShareModal from '../../../components/share/ShareModal'
 // 移除ToastManager，使用内联提示样式
 import { exportSVG, exportPNG, getSafeFilename, getTimestamp } from '../../../lib/exportUtils.js'
+import { Download, Share2, Pencil, Trash2, ChevronDown } from 'lucide-react'
 
 export default function ViewMindmapPage() {
   const { user, token, isLoading } = useAuth()
@@ -59,7 +60,7 @@ export default function ViewMindmapPage() {
   // 获取思维导图详情
   useEffect(() => {
     const fetchMindmap = async () => {
-      if (!token || !user || !mindmapId) return
+      if (!mindmapId) return
 
       try {
         setLoading(true)
@@ -90,7 +91,9 @@ export default function ViewMindmapPage() {
       }
     }
 
-    fetchMindmap()
+    if (token && user) { // 确保token和用户信息加载后再获取
+      fetchMindmap()
+    }
   }, [token, user, mindmapId])
 
   // 格式化日期显示
@@ -190,9 +193,9 @@ export default function ViewMindmapPage() {
       } else {
         throw new Error(result.error)
       }
-          } catch (error) {
-        setError(`SVG导出失败: ${error.message}`)
-      } finally {
+    } catch (error) {
+      setError(`SVG导出失败: ${error.message}`)
+    } finally {
         isExportingRef.current = false
         setIsExportingUI(false)
         // 延迟恢复组件正常状态，确保所有状态变化完成
@@ -245,9 +248,9 @@ export default function ViewMindmapPage() {
       } else {
         throw new Error(result.error)
       }
-          } catch (error) {
-        setError(`PNG导出失败: ${error.message}`)
-      } finally {
+    } catch (error) {
+      setError(`PNG导出失败: ${error.message}`)
+    } finally {
         isExportingRef.current = false
         setIsExportingUI(false)
         // 延迟恢复组件正常状态，确保所有状态变化完成
@@ -360,29 +363,27 @@ export default function ViewMindmapPage() {
               
               {/* 导出按钮 */}
               <div className="relative">
-                                  <button
-                    onClick={() => setShowExportMenu(!showExportMenu)}
-                    disabled={isExportingUI}
-                    className="bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-                  >
-                    {isExportingUI ? (
+                <button
+                  onClick={() => setShowExportMenu(!showExportMenu)}
+                  disabled={isExportingUI}
+                  className="bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                >
+                  {isExportingUI ? (
                     <>
                       <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
                       <span>导出中...</span>
                     </>
                   ) : (
                     <>
-                      <span>📥</span>
+                      <Download className="w-4 h-4 mr-2" />
                       <span>导出</span>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
+                      <ChevronDown className="w-4 h-4 ml-2" />
                     </>
                   )}
                 </button>
                 
-                                  {/* 导出下拉菜单 */}
-                  {showExportMenu && !isExportingUI && (
+                {/* 导出下拉菜单 */}
+                {showExportMenu && !isExportingUI && (
                   <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50">
                     <div className="py-1">
                       <button
@@ -412,21 +413,24 @@ export default function ViewMindmapPage() {
               
               <button
                 onClick={handleShareClick}
-                className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700"
+                className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700 flex items-center space-x-2"
               >
-                🔗 分享
+                <Share2 className="w-4 h-4" />
+                <span>分享</span>
               </button>
               <button
                 onClick={() => alert('编辑功能开发中...')}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700"
+                className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 flex items-center space-x-2"
               >
-                ✏️ 编辑
+                <Pencil className="w-4 h-4" />
+                <span>编辑</span>
               </button>
               <button
                 onClick={handleDelete}
-                className="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700"
+                className="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700 flex items-center space-x-2"
               >
-                🗑️ 删除
+                <Trash2 className="w-4 h-4" />
+                <span>删除</span>
               </button>
             </div>
           </div>
