@@ -147,54 +147,36 @@ class EmailService:
             <html>
             <head>
                 <meta charset="utf-8">
-                <title>ThinkSo 登录验证</title>
+                <title>ThinkSo Login</title>
                 <style>
-                    body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; }}
-                    .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-                    .header {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }}
-                    .content {{ background: #f8f9fa; padding: 30px; border-radius: 0 0 8px 8px; }}
-                    .code-box {{ background: #fff; border: 2px dashed #667eea; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px; }}
-                    .code {{ font-size: 24px; font-weight: bold; color: #667eea; letter-spacing: 3px; }}
-                    .button {{ display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 20px 0; }}
-                    .footer {{ text-align: center; margin-top: 30px; color: #666; font-size: 14px; }}
-                    .logo {{ font-size: 24px; font-weight: bold; }}
+                    body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }}
+                    .container {{ max-width: 500px; margin: 0 auto; background: white; border-radius: 12px; padding: 40px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
+                    .header {{ text-align: left; margin-bottom: 30px; }}
+                    .emoji {{ font-size: 24px; margin-right: 8px; }}
+                    .title {{ font-size: 24px; font-weight: 600; color: #333; margin: 0; }}
+                    .greeting {{ font-size: 16px; color: #333; margin-bottom: 20px; }}
+                    .message {{ font-size: 16px; color: #333; line-height: 1.5; margin-bottom: 30px; }}
+                    .button {{ display: inline-block; background: #007AFF; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 500; font-size: 16px; }}
+                    .signature {{ font-size: 14px; color: #666; margin-top: 30px; }}
                 </style>
             </head>
             <body>
                 <div class="container">
                     <div class="header">
-                        <div class="logo">🧠 ThinkSo</div>
-                        <h2>登录验证码</h2>
+                        <div class="title"><span class="emoji">👋</span>{login_code} is your login code.</div>
                     </div>
-                    <div class="content">
-                        <p>尊敬的 <strong>{user_name}</strong>，</p>
-                        
-                        <p>您正在尝试登录 ThinkSo，请使用以下验证码完成登录：</p>
-                        
-                        <div class="code-box">
-                            <p style="margin: 0; color: #666;">您的 6 位登录验证码：</p>
-                            <div class="code">{login_code}</div>
-                        </div>
-                        
-                        <p style="text-align: center; color: #666;">或者点击下面的按钮直接登录：</p>
-                        
-                        <div style="text-align: center;">
-                            <a href="{magic_link_url}" class="button">🔐 一键登录</a>
-                        </div>
-                        
-                        <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 6px; margin: 20px 0;">
-                            <p style="margin: 0; font-size: 14px; color: #856404;">
-                                <strong>⚠️ 安全提醒：</strong><br>
-                                • 验证码 10 分钟内有效<br>
-                                • 如果这不是您的操作，请忽略此邮件<br>
-                                • 请勿将验证码分享给他人
-                            </p>
-                        </div>
-                        
-                        <div class="footer">
-                            <p style="font-size: 12px;">此邮件由 ThinkSo 自动发送，请勿回复。</p>
-                        </div>
+                    
+                    <div class="greeting">Hi {user_name},</div>
+                    
+                    <div class="message">
+                        {login_code} is your login code. You can also click below to login to your account:
                     </div>
+                    
+                    <div style="text-align: left;">
+                        <a href="{magic_link_url}" class="button">Login to Thinkso</a>
+                    </div>
+                    
+                    <div class="signature">- Thinkso.io</div>
                 </div>
             </body>
             </html>
@@ -204,7 +186,7 @@ class EmailService:
             params = {
                 "from": f"{self.mail_from_name} <{self.mail_from}>",
                 "to": [user_email],
-                "subject": f"[ThinkSo] 登录验证码: {login_code}",
+                "subject": f"{login_code} is your login code.",
                 "html": html_content,
             }
             
