@@ -656,20 +656,26 @@ async def initiate_login(request: Request, data: InitiateLoginRequest, db: Sessi
         else:
             raise e
     
-    # 7. 发送邮件
-    try:
-        print(f"准备向 {data.email} 发送验证码邮件")
-        email_sent = await _send_login_code_email(data.email, code, magic_token)
-        if email_sent:
-            print(f"✅ 验证码邮件发送成功到 {data.email}")
-        else:
-            print(f"⚠️ 验证码邮件发送失败到 {data.email}，但继续返回成功响应")
-    except Exception as e:
-        # 即便邮件发送失败，为了不暴露邮箱是否存在，也返回成功
-        # 但在服务器端记录严重错误
-        print(f"❌ CRITICAL: Failed to send login code email to {data.email}: {e}")
-        import traceback
-        print(f"邮件发送异常详情: {traceback.format_exc()}")
+    # 7. 异步发送邮件 - 不阻塞用户界面响应
+    import asyncio
+    
+    # 创建后台任务发送邮件，不等待完成
+    async def send_email_background():
+        try:
+            print(f"📧 [后台任务] 开始向 {data.email} 发送验证码邮件")
+            email_sent = await _send_login_code_email(data.email, code, magic_token)
+            if email_sent:
+                print(f"✅ [后台任务] 验证码邮件发送成功到 {data.email}")
+            else:
+                print(f"⚠️ [后台任务] 验证码邮件发送失败到 {data.email}")
+        except Exception as e:
+            print(f"❌ [后台任务] 邮件发送异常到 {data.email}: {e}")
+            import traceback
+            print(f"邮件发送异常详情: {traceback.format_exc()}")
+    
+    # 启动后台任务，立即返回响应
+    asyncio.create_task(send_email_background())
+    print(f"🚀 [即时响应] 向 {data.email} 的邮件发送已启动后台处理")
 
     return InitiateLoginResponse(success=True, message="验证码已发送到您的邮箱，请查收。")
 

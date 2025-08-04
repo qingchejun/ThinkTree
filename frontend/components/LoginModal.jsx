@@ -97,7 +97,9 @@ const LoginModal = ({ isOpen, onClose, initialInvitationCode, autoOpenRegister }
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
+          // 立即切换到验证码界面，提升用户体验
           setView('verify');
+          console.log('✅ 接口响应成功，已切换到验证码界面');
         } else {
           setError(data.message || '发送验证码失败，请稍后重试');
         }
@@ -347,8 +349,11 @@ const LoginModal = ({ isOpen, onClose, initialInvitationCode, autoOpenRegister }
             </div>
             
             <h2 className="text-2xl font-bold text-gray-900 mb-2">检查您的邮箱</h2>
-            <p className="text-gray-600 mb-8">
+            <p className="text-gray-600 mb-4">
               我们向 <span className="font-semibold text-gray-800">{email}</span> 发送了一个6位数的验证码。
+            </p>
+            <p className="text-sm text-gray-500 mb-8">
+              💡 邮件通常在1-2分钟内到达，请耐心等待。如未收到，请检查垃圾邮件文件夹。
             </p>
             
             {/* 验证码输入框 */}
