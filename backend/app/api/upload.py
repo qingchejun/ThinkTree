@@ -218,9 +218,19 @@ async def upload_file(
                 if not refund_success:
                     print(f"严重错误: 用户 {current_user.id} 的积分退款失败: {refund_error}")
                 
+                error_detail = mindmap_result.get('error', 'Unknown error')
+                
+                # 为用户提供更友好的错误信息
+                if "API密钥" in error_detail or "API_KEY_INVALID" in error_detail:
+                    user_friendly_error = "AI服务暂时不可用，请稍后重试。如果问题持续存在，请联系客服。"
+                elif "QUOTA_EXCEEDED" in error_detail:
+                    user_friendly_error = "AI服务调用次数已达上限，请稍后重试。"
+                else:
+                    user_friendly_error = f"思维导图生成失败: {error_detail}"
+                
                 raise HTTPException(
                     status_code=500,
-                    detail=f"思维导图生成失败: {mindmap_result.get('error', 'Unknown error')}"
+                    detail=user_friendly_error
                 )
             
             # 5. 成功生成，返回结果
@@ -333,9 +343,19 @@ async def process_text(
                 # 记录退款失败的严重错误
                 print(f"严重错误: 用户 {current_user.id} 的积分退款失败: {refund_error}")
             
+            error_detail = mindmap_result.get('error', 'Unknown error')
+            
+            # 为用户提供更友好的错误信息
+            if "API密钥" in error_detail or "API_KEY_INVALID" in error_detail:
+                user_friendly_error = "AI服务暂时不可用，请稍后重试。如果问题持续存在，请联系客服。"
+            elif "QUOTA_EXCEEDED" in error_detail:
+                user_friendly_error = "AI服务调用次数已达上限，请稍后重试。"
+            else:
+                user_friendly_error = f"思维导图生成失败: {error_detail}"
+            
             raise HTTPException(
                 status_code=500,
-                detail=f"思维导图生成失败: {mindmap_result.get('error', 'Unknown error')}"
+                detail=user_friendly_error
             )
         
         # 5. 成功生成，返回结果

@@ -12,10 +12,15 @@ class GeminiProcessor:
     
     def __init__(self):
         """初始化 Gemini AI 服务"""
+        print(f"初始化 Gemini AI 处理器...")
+        print(f"API密钥状态: {'已设置' if settings.gemini_api_key else '未设置'}")
         if settings.gemini_api_key:
+            print(f"API密钥前6位: {settings.gemini_api_key[:6]}...")
             genai.configure(api_key=settings.gemini_api_key)
             self.model = genai.GenerativeModel('gemini-1.5-flash')
+            print("Gemini 模型初始化成功")
         else:
+            print("警告: Gemini API密钥未设置，AI功能将不可用")
             self.model = None
     
     async def generate_mindmap_structure(self, content: str) -> Dict[str, Any]:
@@ -24,16 +29,20 @@ class GeminiProcessor:
         统一的AI生成方法，确保关键信息不丢失
         """
         if not self.model:
+            error_msg = f"Gemini API 未配置 - API key: {'已设置' if settings.gemini_api_key else '未设置'}"
+            print(f"AI处理器错误: {error_msg}")
             return {
                 "success": False,
-                "error": "Gemini API key not configured"
+                "error": error_msg
             }
         
         prompt = self._build_mindmap_prompt(content)
         
         try:
+            print(f"正在调用 Gemini API，内容长度: {len(content)} 字符")
             response = self.model.generate_content(prompt)
             response_text = response.text.strip()
+            print(f"Gemini API 响应成功，响应长度: {len(response_text)} 字符")
             
             # 清理响应文本，提取Markdown部分
             cleaned_markdown = self._clean_markdown_response(response_text)
@@ -58,9 +67,21 @@ class GeminiProcessor:
             }
             
         except Exception as e:
+            error_msg = f"AI生成失败: {str(e)}"
+            print(f"Gemini API 调用失败: {error_msg}")
+            print(f"错误类型: {type(e).__name__}")
+            
+            # 更详细的错误信息
+            if "API_KEY_INVALID" in str(e):
+                error_msg = "API密钥无效，请检查Gemini API配置"
+            elif "PERMISSION_DENIED" in str(e):
+                error_msg = "API权限被拒绝，请检查API密钥权限"
+            elif "QUOTA_EXCEEDED" in str(e):
+                error_msg = "API调用次数已达上限，请稍后重试"
+            
             return {
                 "success": False,
-                "error": f"AI生成失败: {str(e)}"
+                "error": error_msg
             }
     
     def _clean_markdown_response(self, text: str) -> str:
