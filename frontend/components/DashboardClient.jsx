@@ -23,7 +23,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '../context/AuthContext';
 import ShareModal from './share/ShareModal';
-import { Gift, Zap, LayoutDashboard, CreditCard, Settings, LogOut, FileText, FileUp, Youtube, Podcast, FileAudio, Link as LinkIcon, Sparkles, UploadCloud, PlusCircle, ListChecks, ArrowRight, Edit3, Trash2, Share2, FileX, Plus, File } from 'lucide-react';
+import { Gift, Zap, LayoutDashboard, CreditCard, Settings, LogOut, FileText, FileUp, Youtube, Podcast, FileAudio, Link as LinkIcon, Sparkles, UploadCloud, PlusCircle, ListChecks, ArrowRight, Eye, Trash2, Share2, FileX, Plus, File } from 'lucide-react';
 // 头像相关功能已移至 Navbar 组件
 
 // ===================================================================
@@ -340,6 +340,14 @@ const RecentProjects = React.memo(({ mindmaps, onCardClick, onCreateNew, loading
       mindmapTitle: ''
     });
 
+    // 删除确认弹窗状态
+    const [deleteModal, setDeleteModal] = useState({
+      isOpen: false,
+      mindmapId: null,
+      mindmapTitle: '',
+      isDeleting: false
+    });
+
     const handleCardClick = (id) => {
       router.push(`/mindmap/${id}`);
     };
@@ -348,14 +356,64 @@ const RecentProjects = React.memo(({ mindmaps, onCardClick, onCreateNew, loading
       router.push('/create');
     };
 
-    const handleRename = (id) => {
-      // TODO: 实现重命名功能
-      console.log('重命名思维导图:', id);
+    const handleView = (e, id) => {
+      e.stopPropagation(); // 防止触发卡片点击
+      router.push(`/mindmap/${id}`);
     };
 
-    const handleDelete = (id) => {
-      // TODO: 实现删除功能
-      console.log('删除思维导图:', id);
+    const handleDelete = (e, mindmap) => {
+      e.stopPropagation(); // 防止触发卡片点击
+      setDeleteModal({
+        isOpen: true,
+        mindmapId: mindmap.id,
+        mindmapTitle: mindmap.title,
+        isDeleting: false
+      });
+    };
+
+    // 确认删除
+    const confirmDelete = async () => {
+      if (!deleteModal.mindmapId) return;
+
+      try {
+        setDeleteModal(prev => ({ ...prev, isDeleting: true }));
+        
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/mindmaps/${deleteModal.mindmapId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          // 从列表中移除已删除的思维导图
+          window.location.reload();
+        } else {
+          console.error('删除思维导图失败:', response.status);
+          alert('删除失败，请重试');
+        }
+      } catch (error) {
+        console.error('删除思维导图失败:', error);
+        alert('删除失败，请重试');
+      } finally {
+        setDeleteModal({
+          isOpen: false,
+          mindmapId: null,
+          mindmapTitle: '',
+          isDeleting: false
+        });
+      }
+    };
+
+    // 取消删除
+    const cancelDelete = () => {
+      setDeleteModal({
+        isOpen: false,
+        mindmapId: null,
+        mindmapTitle: '',
+        isDeleting: false
+      });
     };
 
     // 处理分享点击
@@ -380,7 +438,7 @@ const RecentProjects = React.memo(({ mindmaps, onCardClick, onCreateNew, loading
     return (
       <div id="dashboardView" className="w-full max-w-6xl mx-auto mt-12">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-gray-800">我的导图</h2>
+          <h2 className="text-2xl font-bold text-gray-800">我的思维导图</h2>
           {mindmaps && mindmaps.length > 0 && (
             <Link href="/mindmaps" className="text-sm font-semibold text-gray-600 hover:text-black flex items-center space-x-1">
               <span>查看全部</span>
@@ -436,10 +494,18 @@ const RecentProjects = React.memo(({ mindmaps, onCardClick, onCreateNew, loading
                   >
                     <Share2 className="w-4 h-4" />
                   </button>
-                  <button onClick={() => handleRename(mindmap.id)} className="action-button">
-                    <Edit3 className="w-4 h-4" />
+                  <button 
+                    onClick={(e) => handleView(e, mindmap.id)} 
+                    className="action-button text-green-500 hover:bg-green-100"
+                    title="查看思维导图"
+                  >
+                    <Eye className="w-4 h-4" />
                   </button>
-                  <button onClick={() => handleDelete(mindmap.id)} className="action-button text-red-500 hover:bg-red-100">
+                  <button 
+                    onClick={(e) => handleDelete(e, mindmap)} 
+                    className="action-button text-red-500 hover:bg-red-100"
+                    title="删除思维导图"
+                  >
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -467,6 +533,54 @@ const RecentProjects = React.memo(({ mindmaps, onCardClick, onCreateNew, loading
           mindmapId={shareModal.mindmapId}
           mindmapTitle={shareModal.mindmapTitle}
         />
+
+        {/* 删除确认弹窗 */}
+        {deleteModal.isOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+              <div className="flex items-center mb-4">
+                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-4">
+                  <Trash2 className="w-6 h-6 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900">确认删除</h3>
+                  <p className="text-sm text-gray-500">此操作无法撤销</p>
+                </div>
+              </div>
+              
+              <p className="text-gray-700 mb-6">
+                确定要删除思维导图 <span className="font-semibold">"{deleteModal.mindmapTitle}"</span> 吗？
+              </p>
+              
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={cancelDelete}
+                  disabled={deleteModal.isDeleting}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 disabled:opacity-50"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  disabled={deleteModal.isDeleting}
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50 flex items-center"
+                >
+                  {deleteModal.isDeleting ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      删除中...
+                    </>
+                  ) : (
+                    '确认删除'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   });
