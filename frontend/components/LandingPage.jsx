@@ -73,7 +73,7 @@ const LandingPage = ({ invitationCode, autoRegister }) => {
         Hero区域（英雄区域）- 页面的主要焦点区域
         包含：产品slogan、主要CTA按钮、福利信息
       */}
-      <main className="container mx-auto px-6 pt-20 pb-16 text-center">
+      <main className="container mx-auto px-6 pt-20 pb-8 text-center">
         {/* 产品定位徽章 - 突出产品的新颖性和智能特色 */}
         <div className="mb-6 flex justify-center items-center">
           <div className="bg-orange-100 text-orange-700 border border-orange-200 rounded-full px-3 py-1 text-sm font-medium flex items-center">
@@ -109,7 +109,7 @@ const LandingPage = ({ invitationCode, autoRegister }) => {
         核心功能展示区域 - 详细介绍产品的6大核心功能
         使用卡片式布局，每个功能都有图标、标题和描述
       */}
-      <section className="py-24 bg-white">
+      <section className="py-12 bg-white">
         <div className="container mx-auto px-6">
           {/* 区域标题和描述 */}
           <div className="text-center mb-16">
