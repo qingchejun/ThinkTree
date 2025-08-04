@@ -23,7 +23,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '../context/AuthContext';
 import ShareModal from './share/ShareModal';
-import { Gift, Zap, LayoutDashboard, CreditCard, Settings, LogOut, FileText, FileUp, Youtube, Podcast, FileAudio, Link as LinkIcon, Sparkles, UploadCloud, PlusCircle, ListChecks, ArrowRight, Eye, Trash2, Share2, FileX, Plus, File } from 'lucide-react';
+import { Gift, Zap, LayoutDashboard, CreditCard, Settings, LogOut, FileText, FileUp, Youtube, Podcast, FileAudio, Link as LinkIcon, Sparkles, UploadCloud, PlusCircle, ListChecks, ArrowRight, Eye, Trash2, Share2, FileX, Plus, File, Download } from 'lucide-react';
 // 头像相关功能已移至 Navbar 组件
 
 // ===================================================================
@@ -426,6 +426,43 @@ const RecentProjects = React.memo(({ mindmaps, onCardClick, onCreateNew, loading
       });
     };
 
+    // 处理导出点击
+    const handleExport = async (e, mindmap) => {
+      e.stopPropagation(); // 防止触发卡片点击
+      
+      try {
+        // 获取思维导图数据
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/mindmaps/${mindmap.id}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('获取思维导图数据失败');
+        }
+
+        const mindmapData = await response.json();
+        
+        // 创建并下载 Markdown 文件
+        const blob = new Blob([mindmapData.content], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${mindmap.title}.md`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        console.log('导出思维导图成功:', mindmap.title);
+      } catch (error) {
+        console.error('导出思维导图失败:', error);
+        alert('导出失败，请重试');
+      }
+    };
+
     // 关闭分享模态框
     const handleCloseShareModal = () => {
       setShareModal({
@@ -488,18 +525,25 @@ const RecentProjects = React.memo(({ mindmaps, onCardClick, onCreateNew, loading
                 </div>
                 <div className="border-t p-2 flex justify-end space-x-1">
                   <button 
-                    onClick={(e) => handleShare(e, mindmap)} 
-                    className="action-button text-blue-500 hover:bg-blue-100"
-                    title="分享思维导图"
-                  >
-                    <Share2 className="w-4 h-4" />
-                  </button>
-                  <button 
                     onClick={(e) => handleView(e, mindmap.id)} 
                     className="action-button text-green-500 hover:bg-green-100"
                     title="查看思维导图"
                   >
                     <Eye className="w-4 h-4" />
+                  </button>
+                  <button 
+                    onClick={(e) => handleExport(e, mindmap)} 
+                    className="action-button text-purple-500 hover:bg-purple-100"
+                    title="导出思维导图"
+                  >
+                    <Download className="w-4 h-4" />
+                  </button>
+                  <button 
+                    onClick={(e) => handleShare(e, mindmap)} 
+                    className="action-button text-blue-500 hover:bg-blue-100"
+                    title="分享思维导图"
+                  >
+                    <Share2 className="w-4 h-4" />
                   </button>
                   <button 
                     onClick={(e) => handleDelete(e, mindmap)} 
