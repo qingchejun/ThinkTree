@@ -24,6 +24,7 @@
 
 import React, { useState, useContext, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 import AuthContext from '../context/AuthContext'; 
 
 const LoginModal = ({ isOpen, onClose, initialInvitationCode, autoOpenRegister }) => {// 调试日志 - 仅在开发环境显示
@@ -42,6 +43,7 @@ const LoginModal = ({ isOpen, onClose, initialInvitationCode, autoOpenRegister }
   
   const { login } = useContext(AuthContext);
   const router = useRouter();
+  const { executeRecaptcha } = useGoogleReCaptcha();
 
   const inputRefs = useRef([]);
 
@@ -80,21 +82,43 @@ const LoginModal = ({ isOpen, onClose, initialInvitationCode, autoOpenRegister }
     setError('');
 
     try {
+      // 执行reCAPTCHA验证 (如果启用)
+      let recaptchaToken = null;
+      if (executeRecaptcha) {
+        try {
+          recaptchaToken = await executeRecaptcha('register');
+          console.log('🤖 reCAPTCHA Token获取成功');
+        } catch (error) {
+          console.warn('⚠️ reCAPTCHA验证失败，但继续执行:', error);
+        }
+      }
+
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
       const fullUrl = `${apiUrl}/api/auth/initiate-login`;
       
-      console.log('🔍 [调试] 发起登录请求:', { email, invitation_code: invitationCode || null });
+      console.log('🔍 [调试] 发起登录请求:', { 
+        email, 
+        invitation_code: invitationCode || null,
+        has_recaptcha: !!recaptchaToken 
+      });
       console.log('🔍 [调试] API URL:', apiUrl);
       console.log('🔍 [调试] 完整请求URL:', fullUrl);
       console.log('🔍 [调试] 环境:', process.env.NODE_ENV);
       
+      const requestBody = { 
+        email, 
+        invitation_code: invitationCode || null, // 发送邀请码（可能为空）
+      };
+      
+      // 只有在有reCAPTCHA token时才添加到请求中
+      if (recaptchaToken) {
+        requestBody.recaptcha_token = recaptchaToken;
+      }
+      
       const response = await fetch(fullUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          email, 
-          invitation_code: invitationCode || null // 发送邀请码（可能为空）
-        })
+        body: JSON.stringify(requestBody)
       });
       
       console.log('响应状态:', response.status, response.statusText);

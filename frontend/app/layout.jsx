@@ -3,6 +3,7 @@
 import '../styles/globals.css'
 import React from 'react';
 import { usePathname } from 'next/navigation'; // 引入 usePathname
+import { GoogleReCaptchaProvider } from 'react-google-recaptcha-v3'
 import { AuthProvider } from '../context/AuthContext'
 import { ModalProvider, useModal } from '../context/ModalContext';
 import { ToastContainer } from '../components/common/Toast'
@@ -28,14 +29,27 @@ function LayoutWrapper({ children }) {
 }
 
 export default function RootLayout({ children }) {
+  // reCAPTCHA Site Key - 从环境变量获取
+  const recaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+  
   return (
     <html lang="zh-CN">
       <body className={`${inter.className} antialiased`}>
-        <AuthProvider>
-          <ModalProvider>
-            <LayoutWrapper>{children}</LayoutWrapper>
-          </ModalProvider>
-        </AuthProvider>
+        {recaptchaSiteKey ? (
+          <GoogleReCaptchaProvider reCaptchaKey={recaptchaSiteKey}>
+            <AuthProvider>
+              <ModalProvider>
+                <LayoutWrapper>{children}</LayoutWrapper>
+              </ModalProvider>
+            </AuthProvider>
+          </GoogleReCaptchaProvider>
+        ) : (
+          <AuthProvider>
+            <ModalProvider>
+              <LayoutWrapper>{children}</LayoutWrapper>
+            </ModalProvider>
+          </AuthProvider>
+        )}
       </body>
     </html>
   )
