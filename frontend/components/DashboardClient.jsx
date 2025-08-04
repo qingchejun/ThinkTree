@@ -22,7 +22,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '../context/AuthContext';
-import { Gift, Zap, LayoutDashboard, CreditCard, Settings, LogOut, FileText, FileUp, Youtube, Podcast, FileAudio, Link as LinkIcon, Sparkles, UploadCloud, PlusCircle, ListChecks, ArrowRight, Edit3, Trash2, FileX, Plus, File } from 'lucide-react';
+import ShareModal from './share/ShareModal';
+import { Gift, Zap, LayoutDashboard, CreditCard, Settings, LogOut, FileText, FileUp, Youtube, Podcast, FileAudio, Link as LinkIcon, Sparkles, UploadCloud, PlusCircle, ListChecks, ArrowRight, Edit3, Trash2, Share2, FileX, Plus, File } from 'lucide-react';
 // 头像相关功能已移至 Navbar 组件
 
 // ===================================================================
@@ -332,6 +333,13 @@ CreationPanel.displayName = 'CreationPanel';
 const RecentProjects = React.memo(({ mindmaps, onCardClick, onCreateNew, loading = false }) => {
     const router = useRouter();
 
+    // 分享模态框状态
+    const [shareModal, setShareModal] = useState({
+      isOpen: false,
+      mindmapId: null,
+      mindmapTitle: ''
+    });
+
     const handleCardClick = (id) => {
       router.push(`/mindmap/${id}`);
     };
@@ -348,6 +356,25 @@ const RecentProjects = React.memo(({ mindmaps, onCardClick, onCreateNew, loading
     const handleDelete = (id) => {
       // TODO: 实现删除功能
       console.log('删除思维导图:', id);
+    };
+
+    // 处理分享点击
+    const handleShare = (e, mindmap) => {
+      e.stopPropagation(); // 防止触发卡片点击
+      setShareModal({
+        isOpen: true,
+        mindmapId: mindmap.id,
+        mindmapTitle: mindmap.title
+      });
+    };
+
+    // 关闭分享模态框
+    const handleCloseShareModal = () => {
+      setShareModal({
+        isOpen: false,
+        mindmapId: null,
+        mindmapTitle: ''
+      });
     };
 
     return (
@@ -402,6 +429,13 @@ const RecentProjects = React.memo(({ mindmaps, onCardClick, onCreateNew, loading
                   </div>
                 </div>
                 <div className="border-t p-2 flex justify-end space-x-1">
+                  <button 
+                    onClick={(e) => handleShare(e, mindmap)} 
+                    className="action-button text-blue-500 hover:bg-blue-100"
+                    title="分享思维导图"
+                  >
+                    <Share2 className="w-4 h-4" />
+                  </button>
                   <button onClick={() => handleRename(mindmap.id)} className="action-button">
                     <Edit3 className="w-4 h-4" />
                   </button>
@@ -425,6 +459,14 @@ const RecentProjects = React.memo(({ mindmaps, onCardClick, onCreateNew, loading
               </div>
           </div>
         )}
+        
+        {/* 分享模态框 */}
+        <ShareModal
+          isOpen={shareModal.isOpen}
+          onClose={handleCloseShareModal}
+          mindmapId={shareModal.mindmapId}
+          mindmapTitle={shareModal.mindmapTitle}
+        />
       </div>
     );
   });
