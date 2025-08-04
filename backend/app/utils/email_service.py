@@ -149,11 +149,8 @@ class EmailService:
                 <meta charset="utf-8">
                 <title>ThinkSo Login</title>
                 <style>
-                    body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }}
-                    .container {{ max-width: 500px; margin: 0 auto; background: white; border-radius: 12px; padding: 40px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
-                    .header {{ text-align: left; margin-bottom: 30px; }}
-                    .emoji {{ font-size: 24px; margin-right: 8px; }}
-                    .title {{ font-size: 24px; font-weight: 600; color: #333; margin: 0; }}
+                    body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background-color: #ffffff; }}
+                    .container {{ max-width: 500px; margin: 0 auto; padding: 20px; }}
                     .greeting {{ font-size: 16px; color: #333; margin-bottom: 20px; }}
                     .message {{ font-size: 16px; color: #333; line-height: 1.5; margin-bottom: 30px; }}
                     .button {{ display: inline-block; background: #007AFF; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 500; font-size: 16px; }}
@@ -162,17 +159,13 @@ class EmailService:
             </head>
             <body>
                 <div class="container">
-                    <div class="header">
-                        <div class="title"><span class="emoji">👋</span>{login_code} is your login code.</div>
-                    </div>
-                    
                     <div class="greeting">Hi {user_name},</div>
                     
                     <div class="message">
                         {login_code} is your login code. You can also click below to login to your account:
                     </div>
                     
-                    <div style="text-align: left;">
+                    <div>
                         <a href="{magic_link_url}" class="button">Login to Thinkso</a>
                     </div>
                     
@@ -184,9 +177,9 @@ class EmailService:
             
             # 构建邮件参数
             params = {
-                "from": f"{self.mail_from_name} <{self.mail_from}>",
+                "from": f"ThinkSo Login <{self.mail_from}>",
                 "to": [user_email],
-                "subject": f"{login_code} is your login code.",
+                "subject": f"👏{login_code} is your login code.",
                 "html": html_content,
             }
             
