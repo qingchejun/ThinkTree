@@ -166,9 +166,9 @@ export function AuthProvider({ children }) {
       document.cookie = "thinktree_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
     }
     
-    // 跳转到首页
+    // 跳转到主站首页
     if (typeof window !== 'undefined') {
-      router.push('/')
+      window.location.href = 'https://thinkso.io'
     }
   }
 
