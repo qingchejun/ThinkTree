@@ -35,8 +35,10 @@ def upgrade() -> None:
     op.drop_table('users', if_exists=True)
 
     # 3. 删除所有自定义的枚举类型 (如果存在)
-    op.execute('DROP TYPE IF EXISTS transactiontype CASCADE')
-    op.execute('DROP TYPE IF EXISTS redemptioncodestatus CASCADE')
+    bind = op.get_bind()
+    if bind.dialect.name == 'postgresql':
+        op.execute('DROP TYPE IF EXISTS transactiontype CASCADE')
+        op.execute('DROP TYPE IF EXISTS redemptioncodestatus CASCADE')
 
     # ### 现在，按正确的顺序创建所有表 ###
     # 注意：枚举类型将由 SQLAlchemy 在创建表时自动创建
@@ -197,6 +199,9 @@ def downgrade() -> None:
     op.drop_table('users')
     
     # 最后删除所有自定义枚举类型
-    op.execute('DROP TYPE IF EXISTS transactiontype CASCADE')
+    bind = op.get_bind()
+    if bind.dialect.name == 'postgresql':
+        op.execute('DROP TYPE IF EXISTS transactiontype CASCADE')
+        op.execute('DROP TYPE IF EXISTS redemptioncodestatus CASCADE')
     op.execute('DROP TYPE IF EXISTS redemptioncodestatus CASCADE')
     # ### end Alembic commands ###

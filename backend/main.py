@@ -34,6 +34,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 @app.on_event("startup")
 async def startup_event():
     """应用启动事件 - 生产环境使用Alembic管理数据库"""
+    print(f"---DIAGNOSTIC-INFO--- Application using DATABASE_URL: {settings.database_url}")
     # 仅在使用SQLite的开发环境中创建表
     if "sqlite" in settings.database_url:
         from app.core.database import create_tables

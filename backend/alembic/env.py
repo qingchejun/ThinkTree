@@ -1,6 +1,11 @@
 from logging.config import fileConfig
 import os
 import sys
+from dotenv import load_dotenv
+
+# 优先加载 .env.local，然后是 .env
+load_dotenv(dotenv_path='.env.local')
+load_dotenv(dotenv_path='.env')
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool

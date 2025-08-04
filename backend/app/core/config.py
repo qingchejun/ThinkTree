@@ -4,9 +4,17 @@ ThinkSo 应用配置
 
 import os
 from pydantic_settings import BaseSettings
+from dotenv import load_dotenv
 
+# 优先加载 .env.local，并覆盖现有环境变量，确保本地开发环境的正确性
+# 这个文件在生产环境中不存在，因此不会影响生产部署
+load_dotenv(dotenv_path='.env', override=True)
+load_dotenv(dotenv_path='.env.local', override=True)
 
 class Settings(BaseSettings):
+    class Config:
+        env_file = ('.env.local', '.env')
+        env_file_encoding = 'utf-8'
     """应用设置"""
     
     # 基础配置
