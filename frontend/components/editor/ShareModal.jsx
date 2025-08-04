@@ -21,7 +21,7 @@ export default function ShareModal({ isOpen, onClose, mindmapTitle }) {
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
         <div className="p-4 border-b flex justify-between items-center">
-          <h3 className="text-lg font-semibold">分享 "{mindmapTitle}"</h3>
+          <h3 className="text-lg font-semibold">分享 &ldquo;{mindmapTitle}&rdquo;</h3>
           <Button variant="ghost" size="sm" onClick={onClose}>
             <X className="w-4 h-4" />
           </Button>

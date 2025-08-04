@@ -100,7 +100,7 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
     } else {
       setCreditEstimate(null)
     }
-  }, [textInput, uploadMode, activeToken])
+  }, [textInput, uploadMode, activeToken]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // 处理积分不足的友好提示
   const showInsufficientCreditsAlert = (requiredCredits, currentBalance) => {

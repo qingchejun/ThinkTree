@@ -37,7 +37,7 @@ const RedemptionHistory = () => {
       setHistory([]);
       setIsLoading(false);
     }
-  }, [token]);
+  }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);

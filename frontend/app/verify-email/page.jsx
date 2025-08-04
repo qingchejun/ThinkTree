@@ -23,7 +23,7 @@ function VerifyEmailContent() {
       setError('验证链接无效，缺少验证令牌')
       setVerifying(false)
     }
-  }, [searchParams])
+  }, [searchParams]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const verifyEmail = async (token) => {
     try {

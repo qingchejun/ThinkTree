@@ -33,7 +33,7 @@ export default function ExportModal({ isOpen, onClose, mindmapTitle }) {
         </div>
         <div className="p-6">
           <p className="text-sm text-gray-600 mb-4">
-            选择一种格式导出 "<strong>{mindmapTitle}</strong>":
+            选择一种格式导出 &ldquo;<strong>{mindmapTitle}</strong>&rdquo;:
           </p>
           <div className="space-y-2">
             {exportOptions.map((option) => (

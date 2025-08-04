@@ -44,7 +44,7 @@ export default function ServiceStatus({ onStatusChange }) {
     const interval = setInterval(checkServiceStatus, 30000)
     
     return () => clearInterval(interval)
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const getStatusColor = () => {
     switch (status) {

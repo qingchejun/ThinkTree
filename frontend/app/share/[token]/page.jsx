@@ -25,7 +25,7 @@ export default function SharePage() {
       title: mindmap.title,
       markdown: mindmap.content
     } : null
-  }, [mindmap?.title, mindmap?.content])
+  }, [mindmap?.title, mindmap?.content, mindmap])
 
   // 初始化客户端状态
   useEffect(() => {
