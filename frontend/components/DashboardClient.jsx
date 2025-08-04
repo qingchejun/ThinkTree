@@ -418,7 +418,7 @@ RecentProjects.displayName = 'RecentProjects';
 // ======================= 4. 主组件：创作中心 ========================
 // ===================================================================
 const DashboardClient = ({ initialData }) => {
-  const { logout } = useAuth();
+  const { logout, isLoading } = useAuth();
   const router = useRouter();
   const { apiCall } = useApi();
 
@@ -442,12 +442,19 @@ const DashboardClient = ({ initialData }) => {
     }
   };
 
-  // useEffect(() => {
-  //   if (!user) {
-  //     router.push('/?auth=login');
-  //   }
-  // }, [user, router]);
+  // 未登录用户自动跳转到首页并打开登录弹窗
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.push('/?auth=login');
+    }
+  }, [user, isLoading, router]);
 
+  // 正在加载认证状态时显示骨架屏
+  if (isLoading) {
+    return <LoadingSkeleton />;
+  }
+
+  // 未登录用户显示骨架屏（跳转过程中的短暂状态）
   if (!user) {
     return <LoadingSkeleton />;
   }

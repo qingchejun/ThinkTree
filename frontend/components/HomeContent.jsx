@@ -13,26 +13,36 @@ export default function HomeContent() {
   const searchParams = useSearchParams();
   const [invitationCode, setInvitationCode] = useState('');
   const [autoRegister, setAutoRegister] = useState(false);
+  const [autoLogin, setAutoLogin] = useState(false);
   
   // 从 useSearchParams Hook 获取URL参数（这会正确处理客户端导航）
   useEffect(() => {
     const codeFromUrl = searchParams.get('invitation_code') || '';
     const autoRegisterFromUrl = searchParams.get('auto_register') === 'true';
+    const autoLoginFromUrl = searchParams.get('auth') === 'login';
     
     setInvitationCode(codeFromUrl);
     setAutoRegister(autoRegisterFromUrl);
+    setAutoLogin(autoLoginFromUrl);
   }, [searchParams]);
+
+  // 自动打开登录弹窗（当检测到 auth=login 参数时）
+  useEffect(() => {
+    if (!isLoading && !user && autoLogin) {
+      openLoginModal();
+    }
+  }, [autoLogin, isLoading, user, openLoginModal]);
 
   // 清理URL参数（在弹窗打开后延迟清理）
   useEffect(() => {
-    if (!isLoading && !user && (invitationCode || autoRegister)) {
+    if (!isLoading && !user && (invitationCode || autoRegister || autoLogin)) {
       // 延迟清理URL，确保LandingPage组件有足够时间处理参数并打开弹窗
       const timer = setTimeout(() => {
         router.replace('/', undefined, { shallow: true });
       }, 2000);
       return () => clearTimeout(timer);
     }
-  }, [invitationCode, autoRegister, isLoading, user, router]);
+  }, [invitationCode, autoRegister, autoLogin, isLoading, user, router]);
 
   // 如果用户已登录，跳转到工作台
   useEffect(() => {
