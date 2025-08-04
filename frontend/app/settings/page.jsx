@@ -207,7 +207,7 @@ const SettingsContent = () => {
     }
 
     if (!isAuthenticated) {
-      router.push('/dashboard');
+      router.push('/?auth=login');
       return;
     }
 

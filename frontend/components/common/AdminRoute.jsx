@@ -10,12 +10,8 @@ const AdminRoute = ({ children }) => {
   useEffect(() => {
     if (!isLoading) {
       if (!user) {
-        // 用户未登录，重定向到登录页
-        if (typeof window !== 'undefined') {
-          router.push('/login?redirect=' + encodeURIComponent(window.location.pathname));
-        } else {
-          router.push('/');
-        }
+        // 用户未登录，重定向到首页并打开登录弹窗
+        router.push('/?auth=login');
         return;
       }
       

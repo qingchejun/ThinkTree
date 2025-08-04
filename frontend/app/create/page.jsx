@@ -49,10 +49,10 @@ export default function CreatePage() {
     });
   };
 
-  // 认证检查 - 未登录用户重定向到登录页
+  // 认证检查 - 未登录用户重定向到首页并打开登录弹窗
   useEffect(() => {
     if (!isLoading && !user) {
-      router.push('/login?redirect=/create')
+      router.push('/?auth=login')
     }
   }, [user, isLoading, router])
 

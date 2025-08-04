@@ -253,7 +253,7 @@ export default function MindmapsPage() {
             {/* 固定新建导图入口 */}
             <Card 
               className="flex flex-col items-center justify-center text-center border-2 border-dashed border-gray-300 hover:border-gray-400 hover:bg-gray-50 transition-all duration-300 cursor-pointer min-h-[220px]"
-              onClick={() => router.push('/editor/new')}
+              onClick={() => router.push('/create')}
             >
               <div className="flex items-center justify-center w-16 h-16 rounded-full bg-gray-200 mb-4">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
