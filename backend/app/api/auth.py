@@ -1688,7 +1688,7 @@ async def google_callback(request: StarletteRequest, db: Session = Depends(get_d
     except Exception as e:
         # 发生错误时重定向到登录页面并显示错误信息
         error_message = f"Google 登录失败: {str(e)}"
-        login_url = f"https://thinkso.io/login?error={error_message}"
+        login_url = f"https://thinkso.io/?auth=login&error={error_message}"
         return RedirectResponse(url=login_url)
 
 
@@ -1883,7 +1883,7 @@ async def magic_link_callback(token: str, db: Session = Depends(get_db)):
 
     if not login_token:
         # 重定向到登录页面并显示错误
-        return RedirectResponse(url=f"{settings.frontend_url}/login?error=invalid_token")
+        return RedirectResponse(url=f"{settings.frontend_url}/?auth=login&error=invalid_token")
 
     # 将该 token 标记为已使用
     login_token.used_at = now

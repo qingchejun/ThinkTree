@@ -32,7 +32,7 @@ import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { Sparkles, Cpu, FileStack, Users, BrainCircuit, FileOutput, Infinity, UploadCloud, Eye, PlusCircle } from 'lucide-react';
 
-const LandingPage = ({ invitationCode, autoRegister, onLoginClick }) => {
+const LandingPage = ({ invitationCode, autoRegister, errorMessage, onLoginClick }) => {
   // 自动触发登录弹窗的逻辑
   useEffect(() => {
     if ((autoRegister || invitationCode) && onLoginClick) {
@@ -55,6 +55,19 @@ const LandingPage = ({ invitationCode, autoRegister, onLoginClick }) => {
           </div>
           <span className="text-gray-600 ml-3">智能驱动的思维与知识管理伙伴</span>
         </div>
+        
+        {/* 错误提示 - 显示来自URL的错误信息 */}
+        {errorMessage && (
+          <div className="mb-6 max-w-2xl mx-auto p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="flex items-center">
+              <div className="text-red-500 text-xl mr-3">⚠️</div>
+              <div>
+                <h3 className="text-red-800 font-semibold mb-1">登录失败</h3>
+                <p className="text-red-700 text-sm">{decodeURIComponent(errorMessage)}</p>
+              </div>
+            </div>
+          </div>
+        )}
         
         {/* 主标题 - 产品的核心价值主张 */}
         <h1 className="text-5xl md:text-7xl font-extrabold text-gray-900 leading-tight mb-16">

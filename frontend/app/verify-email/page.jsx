@@ -46,7 +46,7 @@ function VerifyEmailContent() {
         
         // 3秒后自动跳转到登录页面
         setTimeout(() => {
-          router.push('/login?verified=true')
+          router.push('/?auth=login&verified=true')
         }, 3000)
       } else {
         setError(data.message || '邮箱验证失败，请稍后重试')
@@ -146,7 +146,7 @@ function VerifyEmailContent() {
             {/* 操作按钮 */}
             <div className="space-y-3">
               <Link
-                href="/login?verified=true"
+                href="/?auth=login&verified=true"
                 className="w-full bg-blue-600 text-white py-3 px-4 rounded-md text-sm font-medium hover:bg-blue-700 transition duration-200 inline-block"
               >
                 立即登录
@@ -209,7 +209,7 @@ function VerifyEmailContent() {
             
             <div className="flex space-x-3">
               <Link
-                href="/login"
+                href="/?auth=login"
                 className="flex-1 bg-gray-100 text-gray-700 py-2 px-4 rounded-md text-sm font-medium hover:bg-gray-200 transition duration-200 text-center"
               >
                 前往登录
