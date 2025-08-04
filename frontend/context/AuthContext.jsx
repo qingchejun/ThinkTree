@@ -15,7 +15,8 @@ export const AuthContext = createContext({
   login: async (token) => {},
   logout: () => {},
   refreshUser: async () => {},
-  showDailyRewardToast: null
+  showDailyRewardToast: null,
+  credits: 0
 })
 
 // 认证提供者组件
@@ -262,7 +263,9 @@ export function AuthProvider({ children }) {
     setShowDailyRewardToast,
     // 辅助状态 - 修复：支持HttpOnly Cookie认证，只要有用户信息即视为已认证
     isAuthenticated: !!user,
-    isAdmin: !!user && user.is_superuser
+    isAdmin: !!user && user.is_superuser,
+    // 用户积分 - 从用户对象中提取积分信息
+    credits: user?.credits || 0
   }
 
   // 开发环境调试日志 - 只在客户端执行
@@ -273,7 +276,8 @@ export function AuthProvider({ children }) {
       isLoading,
       isAuthenticated: !!user, // 修复：与上面的逻辑保持一致
       isAdmin: !!user && user.is_superuser,
-      userEmail: user?.email
+      userEmail: user?.email,
+      credits: user?.credits || 0
     })
   }
 
