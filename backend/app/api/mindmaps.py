@@ -123,7 +123,7 @@ async def create_mindmap(
         )
 
 
-@router.get("/", response_model=List[MindmapSummaryResponse])
+@router.get("/", response_model=List[MindmapResponse])
 async def get_user_mindmaps(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -142,17 +142,18 @@ async def get_user_mindmaps(
             Mindmap.updated_at.desc()
         ).offset(skip).limit(limit).all()
         
-        # 转换为摘要响应格式
+        # 转换为完整响应格式，包含完整content用于缩略图生成
         return [
-            MindmapSummaryResponse(
+            MindmapResponse(
                 id=str(mindmap.id),
                 title=mindmap.title,
+                content=mindmap.content,
                 description=mindmap.description,
                 tags=mindmap.tags.split(',') if mindmap.tags else [],
                 is_public=mindmap.is_public,
                 created_at=mindmap.created_at.isoformat(),
                 updated_at=mindmap.updated_at.isoformat(),
-                content_preview=mindmap.content[:100] + "..." if len(mindmap.content) > 100 else mindmap.content
+                user_id=mindmap.user_id
             )
             for mindmap in mindmaps
         ]

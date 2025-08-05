@@ -16,6 +16,7 @@ const MindmapThumbnail = ({ content, title, className = "" }) => {
 
   useEffect(() => {
     console.log('=== MindmapThumbnail useEffect 开始 ===')
+    console.log('MindmapThumbnail - title:', title)
     console.log('MindmapThumbnail - content:', content ? content.substring(0, 100) + '...' : 'null/undefined')
     console.log('MindmapThumbnail - content type:', typeof content)
     console.log('MindmapThumbnail - content length:', content?.length || 0)
