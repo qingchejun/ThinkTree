@@ -88,34 +88,22 @@ export default function SharePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* 头部 */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <span className="text-2xl">🌳</span>
-                <span className="text-xl font-bold text-gray-800">ThinkSo</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* 主内容区 */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      {/* 主内容区 - 全屏显示 */}
+      <main className="w-full h-screen">
         {/* 加载状态 */}
         {loading && (
-          <div className="text-center py-12">
-            <div className="animate-spin w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p className="text-gray-600">正在加载分享内容...</p>
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <div className="animate-spin w-8 h-8 border-4 border-gray-800 border-t-transparent rounded-full mx-auto mb-4"></div>
+              <p className="text-gray-600">正在加载分享内容...</p>
+            </div>
           </div>
         )}
 
         {/* 错误状态 */}
         {error && (
-          <div className="max-w-md mx-auto">
-            <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+          <div className="flex items-center justify-center h-full">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center max-w-md">
               <div className="text-red-500 text-4xl mb-4">❌</div>
               <h3 className="text-lg font-semibold text-red-900 mb-2">访问失败</h3>
               <p className="text-red-700 mb-4">{error}</p>
@@ -141,33 +129,14 @@ export default function SharePage() {
           </div>
         )}
 
-        {/* 思维导图内容 */}
+        {/* 思维导图内容 - 全屏显示 */}
         {!loading && !error && mindmap && (
-          <div className="space-y-6">
-            {/* 思维导图信息 */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                    {mindmap.title}
-                  </h1>
-                  {mindmap.description && (
-                    <p className="text-gray-600 mb-4">{mindmap.description}</p>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* 思维导图展示区 */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-              <div className="h-[calc(100vh-200px)]">
-                {stableMindmapData && (
-                  <SimpleMarkmapBasic
-                    mindmapData={stableMindmapData}
-                  />
-                )}
-              </div>
-            </div>
+          <div className="w-full h-full">
+            {stableMindmapData && (
+              <SimpleMarkmapBasic
+                mindmapData={stableMindmapData}
+              />
+            )}
           </div>
         )}
       </main>
