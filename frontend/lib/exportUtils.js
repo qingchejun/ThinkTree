@@ -154,12 +154,12 @@ export function exportSVG(markmapInstance, filename = 'mindmap') {
 }
 
 /**
- * SVG转PNG（优化版，避免跨域问题）
+ * SVG转PNG（高质量版本）
  * @param {string} svgContent - SVG内容字符串
  * @param {number} scale - 缩放比例（用于提高分辨率）
  * @returns {Promise<Blob>} PNG Blob
  */
-export function svgToPNG(svgContent, scale = 2) {
+export function svgToPNG(svgContent, scale = 4) {
   if (!isClientSide()) {
     return Promise.reject(new Error('PNG转换功能仅在客户端可用'));
   }
@@ -176,18 +176,18 @@ export function svgToPNG(svgContent, scale = 2) {
       }
       
       // 获取SVG尺寸
-      let width = parseFloat(svgElement.getAttribute('width')) || 800
-      let height = parseFloat(svgElement.getAttribute('height')) || 600
+      let width = parseFloat(svgElement.getAttribute('width')) || 1200
+      let height = parseFloat(svgElement.getAttribute('height')) || 900
       
       // 如果尺寸包含单位，移除单位
       if (typeof width === 'string') {
-        width = parseFloat(width.replace(/[^0-9.]/g, '')) || 800
+        width = parseFloat(width.replace(/[^0-9.]/g, '')) || 1200
       }
       if (typeof height === 'string') {
-        height = parseFloat(height.replace(/[^0-9.]/g, '')) || 600
+        height = parseFloat(height.replace(/[^0-9.]/g, '')) || 900
       }
       
-      // 创建Canvas
+      // 创建高分辨率Canvas
       const canvas = document.createElement('canvas')
       const ctx = canvas.getContext('2d')
       
@@ -195,8 +195,13 @@ export function svgToPNG(svgContent, scale = 2) {
       canvas.width = Math.round(width * scale)
       canvas.height = Math.round(height * scale)
       
-      // 设置白色背景
-      ctx.fillStyle = 'white'
+      // 优化Canvas渲染质量
+      ctx.imageSmoothingEnabled = true
+      ctx.imageSmoothingQuality = 'high'
+      ctx.textRenderingOptimization = 'optimizeQuality'
+      
+      // 设置高质量白色背景
+      ctx.fillStyle = '#ffffff'
       ctx.fillRect(0, 0, canvas.width, canvas.height)
       
       // 创建Image对象
@@ -207,10 +212,20 @@ export function svgToPNG(svgContent, scale = 2) {
       
       img.onload = function() {
         try {
-          // 在Canvas上绘制SVG（缩放到指定尺寸）
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+          // 保存当前状态
+          ctx.save()
           
-          // 转换为PNG Blob
+          // 设置高质量渲染
+          ctx.scale(scale, scale)
+          ctx.translate(0, 0)
+          
+          // 在Canvas上绘制SVG
+          ctx.drawImage(img, 0, 0, width, height)
+          
+          // 恢复状态
+          ctx.restore()
+          
+          // 转换为高质量PNG Blob
           canvas.toBlob((blob) => {
             if (blob) {
               resolve(blob)
@@ -228,8 +243,25 @@ export function svgToPNG(svgContent, scale = 2) {
         reject(new Error('SVG图像加载失败，可能是浏览器安全限制导致'))
       }
       
+      // 优化SVG内容，确保高质量渲染
+      let optimizedSvgContent = svgContent
+      
+      // 确保SVG有正确的尺寸属性
+      if (!optimizedSvgContent.includes('width=') || !optimizedSvgContent.includes('height=')) {
+        optimizedSvgContent = optimizedSvgContent.replace(
+          '<svg',
+          `<svg width="${width}" height="${height}"`
+        )
+      }
+      
+      // 添加高质量渲染属性
+      optimizedSvgContent = optimizedSvgContent.replace(
+        '<svg',
+        '<svg shape-rendering="geometricPrecision" text-rendering="geometricPrecision"'
+      )
+      
       // 使用Data URI方式加载SVG，避免跨域问题
-      const svgDataUri = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgContent)}`
+      const svgDataUri = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(optimizedSvgContent)}`
       img.src = svgDataUri
       
     } catch (error) {
@@ -244,7 +276,7 @@ export function svgToPNG(svgContent, scale = 2) {
  * @param {string} filename - 文件名（不含扩展名）
  * @param {number} scale - 缩放比例
  */
-export async function exportPNG(markmapInstance, filename = 'mindmap', scale = 2) {
+export async function exportPNG(markmapInstance, filename = 'mindmap', scale = 4) {
   try {
     const svgContent = getSVGFromMarkmap(markmapInstance)
     const pngBlob = await svgToPNG(svgContent, scale)
@@ -289,4 +321,4 @@ export function getTimestamp() {
   const minute = String(now.getMinutes()).padStart(2, '0')
   
   return `${year}${month}${day}_${hour}${minute}`
-} 
+}

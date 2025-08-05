@@ -428,19 +428,90 @@ const RecentProjects = React.memo(({ mindmaps, onCardClick, onCreateNew, loading
       });
     };
 
-    // 处理PNG导出
+    // 处理PNG导出 - 直接在当前页面导出
      const handleExport = async (e, mindmap) => {
        e.stopPropagation();
        
        try {
-         // 直接跳转到思维导图页面进行PNG导出
-         const exportUrl = `/mindmap/${mindmap.id}?export=png`;
-         window.open(exportUrl, '_blank');
+         console.log(`开始导出思维导图 (PNG):`, mindmap.title);
          
-         console.log(`准备导出思维导图 (PNG):`, mindmap.title);
+         // 动态导入所需的库
+         const { Markmap } = await import('markmap-view');
+         const { Transformer } = await import('markmap-lib');
+         const { exportPNG, getSafeFilename, getTimestamp } = await import('../lib/exportUtils.js');
+         
+         // 创建更大尺寸的临时SVG容器以提高清晰度
+         const tempContainer = document.createElement('div');
+         tempContainer.style.position = 'absolute';
+         tempContainer.style.left = '-9999px';
+         tempContainer.style.top = '-9999px';
+         tempContainer.style.width = '1600px';  // 增大尺寸
+         tempContainer.style.height = '1200px'; // 增大尺寸
+         document.body.appendChild(tempContainer);
+         
+         const tempSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+         tempSvg.setAttribute('width', '1600');  // 增大尺寸
+         tempSvg.setAttribute('height', '1200'); // 增大尺寸
+         tempContainer.appendChild(tempSvg);
+         
+         try {
+           // 转换markdown内容
+           const transformer = new Transformer();
+           const { root, features } = transformer.transform(mindmap.content);
+           
+           // 创建markmap实例，优化配置以提高清晰度
+           const markmapInstance = Markmap.create(tempSvg, {
+             duration: 0, // 禁用动画以加快渲染
+             maxWidth: 400,  // 增大节点宽度
+             spacingVertical: 8,   // 增大垂直间距
+             spacingHorizontal: 120, // 增大水平间距
+             autoFit: true,
+             pan: false,
+             zoom: false,
+             // 添加字体配置以提高清晰度
+             style: (id) => `
+               .${id} .markmap-node > circle {
+                 stroke-width: 2;
+               }
+               .${id} .markmap-node text {
+                 font-size: 14px;
+                 font-weight: 500;
+               }
+               .${id} .markmap-link {
+                 stroke-width: 2;
+               }
+             `
+           });
+           
+           // 渲染思维导图
+           markmapInstance.setData(root);
+           markmapInstance.fit();
+           
+           // 等待渲染完成
+           await new Promise(resolve => setTimeout(resolve, 800));
+           
+           // 生成文件名
+           const safeTitle = getSafeFilename(mindmap.title);
+           const timestamp = getTimestamp();
+           const filename = `${safeTitle}_${timestamp}`;
+           
+           // 导出高清PNG (4x分辨率)
+           const result = await exportPNG(markmapInstance, filename, 4);
+           
+           if (result.success) {
+             console.log(`PNG文件导出成功: ${result.filename}`);
+           } else {
+             throw new Error(result.error);
+           }
+           
+         } finally {
+           // 清理临时元素
+           document.body.removeChild(tempContainer);
+         }
+         
        } catch (error) {
          console.error('导出思维导图失败:', error);
-         alert('导出失败，请重试');
+         alert(`导出失败: ${error.message}`);
        }
      };
 
