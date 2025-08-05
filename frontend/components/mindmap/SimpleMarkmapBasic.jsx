@@ -4,6 +4,7 @@
 'use client'
 
 import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react'
+import { Maximize2, Minimize2, ZoomIn } from 'lucide-react'
 
 const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
   const svgRef = useRef(null)
@@ -415,9 +416,7 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
           } text-white px-3 py-1 rounded text-sm shadow-md transition-colors flex items-center space-x-1`}
           title={isExpanded ? '点击折叠到主要节点' : '点击展开所有节点'}
         >
-          <span className="text-base">
-            {isExpanded ? '📄' : '📖'}
-          </span>
+          {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           <span>
             {isExpanded ? '折叠' : '展开'}
           </span>
@@ -449,7 +448,7 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
           className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm shadow-md transition-colors flex items-center space-x-1"
           title="重新适应窗口大小"
         >
-          <span className="text-base">🔍</span>
+          <ZoomIn className="w-4 h-4" />
           <span>适应</span>
         </button>
       </div>

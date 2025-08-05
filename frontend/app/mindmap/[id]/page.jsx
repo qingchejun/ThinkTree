@@ -11,7 +11,7 @@ import SimpleMarkmapBasic from '../../../components/mindmap/SimpleMarkmapBasic'
 import ShareModal from '../../../components/share/ShareModal'
 // 移除ToastManager，使用内联提示样式
 import { exportSVG, exportPNG, getSafeFilename, getTimestamp } from '../../../lib/exportUtils.js'
-import { Download, Share2, Trash2, ChevronDown, ArrowLeft, Eye, Star } from 'lucide-react'
+import { Download, Share2, Trash2, ChevronDown, ArrowLeft, Eye, Star, Check, X } from 'lucide-react'
 
 export default function ViewMindmapPage() {
   const { user, token, isLoading } = useAuth()
@@ -41,6 +41,11 @@ export default function ViewMindmapPage() {
   
   // 收藏状态
   const [isFavorited, setIsFavorited] = useState(false)
+  
+  // 标题编辑状态
+  const [isEditingTitle, setIsEditingTitle] = useState(false)
+  const [editingTitle, setEditingTitle] = useState('')
+  const [isSavingTitle, setIsSavingTitle] = useState(false)
   
   // Markmap 组件引用
   const markmapRef = useRef(null)
@@ -199,6 +204,76 @@ export default function ViewMindmapPage() {
     }
     
     setTimeout(() => setSuccessMessage(null), 3000)
+  }
+
+  // 开始编辑标题
+  const handleStartEditTitle = () => {
+    setEditingTitle(mindmap.title)
+    setIsEditingTitle(true)
+  }
+
+  // 保存标题
+  const handleSaveTitle = async () => {
+    if (isSavingTitle) return // 防止重复调用
+    
+    if (!editingTitle.trim()) {
+      setError('标题不能为空')
+      return
+    }
+
+    if (editingTitle.trim() === mindmap.title) {
+      setIsEditingTitle(false)
+      return
+    }
+
+    try {
+      setIsSavingTitle(true)
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/mindmaps/${mindmapId}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: editingTitle.trim()
+        }),
+      })
+
+      if (response.ok) {
+        const updatedMindmap = await response.json()
+        setMindmap(updatedMindmap)
+        setIsEditingTitle(false)
+        setSuccessMessage('标题修改成功')
+        setTimeout(() => setSuccessMessage(null), 3000)
+      } else {
+        const errorData = await response.json()
+        throw new Error(errorData.detail || '标题修改失败')
+      }
+    } catch (err) {
+      console.error('标题修改失败:', err)
+      setError(`标题修改失败: ${err.message}`)
+      setTimeout(() => setError(null), 3000)
+    } finally {
+      setIsSavingTitle(false)
+    }
+  }
+
+  // 取消编辑标题
+  const handleCancelEditTitle = () => {
+    setEditingTitle('')
+    setIsEditingTitle(false)
+    setIsSavingTitle(false)
+  }
+
+  // 处理键盘事件
+  const handleTitleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      handleSaveTitle()
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      handleCancelEditTitle()
+    }
   }
 
   // 导出SVG（最终优化版 + 调试版）
@@ -428,10 +503,57 @@ export default function ViewMindmapPage() {
                 >
                   <ArrowLeft className="w-4 h-4" />
                 </button>
-                <div>
-                  <h1 className="text-xl font-bold text-gray-900 truncate">
-                    {mindmap.title}
-                  </h1>
+                <div className="min-w-0 flex-1">
+                  {isEditingTitle ? (
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="text"
+                        value={editingTitle}
+                        onChange={(e) => setEditingTitle(e.target.value)}
+                        onKeyDown={handleTitleKeyDown}
+                        onBlur={(e) => {
+                          // 延迟执行onBlur，让按钮点击事件优先执行
+                          setTimeout(() => {
+                            if (isEditingTitle && !isSavingTitle) {
+                              handleSaveTitle()
+                            }
+                          }, 200)
+                        }}
+                        className="text-xl font-bold text-gray-900 bg-white border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-0 flex-1"
+                        placeholder="请输入标题"
+                        autoFocus
+                        maxLength={100}
+                      />
+                      <button
+                        onClick={handleSaveTitle}
+                        disabled={isSavingTitle}
+                        className="action-button text-green-500 hover:bg-green-100 hover:text-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="保存标题"
+                      >
+                        {isSavingTitle ? (
+                          <div className="animate-spin w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full"></div>
+                        ) : (
+                          <Check className="w-4 h-4" />
+                        )}
+                      </button>
+                      <button
+                        onClick={handleCancelEditTitle}
+                        disabled={isSavingTitle}
+                        className="action-button text-red-500 hover:bg-red-100 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="取消编辑"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <h1 
+                      className="text-xl font-bold text-gray-900 truncate cursor-pointer hover:text-blue-600 hover:underline transition-colors"
+                      onClick={handleStartEditTitle}
+                      title="点击编辑标题"
+                    >
+                      {mindmap.title}
+                    </h1>
+                  )}
                   <p className="text-sm text-gray-500 mt-1">
                     创建于 {formatDate(mindmap.created_at)}
                     {mindmap.updated_at !== mindmap.created_at && (
