@@ -11,7 +11,7 @@ import SimpleMarkmapBasic from '../../../components/mindmap/SimpleMarkmapBasic'
 import ShareModal from '../../../components/share/ShareModal'
 // 移除ToastManager，使用内联提示样式
 import { exportSVG, exportPNG, getSafeFilename, getTimestamp } from '../../../lib/exportUtils.js'
-import { Download, Share2, Pencil, Trash2, ChevronDown } from 'lucide-react'
+import { Download, Share2, Pencil, Trash2, ChevronDown, ArrowLeft, Eye, Star } from 'lucide-react'
 
 export default function ViewMindmapPage() {
   const { user, token, isLoading } = useAuth()
@@ -38,6 +38,9 @@ export default function ViewMindmapPage() {
     mindmapId: null,
     mindmapTitle: ''
   })
+  
+  // 收藏状态
+  const [isFavorited, setIsFavorited] = useState(false)
   
   // Markmap 组件引用
   const markmapRef = useRef(null)
@@ -79,6 +82,10 @@ export default function ViewMindmapPage() {
         if (response.ok) {
           const data = await response.json()
           setMindmap(data)
+          
+          // 检查是否已收藏
+          const favoriteIds = JSON.parse(localStorage.getItem('favoriteMindmaps') || '[]')
+          setIsFavorited(favoriteIds.includes(data.id))
         } else if (response.status === 404) {
           setError('思维导图不存在或您无权访问')
         } else {
@@ -172,6 +179,26 @@ export default function ViewMindmapPage() {
       mindmapId: null,
       mindmapTitle: ''
     })
+  }
+
+  // 处理收藏/取消收藏
+  const handleToggleFavorite = () => {
+    const favoriteIds = JSON.parse(localStorage.getItem('favoriteMindmaps') || '[]')
+    const isCurrentlyFavorited = favoriteIds.includes(mindmap.id)
+    
+    if (isCurrentlyFavorited) {
+      const newFavoriteIds = favoriteIds.filter(id => id !== mindmap.id)
+      localStorage.setItem('favoriteMindmaps', JSON.stringify(newFavoriteIds))
+      setIsFavorited(false)
+      setSuccessMessage(`已取消收藏"${mindmap.title}"`)
+    } else {
+      favoriteIds.push(mindmap.id)
+      localStorage.setItem('favoriteMindmaps', JSON.stringify(favoriteIds))
+      setIsFavorited(true)
+      setSuccessMessage(`已收藏"${mindmap.title}"`)
+    }
+    
+    setTimeout(() => setSuccessMessage(null), 3000)
   }
 
   // 导出SVG（最终优化版 + 调试版）
@@ -351,121 +378,19 @@ export default function ViewMindmapPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* 头部导航 */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <div className="flex items-center space-x-4">
-                <button
-                  onClick={() => router.push('/mindmaps')}
-                  className="text-indigo-600 hover:text-indigo-500 text-sm font-medium"
-                >
-                  ← 返回控制台
-                </button>
-                <div className="border-l border-gray-300 h-6"></div>
-                <div>
-                  <h1 className="text-xl font-bold text-gray-900 truncate">
-                    {mindmap.title}
-                  </h1>
-                  <p className="text-sm text-gray-600">
-                    创建于 {formatDate(mindmap.created_at)}
-                    {mindmap.updated_at !== mindmap.created_at && (
-                      <span> · 更新于 {formatDate(mindmap.updated_at)}</span>
-                    )}
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-3">
-              <span className="text-sm text-gray-600">👋 {user.email}</span>
-              
-              {/* 导出按钮 */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowExportMenu(!showExportMenu)}
-                  disabled={isExportingUI}
-                  className="bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-                >
-                  {isExportingUI ? (
-                    <>
-                      <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
-                      <span>导出中...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Download className="w-4 h-4 mr-2" />
-                      <span>导出</span>
-                      <ChevronDown className="w-4 h-4 ml-2" />
-                    </>
-                  )}
-                </button>
-                
-                {/* 导出下拉菜单 */}
-                {showExportMenu && !isExportingUI && (
-                  <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50">
-                    <div className="py-1">
-                      <button
-                        onClick={handleExportSVG}
-                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        <span className="mr-3">🎨</span>
-                        <div className="text-left">
-                          <div className="font-medium">导出为 SVG</div>
-                          <div className="text-xs text-gray-500">矢量格式，可缩放，文件小</div>
-                        </div>
-                      </button>
-                      <button
-                        onClick={handleExportPNG}
-                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        <span className="mr-3">🖼️</span>
-                        <div className="text-left">
-                          <div className="font-medium">导出为 PNG</div>
-                          <div className="text-xs text-gray-500">位图格式，高分辨率</div>
-                        </div>
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-              
-              <button
-                onClick={handleShareClick}
-                className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700 flex items-center space-x-2"
-              >
-                <Share2 className="w-4 h-4" />
-                <span>分享</span>
-              </button>
-              <button
-                onClick={() => alert('编辑功能开发中...')}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 flex items-center space-x-2"
-              >
-                <Pencil className="w-4 h-4" />
-                <span>编辑</span>
-              </button>
-              <button
-                onClick={handleDelete}
-                className="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700 flex items-center space-x-2"
-              >
-                <Trash2 className="w-4 h-4" />
-                <span>删除</span>
-              </button>
-            </div>
-          </div>
+      {/* 成功/错误消息 */}
+      {successMessage && (
+        <div className="fixed top-4 right-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded z-50">
+          {successMessage}
         </div>
-      </div>
-
-      {/* 点击外部关闭菜单 */}
-      {showExportMenu && (
-        <div 
-          className="fixed inset-0 z-40" 
-          onClick={() => setShowExportMenu(false)}
-        ></div>
+      )}
+      {error && (
+        <div className="fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded z-50">
+          {error}
+        </div>
       )}
 
-      {/* 思维导图信息 */}
+      {/* 思维导图信息区 */}
       {(mindmap.description || (mindmap.tags && mindmap.tags.length > 0)) && (
         <div className="bg-blue-50 border-b border-blue-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -491,15 +416,113 @@ export default function ViewMindmapPage() {
 
       {/* 思维导图展示区 */}
       <div className="flex-1">
-        <div className="h-[calc(100vh-140px)]">
+        <div className="h-screen">
           <div className="h-full bg-white border border-gray-200 mx-4 my-4 rounded-lg shadow-sm">
+            {/* 整合的标题栏 */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">思维导图视图</h2>
-              <div className="text-sm text-gray-500">
-                Markmap 可视化 | 支持 SVG/PNG 导出
+              <div className="flex items-center space-x-4 flex-1">
+                <button
+                  onClick={() => router.push('/mindmaps')}
+                  className="action-button text-gray-600 hover:bg-gray-100 hover:text-gray-800"
+                  title="返回控制台"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                </button>
+                <div>
+                  <h1 className="text-xl font-bold text-gray-900 truncate">
+                    {mindmap.title}
+                  </h1>
+                  <p className="text-sm text-gray-500 mt-1">
+                    创建于 {formatDate(mindmap.created_at)}
+                    {mindmap.updated_at !== mindmap.created_at && (
+                      <span> · 更新于 {formatDate(mindmap.updated_at)}</span>
+                    )}
+                  </p>
+                </div>
+              </div>
+              
+              {/* 操作按钮组 */}
+              <div className="flex items-center space-x-2">
+                {/* 导出按钮 */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowExportMenu(!showExportMenu)}
+                    disabled={isExportingUI}
+                    className="action-button text-purple-500 hover:bg-purple-100 hover:text-purple-600 disabled:opacity-50"
+                    title="导出思维导图"
+                  >
+                    {isExportingUI ? (
+                      <div className="animate-spin w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full"></div>
+                    ) : (
+                      <Download className="w-4 h-4" />
+                    )}
+                  </button>
+                  
+                  {/* 导出下拉菜单 */}
+                  {showExportMenu && !isExportingUI && (
+                    <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+                      <div className="py-1">
+                        <button
+                          onClick={handleExportSVG}
+                          className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          <span className="mr-3">🎨</span>
+                          <div className="text-left">
+                            <div className="font-medium">导出为 SVG</div>
+                            <div className="text-xs text-gray-500">矢量格式，可缩放</div>
+                          </div>
+                        </button>
+                        <button
+                          onClick={handleExportPNG}
+                          className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          <span className="mr-3">🖼️</span>
+                          <div className="text-left">
+                            <div className="font-medium">导出为 PNG</div>
+                            <div className="text-xs text-gray-500">位图格式，高分辨率</div>
+                          </div>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                <button
+                  onClick={handleShareClick}
+                  className="action-button text-blue-500 hover:bg-blue-100 hover:text-blue-600"
+                  title="分享思维导图"
+                >
+                  <Share2 className="w-4 h-4" />
+                </button>
+                
+                <button
+                  onClick={handleToggleFavorite}
+                  className={`action-button ${isFavorited ? 'text-yellow-500 hover:bg-yellow-100 hover:text-yellow-600' : 'text-gray-400 hover:bg-gray-100 hover:text-yellow-500'}`}
+                  title={isFavorited ? '取消收藏' : '收藏'}
+                >
+                  {isFavorited ? <Star className="w-4 h-4 fill-current" /> : <Star className="w-4 h-4" />}
+                </button>
+                
+                <button
+                  onClick={() => alert('编辑功能开发中...')}
+                  className="action-button text-green-500 hover:bg-green-100 hover:text-green-600"
+                  title="编辑思维导图"
+                >
+                  <Pencil className="w-4 h-4" />
+                </button>
+                
+                <button
+                  onClick={handleDelete}
+                  className="action-button text-red-500 hover:bg-red-100 hover:text-red-600"
+                  title="删除思维导图"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
             </div>
-            <div className="h-[calc(100%-65px)]">
+            
+            {/* 思维导图可视化区域 */}
+            <div className="h-[calc(100%-81px)]">
               <SimpleMarkmapBasic 
                 ref={markmapRef}
                 mindmapData={stableMindmapData}
@@ -508,6 +531,14 @@ export default function ViewMindmapPage() {
           </div>
         </div>
       </div>
+
+      {/* 点击外部关闭导出菜单 */}
+      {showExportMenu && (
+        <div 
+          className="fixed inset-0 z-40" 
+          onClick={() => setShowExportMenu(false)}
+        ></div>
+      )}
 
       {/* 分享模态框 */}
       <ShareModal
