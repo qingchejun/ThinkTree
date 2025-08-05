@@ -119,16 +119,16 @@ const Navbar = () => {
                   <p className="font-semibold text-gray-800 truncate">{user?.display_name || user?.displayName || user?.name || (user?.email ? user.email.split('@')[0] : '用户')}</p>
                   <p className="text-sm text-gray-500 truncate">{user?.email}</p>
                 </div>
-                <Link href="/mindmaps" className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><LayoutDashboard className="w-4 h-4 text-blue-500"/><span>我的导图</span></Link>
-                <Link href="/settings?tab=billing" className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><CreditCard className="w-4 h-4 text-green-500"/><span>用量计费</span></Link>
-                <Link href="/settings" className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><Settings className="w-4 h-4 text-gray-500"/><span>账户设置</span></Link>
-                <Link href="/settings?tab=invitations" className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><ListChecks className="w-4 h-4 text-orange-500"/><span>邀请记录</span></Link>
+                <Link href="/mindmaps" onClick={() => setIsMenuOpen(false)} className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><LayoutDashboard className="w-4 h-4 text-blue-500"/><span>我的导图</span></Link>
+                <Link href="/settings?tab=billing" onClick={() => setIsMenuOpen(false)} className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><CreditCard className="w-4 h-4 text-green-500"/><span>用量计费</span></Link>
+                <Link href="/settings" onClick={() => setIsMenuOpen(false)} className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><Settings className="w-4 h-4 text-gray-500"/><span>账户设置</span></Link>
+                <Link href="/settings?tab=invitations" onClick={() => setIsMenuOpen(false)} className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><ListChecks className="w-4 h-4 text-orange-500"/><span>邀请记录</span></Link>
                 
                 {/* 管理员菜单 - 仅管理员可见 */}
                 {isAdmin && (
                   <>
                     <div className="border-t my-1"></div>
-                    <Link href="/admin/dashboard" className="flex items-center space-x-3 px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50 font-medium">
+                    <Link href="/admin/dashboard" onClick={() => setIsMenuOpen(false)} className="flex items-center space-x-3 px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50 font-medium">
                       <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M12 1L3 5V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V5L12 1ZM12 7C13.1 7 14 7.9 14 9S13.1 11 12 11 10 10.1 10 9 10.9 7 12 7ZM18 15C16.59 15 15.1 14.65 13.81 14.04C13.53 14.32 13.28 14.63 13.09 14.97C14.08 15.29 15.06 15.5 16.02 15.57C17.17 15.64 18 16.56 18 17.71V18H6V17.71C6 16.56 6.83 15.64 7.98 15.57C9.96 15.4 11.81 14.8 13.09 14.03C13.28 13.37 13.53 12.68 13.81 11.96C15.1 11.35 16.59 11 18 11V15Z"/>
                       </svg>
