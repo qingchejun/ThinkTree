@@ -428,26 +428,103 @@ const RecentProjects = React.memo(({ mindmaps, onCardClick, onCreateNew, loading
       });
     };
 
-    // 处理导出点击 - 简化版本，直接下载markdown
+    // 处理PNG导出 - 优化版本
     const handleExport = async (e, mindmap) => {
-      e.stopPropagation(); // 防止触发卡片点击
+      e.stopPropagation();
       
       try {
-        // 创建并下载 Markdown 文件
-        const blob = new Blob([mindmap.content], { type: 'text/markdown' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${mindmap.title}.md`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        console.log(`开始导出思维导图 (PNG):`, mindmap.title);
         
-        console.log('导出思维导图成功:', mindmap.title);
+        // 使用try-catch包装动态导入，避免chunk加载问题
+        let Markmap, Transformer, exportPNG, getSafeFilename, getTimestamp;
+        
+        try {
+          // 分别导入，更容易定位问题
+          const markmapViewModule = await import('markmap-view');
+          Markmap = markmapViewModule.Markmap;
+          
+          const markmapLibModule = await import('markmap-lib');
+          Transformer = markmapLibModule.Transformer;
+          
+          const exportUtilsModule = await import('../lib/exportUtils.js');
+          exportPNG = exportUtilsModule.exportPNG;
+          getSafeFilename = exportUtilsModule.getSafeFilename;
+          getTimestamp = exportUtilsModule.getTimestamp;
+        } catch (importError) {
+          console.error('导入模块失败:', importError);
+          // 回退到markdown导出
+          const blob = new Blob([mindmap.content], { type: 'text/markdown' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${mindmap.title}.md`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          console.log('已回退到Markdown导出');
+          return;
+        }
+        
+        // 创建临时SVG容器
+        const tempContainer = document.createElement('div');
+        tempContainer.style.position = 'absolute';
+        tempContainer.style.left = '-9999px';
+        tempContainer.style.top = '-9999px';
+        tempContainer.style.width = '1600px';
+        tempContainer.style.height = '1200px';
+        document.body.appendChild(tempContainer);
+        
+        const tempSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        tempSvg.setAttribute('width', '1600');
+        tempSvg.setAttribute('height', '1200');
+        tempContainer.appendChild(tempSvg);
+        
+        try {
+          // 转换markdown内容
+          const transformer = new Transformer();
+          const { root } = transformer.transform(mindmap.content);
+          
+          // 创建markmap实例
+          const markmapInstance = Markmap.create(tempSvg, {
+            duration: 0,
+            maxWidth: 400,
+            spacingVertical: 8,
+            spacingHorizontal: 120,
+            autoFit: true,
+            pan: false,
+            zoom: false,
+          });
+          
+          // 渲染思维导图
+          markmapInstance.setData(root);
+          markmapInstance.fit();
+          
+          // 等待渲染完成
+          await new Promise(resolve => setTimeout(resolve, 800));
+          
+          // 生成文件名
+          const safeTitle = getSafeFilename(mindmap.title);
+          const timestamp = getTimestamp();
+          const filename = `${safeTitle}_${timestamp}`;
+          
+          // 导出PNG
+          const result = await exportPNG(markmapInstance, filename, 4);
+          
+          if (result.success) {
+            console.log(`PNG文件导出成功: ${result.filename}`);
+          } else {
+            throw new Error(result.error);
+          }
+          
+        } finally {
+          // 清理临时元素
+          document.body.removeChild(tempContainer);
+        }
+        
       } catch (error) {
         console.error('导出思维导图失败:', error);
-        alert('导出失败，请重试');
+        alert(`导出失败: ${error.message}`);
       }
     };
 
@@ -541,7 +618,7 @@ const RecentProjects = React.memo(({ mindmaps, onCardClick, onCreateNew, loading
                   <button 
                      onClick={(e) => handleExport(e, mindmap)} 
                      className="action-button text-purple-500 hover:bg-purple-100 hover:text-purple-600"
-                     title="导出为Markdown文件"
+                     title="导出为PNG图片"
                    >
                      <Download className="w-4 h-4" />
                    </button>
