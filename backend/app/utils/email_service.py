@@ -68,54 +68,52 @@ class EmailService:
             # 邮件内容
             display_name = user_name if user_name else "ThinkSo用户"
             
-            html_content = f"""
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="utf-8">
-                <title>欢迎来到 ThinkSo</title>
-                <style>
-                    body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; }}
-                    .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-                    .header {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }}
-                    .content {{ background: #f8f9fa; padding: 30px; border-radius: 0 0 8px 8px; }}
-                    .button {{ display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 20px 0; }}
-                    .footer {{ text-align: center; margin-top: 30px; color: #666; font-size: 14px; }}
-                    .logo {{ font-size: 24px; font-weight: bold; }}
-                </style>
-            </head>
-            <body>
-                <div class="container">
-                    <div class="header">
-                        <div class="logo">🧠 ThinkSo</div>
-                        <h2>欢迎来到 ThinkSo！</h2>
-                    </div>
-                    <div class="content">
-                        <p>尊敬的 <strong>{display_name}</strong>，</p>
-                        
-                        <p>🎉 恭喜您成功加入 ThinkSo！您的思维导图创作之旅即将开始。</p>
-                        
-                        <div style="background: #e8f5e8; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                            <h3 style="color: #2d6a2d; margin-top: 0;">🎁 新用户专属礼包</h3>
-                            <p><strong>✨ 免费积分:</strong> 已为您充值 <span style="color: #d63384; font-weight: bold;">100 积分</span></p>
-                            <p><strong>🚀 AI 思维导图生成:</strong> 支持文档、文本、链接转换</p>
-                            <p><strong>📊 多种导出格式:</strong> PNG、SVG、PDF 随心选择</p>
-                        </div>
-                        
-                        <div style="text-align: center;">
-                            <a href="{settings.frontend_url}/create" class="button">🚀 立即开始创作</a>
-                        </div>
-                        
-                        <div class="footer">
-                            <p>💡 <strong>使用小贴士:</strong><br>
-                            上传您的文档或输入想法，AI 将为您生成精美的思维导图</p>
-                            <p style="font-size: 12px;">此邮件由 ThinkSo 自动发送，请勿回复。</p>
-                        </div>
-                    </div>
-                </div>
-            </body>
-            </html>
-            """
+            html_content = f"""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>欢迎来到 ThinkSo</title>
+<style>
+body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; }}
+.container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+.header {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }}
+.content {{ background: #f8f9fa; padding: 30px; border-radius: 0 0 8px 8px; }}
+.button {{ display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 20px 0; }}
+.footer {{ text-align: center; margin-top: 30px; color: #666; font-size: 14px; }}
+.logo {{ font-size: 24px; font-weight: bold; }}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="header">
+<div class="logo">🧠 ThinkSo</div>
+<h2>欢迎来到 ThinkSo！</h2>
+</div>
+<div class="content">
+<p>尊敬的 <strong>{display_name}</strong>，</p>
+
+<p>🎉 恭喜您成功加入 ThinkSo！您的思维导图创作之旅即将开始。</p>
+
+<div style="background: #e8f5e8; padding: 20px; border-radius: 8px; margin: 20px 0;">
+<h3 style="color: #2d6a2d; margin-top: 0;">🎁 新用户专属礼包</h3>
+<p><strong>✨ 免费积分:</strong> 已为您充值 <span style="color: #d63384; font-weight: bold;">100 积分</span></p>
+<p><strong>🚀 AI 思维导图生成:</strong> 支持文档、文本、链接转换</p>
+<p><strong>📊 多种导出格式:</strong> PNG、SVG、PDF 随心选择</p>
+</div>
+
+<div style="text-align: center;">
+<a href="{settings.frontend_url}/create" class="button">🚀 立即开始创作</a>
+</div>
+
+<div class="footer">
+<p>💡 <strong>使用小贴士:</strong><br>
+上传您的文档或输入想法，AI 将为您生成精美的思维导图</p>
+<p style="font-size: 12px;">此邮件由 ThinkSo 自动发送，请勿回复。</p>
+</div>
+</div>
+</div>
+</body>
+</html>"""
             
             # 构建邮件参数
             params = {
@@ -142,38 +140,36 @@ class EmailService:
             return False
             
         try:
-            html_content = f'''
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="utf-8">
-                <title>ThinkSo Login</title>
-                <style>
-                    body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background-color: #ffffff; }}
-                    .container {{ max-width: 500px; margin: 0 auto; padding: 20px; }}
-                    .greeting {{ font-size: 16px; color: #333; margin-bottom: 20px; }}
-                    .message {{ font-size: 16px; color: #333; line-height: 1.5; margin-bottom: 30px; }}
-                    .button {{ display: inline-block; background: #007AFF; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 500; font-size: 16px; }}
-                    .signature {{ font-size: 14px; color: #666; margin-top: 30px; }}
-                </style>
-            </head>
-            <body>
-                <div class="container">
-                    <div class="greeting">Hi {user_name},</div>
-                    
-                    <div class="message">
-                        {login_code} is your login code. You can also click below to login to your account:
-                    </div>
-                    
-                    <div>
-                        <a href="{magic_link_url}" class="button">Login to Thinkso</a>
-                    </div>
-                    
-                    <div class="signature">- Thinkso.io</div>
-                </div>
-            </body>
-            </html>
-            '''
+            html_content = f'''<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>ThinkSo Login</title>
+<style>
+body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background-color: #ffffff; }}
+.container {{ max-width: 500px; margin: 0 auto; padding: 20px; }}
+.greeting {{ font-size: 16px; color: #333; margin-bottom: 20px; }}
+.message {{ font-size: 16px; color: #333; line-height: 1.5; margin-bottom: 30px; }}
+.button {{ display: inline-block; background: #007AFF; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 500; font-size: 16px; }}
+.signature {{ font-size: 14px; color: #666; margin-top: 30px; }}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="greeting">Hi {user_name},</div>
+
+<div class="message">
+{login_code} is your login code. You can also click below to login to your account:
+</div>
+
+<div>
+<a href="{magic_link_url}" class="button">Login to Thinkso</a>
+</div>
+
+<div class="signature">- Thinkso.io</div>
+</div>
+</body>
+</html>'''
             
             # 构建邮件参数
             params = {
