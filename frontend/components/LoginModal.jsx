@@ -363,6 +363,17 @@ const LoginModal = ({ isOpen, onClose, initialInvitationCode, autoOpenRegister }
               >
                 {isEmailLoading ? '发送中...' : 'Continue'}
               </button>
+              
+              {/* reCAPTCHA 声明 */}
+              <p className="text-xs text-gray-500 mt-3 text-center">
+                本站使用 reCAPTCHA 保护，适用 Google 
+                <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline ml-1">
+                  隐私政策
+                </a> 和 
+                <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                  服务条款
+                </a>
+              </p>
             </form>
           </div>
         )}

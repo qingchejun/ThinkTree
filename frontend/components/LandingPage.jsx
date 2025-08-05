@@ -258,6 +258,15 @@ const LandingPage = ({ invitationCode, autoRegister, errorMessage, onLoginClick 
       <footer className="bg-black text-gray-400 py-8">
         <div className="container mx-auto px-6 text-center">
           <p>&copy; 2025 ThinkSo. All rights reserved.</p>
+          <p className="text-xs mt-2">
+            本站使用 reCAPTCHA 保护，适用 Google 
+            <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-white underline ml-1">
+              隐私政策
+            </a> 和 
+            <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-white underline">
+              服务条款
+            </a>
+          </p>
         </div>
       </footer>
     </div>

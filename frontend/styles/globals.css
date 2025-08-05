@@ -406,3 +406,13 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-secondary);
 }
+
+/* reCAPTCHA 样式控制 */
+.grecaptcha-badge {
+  visibility: hidden !important;
+}
+
+/* 如果需要完全隐藏，使用以下样式 */
+.grecaptcha-badge {
+  display: none !important;
+}
