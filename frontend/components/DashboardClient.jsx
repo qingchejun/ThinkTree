@@ -23,6 +23,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '../context/AuthContext';
 import ShareModal from './share/ShareModal';
+import MindmapThumbnail from './mindmap/MindmapThumbnail';
 import { Gift, Zap, LayoutDashboard, CreditCard, Settings, LogOut, FileText, FileUp, Youtube, Podcast, FileAudio, Link as LinkIcon, Sparkles, UploadCloud, PlusCircle, ListChecks, ArrowRight, Eye, Trash2, Share2, FileX, Plus, File, Download } from 'lucide-react';
 
 // 头像相关功能已移至 Navbar 组件
@@ -473,11 +474,15 @@ const RecentProjects = React.memo(({ mindmaps, onCardClick, onCreateNew, loading
             </div>
             {/* 加载骨架屏 */}
             {Array.from({ length: 3 }).map((_, index) => (
-              <div key={index} className="bg-white rounded-xl border overflow-hidden min-h-[200px] animate-pulse">
-                <div className="bg-gray-200 h-32"></div>
+              <div 
+                key={index} 
+                className="bg-white rounded-xl border overflow-hidden min-h-[200px] animate-pulse animate-fade-in-up"
+                style={{ animationDelay: `${(index + 1) * 0.1}s` }}
+              >
+                <div className="bg-gray-200 h-32 animate-shimmer"></div>
                 <div className="p-4">
-                  <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                  <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+                  <div className="h-4 bg-gray-200 rounded mb-2 animate-shimmer"></div>
+                  <div className="h-3 bg-gray-200 rounded w-2/3 animate-shimmer"></div>
                 </div>
               </div>
             ))}
@@ -486,49 +491,63 @@ const RecentProjects = React.memo(({ mindmaps, onCardClick, onCreateNew, loading
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
             {/* 创建新项目卡片 */}
             <div onClick={onCreateNew} 
-                 className="cursor-pointer group bg-gray-50 rounded-xl border-2 border-dashed border-gray-300 hover:border-blue-500 transition-all duration-300 flex flex-col items-center justify-center p-6 h-full min-h-[200px]">
-              <PlusCircle className="w-12 h-12 text-green-500 group-hover:text-blue-500 transition-colors mb-3"/>
+                 className="cursor-pointer group bg-gray-50 rounded-xl border-2 border-dashed border-gray-300 hover:border-blue-500 transition-all duration-300 flex flex-col items-center justify-center p-6 h-full min-h-[200px] animate-fade-in-up hover:scale-105">
+              <PlusCircle className="w-12 h-12 text-green-500 group-hover:text-blue-500 transition-all duration-300 animate-float"/>
               <h3 className="font-semibold text-gray-600 group-hover:text-blue-600 transition-colors text-lg">新建导图</h3>
             </div>
 
             {/* 项目卡片 */}
-            {mindmaps.map((mindmap) => (
-              <div key={mindmap.id} className="project-card group">
+            {mindmaps.map((mindmap, index) => (
+              <div 
+                key={mindmap.id} 
+                className="project-card group animate-fade-in-up"
+                style={{ animationDelay: `${index * 0.1}s` }}
+              >
                 <div onClick={() => onCardClick(mindmap.id)} className="flex-grow cursor-pointer">
-                  <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 h-32 flex items-center justify-center overflow-hidden relative">
-                    <div className="absolute inset-0 bg-white/20"></div>
-                    <Image width={300} height={128} src="/mindmap-preview.png" alt="思维导图预览图" className="w-full h-full object-contain p-3 relative z-10"/>
+                  {/* 动态预览图 */}
+                  <div className="card-preview h-32 overflow-hidden relative transition-transform duration-300">
+                    <MindmapThumbnail 
+                      content={mindmap.content} 
+                      title={mindmap.title}
+                      className="w-full h-full"
+                    />
+                    {/* 悬停遮罩效果 */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                   </div>
                   <div className="p-4">
-                    <h3 className="font-semibold text-gray-800 truncate" title={mindmap.title}>{mindmap.title}</h3>
-                    <p className="text-sm text-gray-500 mt-1">{new Date(mindmap.updated_at).toLocaleDateString('zh-CN')} 更新</p>
+                    <h3 className="card-title font-semibold text-gray-800 truncate transition-colors duration-200" title={mindmap.title}>
+                      {mindmap.title}
+                    </h3>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {new Date(mindmap.updated_at).toLocaleDateString('zh-CN')} 更新
+                    </p>
                   </div>
                 </div>
-                <div className="border-t border-gray-100 p-3 flex justify-end space-x-2 bg-gray-50/50 group-hover:bg-white transition-colors">
+                <div className="card-actions border-t border-gray-100 p-3 flex justify-end space-x-2 bg-gray-50/50 transition-all duration-300">
                   <button 
                     onClick={(e) => handleView(e, mindmap.id)} 
-                    className="action-button text-green-500 hover:bg-green-100"
+                    className="action-button text-green-500 hover:bg-green-100 hover:text-green-600"
                     title="查看思维导图"
                   >
                     <Eye className="w-4 h-4" />
                   </button>
                   <button 
                      onClick={(e) => handleExport(e, mindmap)} 
-                     className="action-button text-purple-500 hover:bg-purple-100"
+                     className="action-button text-purple-500 hover:bg-purple-100 hover:text-purple-600"
                      title="导出为PNG图片"
                    >
                      <Download className="w-4 h-4" />
                    </button>
                   <button 
                     onClick={(e) => handleShare(e, mindmap)} 
-                    className="action-button text-blue-500 hover:bg-blue-100"
+                    className="action-button text-blue-500 hover:bg-blue-100 hover:text-blue-600"
                     title="分享思维导图"
                   >
                     <Share2 className="w-4 h-4" />
                   </button>
                   <button 
                     onClick={(e) => handleDelete(e, mindmap)} 
-                    className="action-button text-red-500 hover:bg-red-100"
+                    className="action-button text-red-500 hover:bg-red-100 hover:text-red-600"
                     title="删除思维导图"
                   >
                     <Trash2 className="w-4 h-4" />
