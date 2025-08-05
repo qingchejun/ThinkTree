@@ -11,7 +11,6 @@ import MindmapThumbnail from '../../components/mindmap/MindmapThumbnail'
 import Sidebar from '../../components/common/Sidebar'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/Select'
 import Pagination from '../../components/ui/Pagination'
 import { 
   Eye, 
@@ -22,8 +21,6 @@ import {
   FileX, 
   Plus,
   Search,
-  SortAsc,
-  SortDesc,
   Calendar,
   AlertCircle,
   CheckCircle,
@@ -41,9 +38,8 @@ export default function MindmapsPage() {
   const [successMessage, setSuccessMessage] = useState(null)
   const [isClient, setIsClient] = useState(false)
 
-  // 搜索、排序和分页状态
+  // 搜索和分页状态
   const [searchTerm, setSearchTerm] = useState('')
-  const [sortOrder, setSortOrder] = useState('desc')
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 7 // 新建卡片占一个位置，所以每页显示7个导图 + 1个新建 = 8个项目
   
@@ -316,22 +312,22 @@ export default function MindmapsPage() {
     router.push('/create')
   }
 
-  // 搜索和排序逻辑
-  const filteredAndSortedMindmaps = mindmaps
+  // 搜索逻辑
+  const filteredMindmaps = mindmaps
     .filter(mindmap => mindmap.title.toLowerCase().includes(searchTerm.toLowerCase()))
     .sort((a, b) => {
       const dateA = new Date(a.updated_at)
       const dateB = new Date(b.updated_at)
-      return sortOrder === 'asc' ? dateA - dateB : dateB - dateA
+      return dateB - dateA // 默认按最新时间排序
     })
 
   // 分页逻辑
-  const paginatedMindmaps = filteredAndSortedMindmaps.slice(
+  const paginatedMindmaps = filteredMindmaps.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   )
 
-  const totalPages = Math.ceil(filteredAndSortedMindmaps.length / itemsPerPage)
+  const totalPages = Math.ceil(filteredMindmaps.length / itemsPerPage)
 
   // 加载状态
   if (isLoading) {
@@ -358,8 +354,6 @@ export default function MindmapsPage() {
       <Sidebar />
       <main className="flex-1 overflow-y-auto p-8">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-3xl font-bold text-gray-800 mb-8">我的思维导图</h1>
-          
           {/* 错误和成功消息提示 */}
           <div className="mb-6 space-y-3">
             {error && (
@@ -376,9 +370,9 @@ export default function MindmapsPage() {
             )}
           </div>
 
-          {/* 搜索和筛选控件 */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-            <div className="relative flex-grow max-w-md">
+          {/* 搜索控件 */}
+          <div className="flex justify-start items-center mb-8">
+            <div className="relative max-w-md">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <Input
                 type="text"
@@ -388,32 +382,6 @@ export default function MindmapsPage() {
                 className="pl-10 w-full"
               />
             </div>
-            <Select onValueChange={setSortOrder} defaultValue={sortOrder}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <div className="flex items-center">
-                  {sortOrder === 'desc' ? (
-                    <SortDesc className="w-4 h-4 mr-2" />
-                  ) : (
-                    <SortAsc className="w-4 h-4 mr-2" />
-                  )}
-                  <SelectValue placeholder="排序方式" />
-                </div>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="desc">
-                  <div className="flex items-center">
-                    <SortDesc className="w-4 h-4 mr-2" />
-                    最新优先
-                  </div>
-                </SelectItem>
-                <SelectItem value="asc">
-                  <div className="flex items-center">
-                    <SortAsc className="w-4 h-4 mr-2" />
-                    最早优先
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
           </div>
 
           {loading ? (
@@ -434,7 +402,7 @@ export default function MindmapsPage() {
                 </div>
               ))}
             </div>
-          ) : filteredAndSortedMindmaps.length > 0 ? (
+          ) : filteredMindmaps.length > 0 ? (
             <>
               {/* 思维导图卡片网格 */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
