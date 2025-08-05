@@ -70,10 +70,10 @@ const Navbar = () => {
     return (
       <header className="bg-white/95 backdrop-blur-lg sticky top-0 z-40 border-b border-gray-200 flex-shrink-0">
         <div className="container mx-auto px-6 py-3 flex justify-between items-center">
-          <div className="flex items-center space-x-2">
+          <Link href="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity cursor-pointer">
             <svg width="32" height="32" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg"><path fill="#111827" d="M128 24a104 104 0 1 0 104 104A104.11 104.11 0 0 0 128 24Zm-8 152v-56H88a8 8 0 0 1 0-16h32V88a8 8 0 0 1 16 0v16h16a8 8 0 0 1 0 16h-16v56h32a8 8 0 0 1 0 16h-32v16a8 8 0 0 1-16 0v-16H96a8 8 0 0 1 0-16h24Z"/></svg>
             <span className="text-2xl font-bold text-gray-900">ThinkSo</span>
-          </div>
+          </Link>
           <button onClick={openLoginModal} className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-black hover:bg-gray-800">
             登录
           </button>
@@ -86,10 +86,10 @@ const Navbar = () => {
     <header className="bg-white/95 backdrop-blur-lg sticky top-0 z-40 border-b border-gray-200 flex-shrink-0">
       <div className="container mx-auto px-6 py-3 flex justify-between items-center">
         {/* 左侧：品牌logo */}
-        <div className="flex items-center space-x-2">
+        <Link href={user ? "/dashboard" : "/"} className="flex items-center space-x-2 hover:opacity-80 transition-opacity cursor-pointer">
           <svg width="32" height="32" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg"><path fill="#111827" d="M128 24a104 104 0 1 0 104 104A104.11 104.11 0 0 0 128 24Zm-8 152v-56H88a8 8 0 0 1 0-16h32V88a8 8 0 0 1 16 0v16h16a8 8 0 0 1 0 16h-16v56h32a8 8 0 0 1 0 16h-32v16a8 8 0 0 1-16 0v-16H96a8 8 0 0 1 0-16h24Z"/></svg>
           <span className="text-2xl font-bold text-gray-900">ThinkSo</span>
-        </div>
+        </Link>
         
         {/* 右侧：邀请好友 + 用户菜单 */}
         <div className="flex items-center space-x-6">
