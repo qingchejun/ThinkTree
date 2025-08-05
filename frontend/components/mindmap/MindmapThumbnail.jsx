@@ -1,8 +1,6 @@
 'use client'
 
 import React, { useEffect, useRef, useState } from 'react'
-import { Markmap } from 'markmap-view'
-import { Transformer } from 'markmap-lib'
 import { FileText, AlertCircle } from 'lucide-react'
 
 /**
@@ -16,12 +14,34 @@ const MindmapThumbnail = ({ content, title, className = "" }) => {
   const [markmap, setMarkmap] = useState(null)
 
   useEffect(() => {
-    if (!content || !svgRef.current) return
+    // 添加调试信息
+    console.log('MindmapThumbnail - content:', content ? content.substring(0, 100) + '...' : 'null/undefined')
+    
+    // 检查内容是否存在
+    if (!content || typeof content !== 'string' || content.trim() === '') {
+      console.log('MindmapThumbnail - 内容为空或无效')
+      setIsLoading(false)
+      setHasError(false)
+      return
+    }
+
+    if (!svgRef.current) {
+      console.log('MindmapThumbnail - SVG引用不存在')
+      return
+    }
 
     const generateThumbnail = async () => {
       try {
         setIsLoading(true)
         setHasError(false)
+
+        // 动态导入markmap库
+        const [{ Markmap }, { Transformer }] = await Promise.all([
+          import('markmap-view'),
+          import('markmap-lib')
+        ])
+
+        console.log('MindmapThumbnail - Markmap库加载成功')
 
         // 创建transformer实例
         const transformer = new Transformer()
@@ -33,8 +53,14 @@ const MindmapThumbnail = ({ content, title, className = "" }) => {
           throw new Error('无法解析思维导图内容')
         }
 
+        console.log('MindmapThumbnail - 内容转换成功，节点数:', root.children?.length || 0)
+
         // 清理之前的内容
         const svg = svgRef.current
+        if (!svg) {
+          throw new Error('SVG元素不存在')
+        }
+        
         svg.innerHTML = ''
         
         // 设置SVG尺寸
@@ -63,15 +89,20 @@ const MindmapThumbnail = ({ content, title, className = "" }) => {
           fontSize: (node) => Math.max(10, 14 - node.depth * 2), // 更小的字体
         })
 
+        console.log('MindmapThumbnail - Markmap实例创建成功')
+
         // 渲染思维导图
         mm.setData(root)
         
         // 自动适配视图
         setTimeout(() => {
           try {
-            mm.fit()
+            if (mm && typeof mm.fit === 'function') {
+              mm.fit()
+            }
             setMarkmap(mm)
             setIsLoading(false)
+            console.log('MindmapThumbnail - 渲染完成')
           } catch (error) {
             console.warn('缩略图适配失败:', error)
             setIsLoading(false)
@@ -85,10 +116,12 @@ const MindmapThumbnail = ({ content, title, className = "" }) => {
       }
     }
 
-    generateThumbnail()
+    // 添加延迟以确保DOM准备就绪
+    const timer = setTimeout(generateThumbnail, 50)
 
     // 清理函数
     return () => {
+      clearTimeout(timer)
       if (markmap) {
         try {
           markmap.destroy()
@@ -130,6 +163,35 @@ const MindmapThumbnail = ({ content, title, className = "" }) => {
         <div className="flex flex-col items-center space-y-2 text-gray-400">
           <FileText className="w-8 h-8" />
           <span className="text-xs">暂无内容</span>
+        </div>
+      </div>
+    )
+  }
+
+  // 如果有错误，显示简单的文本预览作为回退
+  if (hasError) {
+    const lines = content.split('\n').filter(line => line.trim()).slice(0, 6)
+    return (
+      <div className={`relative overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-50 p-3 ${className}`}>
+        <div className="text-xs text-gray-600 space-y-1">
+          {lines.map((line, index) => (
+            <div 
+              key={index} 
+              className="truncate"
+              style={{ 
+                marginLeft: `${(line.match(/^#+/) || [''])[0].length * 8}px`,
+                fontWeight: line.startsWith('#') ? 'bold' : 'normal'
+              }}
+            >
+              {line.replace(/^#+\s*/, '')}
+            </div>
+          ))}
+          {content.split('\n').length > 6 && (
+            <div className="text-gray-400 text-center">...</div>
+          )}
+        </div>
+        <div className="absolute top-2 right-2">
+          <AlertCircle className="w-4 h-4 text-orange-400" />
         </div>
       </div>
     )
