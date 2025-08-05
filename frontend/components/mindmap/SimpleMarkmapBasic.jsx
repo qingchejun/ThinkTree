@@ -282,6 +282,12 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
           autoFit: true,
           pan: true,
           zoom: true,
+          color: (node) => {
+            // 定义彩色数组
+            const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57', '#FF9FF3', '#54A0FF', '#5F27CD', '#00D2D3', '#FF9F43']
+            // 根据节点深度选择颜色
+            return colors[node.depth % colors.length]
+          }
         })
         
         if (!mmRef.current) {
