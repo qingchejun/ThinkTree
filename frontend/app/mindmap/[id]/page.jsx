@@ -11,7 +11,7 @@ import SimpleMarkmapBasic from '../../../components/mindmap/SimpleMarkmapBasic'
 import ShareModal from '../../../components/share/ShareModal'
 // 移除ToastManager，使用内联提示样式
 import { exportSVG, exportPNG, getSafeFilename, getTimestamp } from '../../../lib/exportUtils.js'
-import { Download, Share2, Trash2, ChevronDown, ArrowLeft, Eye, Star, Check, X } from 'lucide-react'
+import { Download, Share2, Trash2, ChevronDown, ArrowLeft, Eye, Star, Check, X, Maximize, Minimize } from 'lucide-react'
 
 export default function ViewMindmapPage() {
   const { user, token, isLoading } = useAuth()
@@ -46,6 +46,9 @@ export default function ViewMindmapPage() {
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [editingTitle, setEditingTitle] = useState('')
   const [isSavingTitle, setIsSavingTitle] = useState(false)
+  
+  // 全屏状态
+  const [isFullscreen, setIsFullscreen] = useState(false)
   
   // Markmap 组件引用
   const markmapRef = useRef(null)
@@ -384,6 +387,40 @@ export default function ViewMindmapPage() {
       }
     }
 
+  // 全屏功能处理
+  const handleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      // 进入全屏
+      document.documentElement.requestFullscreen().then(() => {
+        setIsFullscreen(true)
+      }).catch((err) => {
+        console.error('无法进入全屏模式:', err)
+        setError('无法进入全屏模式')
+      })
+    } else {
+      // 退出全屏
+      document.exitFullscreen().then(() => {
+        setIsFullscreen(false)
+      }).catch((err) => {
+        console.error('无法退出全屏模式:', err)
+        setError('无法退出全屏模式')
+      })
+    }
+  }
+
+  // 监听全屏状态变化
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement)
+    }
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+    
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange)
+    }
+  }, [])
+
   // 加载状态
   if (isLoading || loading) {
     return (
@@ -565,6 +602,19 @@ export default function ViewMindmapPage() {
               
               {/* 操作按钮组 */}
               <div className="flex items-center space-x-2">
+                {/* 全屏按钮 */}
+                <button
+                  onClick={handleFullscreen}
+                  className="action-button text-green-500 hover:bg-green-100 hover:text-green-600"
+                  title={isFullscreen ? "退出全屏" : "进入全屏"}
+                >
+                  {isFullscreen ? (
+                    <Minimize className="w-4 h-4" />
+                  ) : (
+                    <Maximize className="w-4 h-4" />
+                  )}
+                </button>
+                
                 {/* 导出按钮 */}
                 <div className="relative">
                   <button
