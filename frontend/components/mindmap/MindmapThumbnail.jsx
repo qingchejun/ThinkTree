@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react'
 import { FileText, AlertCircle } from 'lucide-react'
+import '../../styles/markmap.css'
 
 /**
  * 思维导图缩略图组件
@@ -14,32 +15,53 @@ const MindmapThumbnail = ({ content, title, className = "" }) => {
   const [markmap, setMarkmap] = useState(null)
 
   useEffect(() => {
-    // 添加调试信息
+    console.log('=== MindmapThumbnail useEffect 开始 ===')
     console.log('MindmapThumbnail - content:', content ? content.substring(0, 100) + '...' : 'null/undefined')
+    console.log('MindmapThumbnail - content type:', typeof content)
+    console.log('MindmapThumbnail - content length:', content?.length || 0)
     
     // 检查内容是否存在
     if (!content || typeof content !== 'string' || content.trim() === '') {
-      console.log('MindmapThumbnail - 内容为空或无效')
+      console.log('MindmapThumbnail - 内容为空或无效，显示空状态')
       setIsLoading(false)
       setHasError(false)
       return
     }
 
-    if (!svgRef.current) {
-      console.log('MindmapThumbnail - SVG引用不存在')
-      return
-    }
+    console.log('MindmapThumbnail - 内容有效，准备生成缩略图...')
+    
+    // 延迟执行，确保DOM准备就绪
+    setTimeout(() => {
+      if (!svgRef.current) {
+        console.log('MindmapThumbnail - SVG引用不存在，设置错误状态')
+        setHasError(true)
+        setIsLoading(false)
+        return
+      }
+      console.log('MindmapThumbnail - SVG引用已准备就绪，开始生成缩略图')
+      generateThumbnail()
+    }, 100)
 
     const generateThumbnail = async () => {
       try {
+        console.log('MindmapThumbnail - 开始生成缩略图')
         setIsLoading(true)
         setHasError(false)
 
         // 动态导入markmap库
-        const [{ Markmap }, { Transformer }] = await Promise.all([
-          import('markmap-view'),
-          import('markmap-lib')
-        ])
+        console.log('MindmapThumbnail - 正在加载Markmap库...')
+        
+        const markmapViewModule = await import('markmap-view')
+        console.log('MindmapThumbnail - markmap-view模块:', markmapViewModule)
+        
+        const markmapLibModule = await import('markmap-lib')
+        console.log('MindmapThumbnail - markmap-lib模块:', markmapLibModule)
+        
+        const { Markmap } = markmapViewModule
+        const { Transformer } = markmapLibModule
+        
+        console.log('MindmapThumbnail - Markmap:', Markmap)
+        console.log('MindmapThumbnail - Transformer:', Transformer)
 
         console.log('MindmapThumbnail - Markmap库加载成功')
 
@@ -47,6 +69,7 @@ const MindmapThumbnail = ({ content, title, className = "" }) => {
         const transformer = new Transformer()
         
         // 转换markdown内容为markmap数据
+        console.log('MindmapThumbnail - 正在转换内容...')
         const { root } = transformer.transform(content)
         
         if (!root) {
@@ -70,6 +93,7 @@ const MindmapThumbnail = ({ content, title, className = "" }) => {
         svg.setAttribute('preserveAspectRatio', 'xMidYMid meet')
 
         // 创建markmap实例（缩略图模式）
+        console.log('MindmapThumbnail - 正在创建Markmap实例...')
         const mm = Markmap.create(svg, {
           // 缩略图专用配置
           duration: 0, // 禁用动画以提高性能
@@ -92,6 +116,7 @@ const MindmapThumbnail = ({ content, title, className = "" }) => {
         console.log('MindmapThumbnail - Markmap实例创建成功')
 
         // 渲染思维导图
+        console.log('MindmapThumbnail - 正在渲染数据...')
         mm.setData(root)
         
         // 自动适配视图
@@ -102,7 +127,7 @@ const MindmapThumbnail = ({ content, title, className = "" }) => {
             }
             setMarkmap(mm)
             setIsLoading(false)
-            console.log('MindmapThumbnail - 渲染完成')
+            console.log('MindmapThumbnail - 渲染完成！')
           } catch (error) {
             console.warn('缩略图适配失败:', error)
             setIsLoading(false)
@@ -111,17 +136,18 @@ const MindmapThumbnail = ({ content, title, className = "" }) => {
 
       } catch (error) {
         console.error('生成思维导图缩略图失败:', error)
+        console.error('错误详情:', error.message)
+        console.error('错误堆栈:', error.stack)
         setHasError(true)
         setIsLoading(false)
       }
     }
 
-    // 添加延迟以确保DOM准备就绪
-    const timer = setTimeout(generateThumbnail, 50)
+    // 清理函数在useEffect结束时自动执行
 
     // 清理函数
     return () => {
-      clearTimeout(timer)
+      console.log('MindmapThumbnail - 清理组件')
       if (markmap) {
         try {
           markmap.destroy()
@@ -144,18 +170,6 @@ const MindmapThumbnail = ({ content, title, className = "" }) => {
     )
   }
 
-  // 错误状态
-  if (hasError) {
-    return (
-      <div className={`flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 ${className}`}>
-        <div className="flex flex-col items-center space-y-2 text-gray-400">
-          <AlertCircle className="w-8 h-8" />
-          <span className="text-xs">预览生成失败</span>
-        </div>
-      </div>
-    )
-  }
-
   // 空内容状态
   if (!content || content.trim() === '') {
     return (
@@ -168,7 +182,7 @@ const MindmapThumbnail = ({ content, title, className = "" }) => {
     )
   }
 
-  // 如果有错误，显示简单的文本预览作为回退
+  // 错误状态 - 显示简单的文本预览作为回退
   if (hasError) {
     const lines = content.split('\n').filter(line => line.trim()).slice(0, 6)
     return (

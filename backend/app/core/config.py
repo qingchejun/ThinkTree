@@ -78,6 +78,7 @@ class Settings(BaseSettings):
         """Pydantic 配置"""
         env_file = ".env"
         case_sensitive = False
+        extra = "ignore"  # 忽略额外的环境变量
 
 
 # 全局设置实例
