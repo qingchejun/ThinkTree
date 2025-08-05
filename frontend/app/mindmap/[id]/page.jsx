@@ -11,7 +11,7 @@ import SimpleMarkmapBasic from '../../../components/mindmap/SimpleMarkmapBasic'
 import ShareModal from '../../../components/share/ShareModal'
 // 移除ToastManager，使用内联提示样式
 import { exportSVG, exportPNG, getSafeFilename, getTimestamp } from '../../../lib/exportUtils.js'
-import { Download, Share2, Pencil, Trash2, ChevronDown, ArrowLeft, Eye, Star } from 'lucide-react'
+import { Download, Share2, Trash2, ChevronDown, ArrowLeft, Eye, Star } from 'lucide-react'
 
 export default function ViewMindmapPage() {
   const { user, token, isLoading } = useAuth()
@@ -501,14 +501,6 @@ export default function ViewMindmapPage() {
                   title={isFavorited ? '取消收藏' : '收藏'}
                 >
                   {isFavorited ? <Star className="w-4 h-4 fill-current" /> : <Star className="w-4 h-4" />}
-                </button>
-                
-                <button
-                  onClick={() => alert('编辑功能开发中...')}
-                  className="action-button text-green-500 hover:bg-green-100 hover:text-green-600"
-                  title="编辑思维导图"
-                >
-                  <Pencil className="w-4 h-4" />
                 </button>
                 
                 <button
