@@ -23,7 +23,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '../context/AuthContext';
 import ShareModal from './share/ShareModal';
-import { Gift, Zap, LayoutDashboard, CreditCard, Settings, LogOut, FileText, FileUp, Youtube, Podcast, FileAudio, Link as LinkIcon, Sparkles, UploadCloud, PlusCircle, ListChecks, ArrowRight, Eye, Trash2, Share2, FileX, Plus, File, Download } from 'lucide-react';
+import { Gift, Zap, LayoutDashboard, CreditCard, Settings, LogOut, FileText, FileUp, Youtube, Podcast, FileAudio, Link as LinkIcon, Sparkles, UploadCloud, PlusCircle, ListChecks, ArrowRight, Eye, Trash2, Share2, FileX, Plus, File, Download, ChevronDown } from 'lucide-react';
+
 // 头像相关功能已移至 Navbar 组件
 
 // ===================================================================
@@ -426,37 +427,27 @@ const RecentProjects = React.memo(({ mindmaps, onCardClick, onCreateNew, loading
       });
     };
 
+    // 导出下拉菜单状态
+    const [exportDropdown, setExportDropdown] = useState(null);
+
     // 处理导出点击
-    const handleExport = async (e, mindmap) => {
-      e.stopPropagation(); // 防止触发卡片点击
+    const handleExportToggle = (e, mindmapId) => {
+      e.stopPropagation();
+      setExportDropdown(exportDropdown === mindmapId ? null : mindmapId);
+    };
+
+    // 处理具体格式导出
+    const handleExport = async (e, mindmap, format) => {
+      e.stopPropagation();
+      setExportDropdown(null);
       
       try {
-        // 获取思维导图数据
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/mindmaps/${mindmap.id}`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error('获取思维导图数据失败');
-        }
-
-        const mindmapData = await response.json();
+        // 直接跳转到思维导图页面进行导出
+        // 这样可以利用现有的完整导出功能
+        const exportUrl = `/mindmap/${mindmap.id}?export=${format}`;
+        window.open(exportUrl, '_blank');
         
-        // 创建并下载 Markdown 文件
-        const blob = new Blob([mindmapData.content], { type: 'text/markdown' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${mindmap.title}.md`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        
-        console.log('导出思维导图成功:', mindmap.title);
+        console.log(`准备导出思维导图 (${format.toUpperCase()}):`, mindmap.title);
       } catch (error) {
         console.error('导出思维导图失败:', error);
         alert('导出失败，请重试');
@@ -515,15 +506,16 @@ const RecentProjects = React.memo(({ mindmaps, onCardClick, onCreateNew, loading
             {mindmaps.map((mindmap) => (
               <div key={mindmap.id} className="project-card group">
                 <div onClick={() => onCardClick(mindmap.id)} className="flex-grow cursor-pointer">
-                                    <div className="bg-gray-100 h-32 flex items-center justify-center overflow-hidden rounded-t-lg">
-                    <Image width={300} height={128} src="/mindmap-preview.png" alt="思维导图预览图" className="w-full h-full object-contain p-2"/>
+                  <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 h-32 flex items-center justify-center overflow-hidden relative">
+                    <div className="absolute inset-0 bg-white/20"></div>
+                    <Image width={300} height={128} src="/mindmap-preview.png" alt="思维导图预览图" className="w-full h-full object-contain p-3 relative z-10"/>
                   </div>
                   <div className="p-4">
                     <h3 className="font-semibold text-gray-800 truncate" title={mindmap.title}>{mindmap.title}</h3>
                     <p className="text-sm text-gray-500 mt-1">{new Date(mindmap.updated_at).toLocaleDateString('zh-CN')} 更新</p>
                   </div>
                 </div>
-                <div className="border-t p-2 flex justify-end space-x-1">
+                <div className="border-t border-gray-100 p-3 flex justify-end space-x-2 bg-gray-50/50 group-hover:bg-white transition-colors">
                   <button 
                     onClick={(e) => handleView(e, mindmap.id)} 
                     className="action-button text-green-500 hover:bg-green-100"
@@ -531,13 +523,33 @@ const RecentProjects = React.memo(({ mindmaps, onCardClick, onCreateNew, loading
                   >
                     <Eye className="w-4 h-4" />
                   </button>
-                  <button 
-                    onClick={(e) => handleExport(e, mindmap)} 
-                    className="action-button text-purple-500 hover:bg-purple-100"
-                    title="导出思维导图"
-                  >
-                    <Download className="w-4 h-4" />
-                  </button>
+                  <div className="relative">
+                    <button 
+                      onClick={(e) => handleExportToggle(e, mindmap.id)} 
+                      className="action-button text-purple-500 hover:bg-purple-100 flex items-center"
+                      title="导出思维导图"
+                    >
+                      <Download className="w-4 h-4" />
+                      <ChevronDown className="w-3 h-3 ml-1" />
+                    </button>
+                    
+                    {exportDropdown === mindmap.id && (
+                      <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[120px]">
+                        <button
+                          onClick={(e) => handleExport(e, mindmap, 'svg')}
+                          className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-t-lg"
+                        >
+                          导出 SVG
+                        </button>
+                        <button
+                          onClick={(e) => handleExport(e, mindmap, 'png')}
+                          className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-b-lg"
+                        >
+                          导出 PNG
+                        </button>
+                      </div>
+                    )}
+                  </div>
                   <button 
                     onClick={(e) => handleShare(e, mindmap)} 
                     className="action-button text-blue-500 hover:bg-blue-100"
@@ -577,6 +589,14 @@ const RecentProjects = React.memo(({ mindmaps, onCardClick, onCreateNew, loading
           mindmapId={shareModal.mindmapId}
           mindmapTitle={shareModal.mindmapTitle}
         />
+
+        {/* 点击外部关闭导出下拉菜单 */}
+        {exportDropdown && (
+          <div 
+            className="fixed inset-0 z-5" 
+            onClick={() => setExportDropdown(null)}
+          />
+        )}
 
         {/* 删除确认弹窗 */}
         {deleteModal.isOpen && (

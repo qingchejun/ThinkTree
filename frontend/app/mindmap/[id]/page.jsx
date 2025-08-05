@@ -5,7 +5,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { useRouter, useParams } from 'next/navigation'
+import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import { useAuth } from '../../../context/AuthContext'
 import SimpleMarkmapBasic from '../../../components/mindmap/SimpleMarkmapBasic'
 import ShareModal from '../../../components/share/ShareModal'
@@ -17,7 +17,9 @@ export default function ViewMindmapPage() {
   const { user, token, isLoading } = useAuth()
   const router = useRouter()
   const params = useParams()
+  const searchParams = useSearchParams()
   const mindmapId = params.id
+  const exportFormat = searchParams.get('export')
   
   // 页面状态管理
   const [mindmap, setMindmap] = useState(null)
@@ -95,6 +97,28 @@ export default function ViewMindmapPage() {
       fetchMindmap()
     }
   }, [token, user, mindmapId])
+
+  // 自动导出功能 - 根据URL参数触发导出
+  useEffect(() => {
+    if (exportFormat && mindmap && markmapRef.current && !isExportingRef.current) {
+      const triggerAutoExport = async () => {
+        // 等待思维导图完全加载
+        await new Promise(resolve => setTimeout(resolve, 2000))
+        
+        if (exportFormat === 'svg') {
+          handleExportSVG()
+        } else if (exportFormat === 'png') {
+          handleExportPNG()
+        }
+        
+        // 导出完成后，移除URL参数
+        const newUrl = window.location.pathname
+        window.history.replaceState({}, '', newUrl)
+      }
+      
+      triggerAutoExport()
+    }
+  }, [exportFormat, mindmap, markmapRef.current])
 
   // 格式化日期显示
   const formatDate = (dateString) => {
