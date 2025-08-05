@@ -1,0 +1,16 @@
+{
+  "name": "ThinkSo - AI 思维导图生成工具",
+  "short_name": "ThinkSo",
+  "description": "AI 驱动的思维导图生成工具，支持文档、文本、链接转换",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "theme_color": "#111827",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "start_url": "/"
+}
