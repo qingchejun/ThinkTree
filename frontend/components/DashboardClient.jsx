@@ -23,7 +23,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '../context/AuthContext';
 import ShareModal from './share/ShareModal';
-import { Gift, Zap, LayoutDashboard, CreditCard, Settings, LogOut, FileText, FileUp, Youtube, Podcast, FileAudio, Link as LinkIcon, Sparkles, UploadCloud, PlusCircle, ListChecks, ArrowRight, Eye, Trash2, Share2, FileX, Plus, File, Download, ChevronDown } from 'lucide-react';
+import { Gift, Zap, LayoutDashboard, CreditCard, Settings, LogOut, FileText, FileUp, Youtube, Podcast, FileAudio, Link as LinkIcon, Sparkles, UploadCloud, PlusCircle, ListChecks, ArrowRight, Eye, Trash2, Share2, FileX, Plus, File, Download } from 'lucide-react';
 
 // 头像相关功能已移至 Navbar 组件
 
@@ -427,32 +427,21 @@ const RecentProjects = React.memo(({ mindmaps, onCardClick, onCreateNew, loading
       });
     };
 
-    // 导出下拉菜单状态
-    const [exportDropdown, setExportDropdown] = useState(null);
-
-    // 处理导出点击
-    const handleExportToggle = (e, mindmapId) => {
-      e.stopPropagation();
-      setExportDropdown(exportDropdown === mindmapId ? null : mindmapId);
-    };
-
-    // 处理具体格式导出
-    const handleExport = async (e, mindmap, format) => {
-      e.stopPropagation();
-      setExportDropdown(null);
-      
-      try {
-        // 直接跳转到思维导图页面进行导出
-        // 这样可以利用现有的完整导出功能
-        const exportUrl = `/mindmap/${mindmap.id}?export=${format}`;
-        window.open(exportUrl, '_blank');
-        
-        console.log(`准备导出思维导图 (${format.toUpperCase()}):`, mindmap.title);
-      } catch (error) {
-        console.error('导出思维导图失败:', error);
-        alert('导出失败，请重试');
-      }
-    };
+    // 处理PNG导出
+     const handleExport = async (e, mindmap) => {
+       e.stopPropagation();
+       
+       try {
+         // 直接跳转到思维导图页面进行PNG导出
+         const exportUrl = `/mindmap/${mindmap.id}?export=png`;
+         window.open(exportUrl, '_blank');
+         
+         console.log(`准备导出思维导图 (PNG):`, mindmap.title);
+       } catch (error) {
+         console.error('导出思维导图失败:', error);
+         alert('导出失败，请重试');
+       }
+     };
 
     // 关闭分享模态框
     const handleCloseShareModal = () => {
@@ -523,33 +512,13 @@ const RecentProjects = React.memo(({ mindmaps, onCardClick, onCreateNew, loading
                   >
                     <Eye className="w-4 h-4" />
                   </button>
-                  <div className="relative">
-                    <button 
-                      onClick={(e) => handleExportToggle(e, mindmap.id)} 
-                      className="action-button text-purple-500 hover:bg-purple-100 flex items-center"
-                      title="导出思维导图"
-                    >
-                      <Download className="w-4 h-4" />
-                      <ChevronDown className="w-3 h-3 ml-1" />
-                    </button>
-                    
-                    {exportDropdown === mindmap.id && (
-                      <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[120px]">
-                        <button
-                          onClick={(e) => handleExport(e, mindmap, 'svg')}
-                          className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-t-lg"
-                        >
-                          导出 SVG
-                        </button>
-                        <button
-                          onClick={(e) => handleExport(e, mindmap, 'png')}
-                          className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-b-lg"
-                        >
-                          导出 PNG
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                  <button 
+                     onClick={(e) => handleExport(e, mindmap)} 
+                     className="action-button text-purple-500 hover:bg-purple-100"
+                     title="导出为PNG图片"
+                   >
+                     <Download className="w-4 h-4" />
+                   </button>
                   <button 
                     onClick={(e) => handleShare(e, mindmap)} 
                     className="action-button text-blue-500 hover:bg-blue-100"
@@ -590,13 +559,7 @@ const RecentProjects = React.memo(({ mindmaps, onCardClick, onCreateNew, loading
           mindmapTitle={shareModal.mindmapTitle}
         />
 
-        {/* 点击外部关闭导出下拉菜单 */}
-        {exportDropdown && (
-          <div 
-            className="fixed inset-0 z-5" 
-            onClick={() => setExportDropdown(null)}
-          />
-        )}
+
 
         {/* 删除确认弹窗 */}
         {deleteModal.isOpen && (

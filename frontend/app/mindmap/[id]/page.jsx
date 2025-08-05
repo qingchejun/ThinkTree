@@ -98,18 +98,14 @@ export default function ViewMindmapPage() {
     }
   }, [token, user, mindmapId])
 
-  // 自动导出功能 - 根据URL参数触发导出
+  // 自动导出功能 - 根据URL参数触发PNG导出
   useEffect(() => {
-    if (exportFormat && mindmap && markmapRef.current && !isExportingRef.current) {
+    if (exportFormat === 'png' && mindmap && markmapRef.current && !isExportingRef.current) {
       const triggerAutoExport = async () => {
         // 等待思维导图完全加载
         await new Promise(resolve => setTimeout(resolve, 2000))
         
-        if (exportFormat === 'svg') {
-          handleExportSVG()
-        } else if (exportFormat === 'png') {
-          handleExportPNG()
-        }
+        handleExportPNG()
         
         // 导出完成后，移除URL参数
         const newUrl = window.location.pathname
