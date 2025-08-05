@@ -75,7 +75,7 @@ class EmailService:
 <title>欢迎来到 ThinkSo</title>
 <style>
 body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; }}
-.container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+.container {{ max-width: 600px; margin: 0 auto; padding: 0; }}
 .header {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }}
 .content {{ background: #f8f9fa; padding: 30px; border-radius: 0 0 8px 8px; }}
 .button {{ display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 20px 0; }}
@@ -147,7 +147,7 @@ body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-heigh
 <title>ThinkSo Login</title>
 <style>
 body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background-color: #ffffff; }}
-.container {{ max-width: 500px; margin: 0 auto; padding: 20px; }}
+.container {{ max-width: 500px; margin: 0 auto; padding: 0; }}
 .greeting {{ font-size: 16px; color: #333; margin-bottom: 20px; }}
 .message {{ font-size: 16px; color: #333; line-height: 1.5; margin-bottom: 30px; }}
 .button {{ display: inline-block; background: #007AFF; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 500; font-size: 16px; }}
