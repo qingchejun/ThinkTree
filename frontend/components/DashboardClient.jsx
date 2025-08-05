@@ -593,7 +593,7 @@ const RecentProjects = React.memo(({ mindmaps, onCardClick, onCreateNew, loading
               </div>
               
               <p className="text-gray-700 mb-6">
-                确定要删除思维导图 <span className="font-semibold">"{deleteModal.mindmapTitle}"</span> 吗？
+                确定要删除思维导图 <span className="font-semibold">&ldquo;{deleteModal.mindmapTitle}&rdquo;</span> 吗？
               </p>
               
               <div className="flex justify-end space-x-3">
