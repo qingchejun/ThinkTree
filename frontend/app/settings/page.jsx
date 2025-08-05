@@ -314,7 +314,7 @@ const SettingsContent = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             {/* 左侧导航 */}
             <aside className="md:col-span-1">
-              <div className="flex flex-col space-y-1 bg-white rounded-xl border border-gray-200 p-2">
+              <div className="flex flex-col space-y-1 bg-white rounded-xl border border-gray-200 p-2 h-fit">
                 {settingsNavItems.map((item) => (
                   <button
                     key={item.id}
@@ -409,12 +409,12 @@ const SettingsContent = () => {
                   </div>
                   <div className="p-6">
                     <div className="space-y-6">
-                      <div className="bg-green-50 p-6 rounded-lg border border-green-200">
-                        <h3 className="text-lg font-medium text-green-900 mb-2">邀请配额</h3>
-                        <p className="text-3xl font-bold text-green-600">
+                      <div className="bg-white p-6 rounded-lg border border-gray-200">
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">邀请配额</h3>
+                        <p className="text-3xl font-bold text-gray-900">
                           {profileData ? profileData.invitation_remaining : '加载中...'}
                         </p>
-                        <p className="text-sm text-green-700 mt-1">
+                        <p className="text-sm text-gray-600 mt-1">
                           剩余邀请码 (总配额: {profileData ? profileData.invitation_quota : '...'})
                         </p>
                       </div>
@@ -457,7 +457,23 @@ const SettingsContent = () => {
                             {invitations.map((invitation, index) => (
                               <div key={index} className="bg-gray-50 rounded-lg border border-gray-200 p-4">
                                 <div className="flex items-center justify-between">
-                                  <span className="font-mono text-sm text-gray-900">{invitation.code}</span>
+                                  <div className="flex items-center space-x-3">
+                                    <span className="font-mono text-sm text-gray-900">{invitation.code}</span>
+                                    <button
+                                      onClick={() => {
+                                        const inviteLink = `https://thinkso.io/register?invitation_code=${invitation.code}`;
+                                        navigator.clipboard.writeText(inviteLink).then(() => {
+                                          showToast('邀请链接已复制到剪贴板！', 'success');
+                                        }).catch(() => {
+                                          showToast('复制失败，请手动复制', 'error');
+                                        });
+                                      }}
+                                      className="px-3 py-1 text-xs font-medium text-gray-600 bg-gray-100 border border-gray-200 rounded-md hover:bg-gray-200 hover:text-gray-800 transition-colors"
+                                      title="复制邀请链接"
+                                    >
+                                      复制链接
+                                    </button>
+                                  </div>
                                   <span className={`text-sm px-2 py-1 rounded-full ${
                                     invitation.is_used 
                                       ? 'bg-green-100 text-green-700' 
@@ -484,12 +500,12 @@ const SettingsContent = () => {
                     </div>
                     <div className="p-6">
                       <div className="space-y-6">
-                        <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
-                          <h3 className="text-lg font-medium text-blue-900 mb-2">当前积分余额</h3>
-                          <p className="text-3xl font-bold text-blue-600">
+                        <div className="bg-white p-6 rounded-lg border border-gray-200">
+                          <h3 className="text-lg font-medium text-gray-900 mb-2">当前积分余额</h3>
+                          <p className="text-3xl font-bold text-gray-900">
                             {currentBalance}
                           </p>
-                          <p className="text-sm text-blue-700 mt-1">积分 (每100字符消耗1积分)</p>
+                          <p className="text-sm text-gray-600 mt-1">积分</p>
                         </div>
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                           <RedemptionCodeForm 
