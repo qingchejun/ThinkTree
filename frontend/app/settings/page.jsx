@@ -227,15 +227,13 @@ const SettingsContent = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background-secondary">
-        <Card className="w-full max-w-md mx-4">
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-4 border-brand-primary border-t-transparent mx-auto mb-4"></div>
-              <p className="text-text-secondary">加载中...</p>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 w-full max-w-md mx-4 p-6">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-900 border-t-transparent mx-auto mb-4"></div>
+            <p className="text-gray-600">加载中...</p>
+          </div>
+        </div>
       </div>
     );
   }
@@ -310,34 +308,40 @@ const SettingsContent = () => {
 
 
   return (
-    <div className="min-h-screen bg-background-secondary text-text-primary">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-6 py-12">
         <Tabs value={activeTab} onValueChange={(value) => router.push(`/settings?tab=${value}`)} className="w-full">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             {/* 左侧导航 */}
             <aside className="md:col-span-1">
-              <TabsList className="flex flex-col items-start justify-start h-full space-y-1 bg-transparent p-0">
+              <div className="flex flex-col space-y-1 bg-white rounded-xl border border-gray-200 p-2">
                 {settingsNavItems.map((item) => (
-                  <TabsTrigger
+                  <button
                     key={item.id}
-                    value={item.id}
-                    className="w-full flex items-center justify-start px-4 py-2 text-sm font-medium rounded-md transition-colors duration-150 data-[state=active]:bg-brand-primary data-[state=active]:text-white text-text-secondary hover:bg-background-tertiary"
+                    onClick={() => router.push(`/settings?tab=${item.id}`)}
+                    className={`w-full flex items-center justify-start px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${
+                      activeTab === item.id 
+                        ? 'bg-black text-white shadow-sm' 
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
                   >
-                    <item.icon className={`mr-3 w-4 h-4 ${item.iconColor}`} />
+                    <item.icon className={`mr-3 w-4 h-4 ${
+                      activeTab === item.id ? 'text-white' : item.iconColor
+                    }`} />
                     {item.name}
-                  </TabsTrigger>
+                  </button>
                 ))}
-              </TabsList>
+              </div>
             </aside>
 
             {/* 右侧内容区 */}
             <main className="md:col-span-3">
                 <TabsContent value="profile">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>个人资料</CardTitle>
-                  </CardHeader>
-                  <CardContent>
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+                  <div className="px-6 py-5 border-b border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900">个人资料</h3>
+                  </div>
+                  <div className="p-6">
                     <div className="space-y-6">
                       <div>
                         <Label>头像</Label>
@@ -347,14 +351,13 @@ const SettingsContent = () => {
                             size={80}
                             className="border-2 border-gray-200"
                           />
-                          <Button
+                          <button
                             type="button"
-                            variant="secondary"
                             onClick={() => setIsAvatarSelectorOpen(true)}
-                            className="text-sm"
+                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-200 rounded-lg hover:bg-gray-200 transition-colors"
                           >
                             更换头像
-                          </Button>
+                          </button>
                         </div>
                       </div>
                       <div>
@@ -364,7 +367,7 @@ const SettingsContent = () => {
                           type="email"
                           value={profileData?.email || user?.email || ''}
                           disabled
-                          className="bg-background-secondary text-text-tertiary mt-2"
+                          className="bg-gray-50 text-gray-500 mt-2 border-gray-200"
                         />
                       </div>
                       <div>
@@ -385,25 +388,26 @@ const SettingsContent = () => {
                           type="text"
                           value={profileData ? new Date(profileData.created_at).toLocaleString() : '加载中...'}
                           disabled
-                          className="bg-background-secondary text-text-tertiary mt-2"
+                          className="bg-gray-50 text-gray-500 mt-2 border-gray-200"
                         />
                       </div>
-                      <Button 
+                      <button 
                         onClick={handleSaveProfile}
                         disabled={isLoading}
+                        className="px-6 py-3 bg-black text-white text-sm font-semibold rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
                         {isLoading ? '保存中...' : '保存更改'}
-                      </Button>
+                      </button>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               </TabsContent>
               <TabsContent value="invitations">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>邀请好友</CardTitle>
-                  </CardHeader>
-                  <CardContent>
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+                  <div className="px-6 py-5 border-b border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900">邀请好友</h3>
+                  </div>
+                  <div className="p-6">
                     <div className="space-y-6">
                       <div className="bg-green-50 p-6 rounded-lg border border-green-200">
                         <h3 className="text-lg font-medium text-green-900 mb-2">邀请配额</h3>
@@ -416,71 +420,69 @@ const SettingsContent = () => {
                       </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Card className="bg-background-secondary">
-                          <CardContent className="pt-6">
-                            <p className="text-sm text-text-secondary">已生成</p>
-                            <p className="text-2xl font-bold text-text-primary">
-                              {profileData ? profileData.invitation_used : '...'}
-                            </p>
-                            <p className="text-sm text-text-tertiary">邀请码</p>
-                          </CardContent>
-                        </Card>
-                        <Card className="bg-background-secondary">
-                          <CardContent className="pt-6">
-                            <p className="text-sm text-text-secondary">总配额</p>
-                            <p className="text-2xl font-bold text-text-primary">
-                              {profileData ? profileData.invitation_quota : '...'}
-                            </p>
-                            <p className="text-sm text-text-tertiary">邀请码</p>
-                          </CardContent>
-                        </Card>
+                        <div className="bg-gray-50 rounded-lg border border-gray-200 p-6">
+                          <p className="text-sm text-gray-600">已生成</p>
+                          <p className="text-2xl font-bold text-gray-900">
+                            {profileData ? profileData.invitation_used : '...'}
+                          </p>
+                          <p className="text-sm text-gray-500">邀请码</p>
+                        </div>
+                        <div className="bg-gray-50 rounded-lg border border-gray-200 p-6">
+                          <p className="text-sm text-gray-600">总配额</p>
+                          <p className="text-2xl font-bold text-gray-900">
+                            {profileData ? profileData.invitation_quota : '...'}
+                          </p>
+                          <p className="text-sm text-gray-500">邀请码</p>
+                        </div>
                       </div>
 
                       <div>
-                        <h3 className="text-lg font-medium text-text-primary mb-4">生成邀请码</h3>
-                        <Button 
+                        <h3 className="text-lg font-medium text-gray-900 mb-4">生成邀请码</h3>
+                        <button 
                           onClick={handleGenerateInvitation}
                           disabled={isLoading || (profileData && profileData.invitation_remaining <= 0)}
-                          variant="secondary"
+                          className="px-6 py-3 bg-black text-white text-sm font-semibold rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                           {isLoading ? '生成中...' : '生成新的邀请码'}
-                        </Button>
+                        </button>
                         {profileData && profileData.invitation_remaining <= 0 && (
                           <p className="text-sm text-red-600 mt-2">已达到邀请码生成上限</p>
                         )}
                       </div>
                       
                       <div>
-                        <h3 className="text-lg font-medium text-text-primary mb-4">我的邀请码</h3>
+                        <h3 className="text-lg font-medium text-gray-900 mb-4">我的邀请码</h3>
                         {invitations.length > 0 ? (
                           <div className="space-y-2">
                             {invitations.map((invitation, index) => (
-                              <Card key={index} className="border border-border-secondary">
-                                <CardContent className="py-3">
-                                  <div className="flex items-center justify-between">
-                                    <span className="font-mono text-sm text-text-primary">{invitation.code}</span>
-                                    <span className={`text-sm ${invitation.is_used ? 'text-green-600' : 'text-text-tertiary'}`}>
-                                      {invitation.is_used ? '已使用' : '未使用'}
-                                    </span>
-                                  </div>
-                                </CardContent>
-                              </Card>
+                              <div key={index} className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-mono text-sm text-gray-900">{invitation.code}</span>
+                                  <span className={`text-sm px-2 py-1 rounded-full ${
+                                    invitation.is_used 
+                                      ? 'bg-green-100 text-green-700' 
+                                      : 'bg-gray-100 text-gray-600'
+                                  }`}>
+                                    {invitation.is_used ? '已使用' : '未使用'}
+                                  </span>
+                                </div>
+                              </div>
                             ))}
                           </div>
                         ) : (
-                          <p className="text-text-tertiary text-sm">暂无邀请码</p>
+                          <p className="text-gray-500 text-sm">暂无邀请码</p>
                         )}
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               </TabsContent>
                 <TabsContent value="billing">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>用量计费</CardTitle>
-                    </CardHeader>
-                    <CardContent>
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+                    <div className="px-6 py-5 border-b border-gray-200">
+                      <h3 className="text-lg font-semibold text-gray-900">用量计费</h3>
+                    </div>
+                    <div className="p-6">
                       <div className="space-y-6">
                         <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
                           <h3 className="text-lg font-medium text-blue-900 mb-2">当前积分余额</h3>
@@ -497,43 +499,37 @@ const SettingsContent = () => {
                           <RedemptionHistory />
                         </div>
                         <div>
-                          <h3 className="text-lg font-medium text-text-primary mb-4">积分历史</h3>
+                          <h3 className="text-lg font-medium text-gray-900 mb-4">积分历史</h3>
                           {creditLoading && !creditHistory.length ? (
-                            <p>加载中...</p>
+                            <p className="text-gray-600">加载中...</p>
                           ) : creditHistory.length > 0 ? (
-                            <div className="space-y-4">
+                            <div className="space-y-3">
                               {creditHistory.map((item) => (
-                                <div key={item.id} className="flex justify-between items-center p-3 bg-background-tertiary rounded-md">
+                                <div key={item.id} className="flex justify-between items-center p-4 bg-gray-50 rounded-lg border border-gray-200">
                                   <div>
-                                    <p className="font-semibold">{formatTransactionType(item.transaction_type)}</p>
-                                    <p className="text-sm text-text-secondary">{formatDate(item.created_at)}</p>
+                                    <p className="font-semibold text-gray-900">{formatTransactionType(item.transaction_type)}</p>
+                                    <p className="text-sm text-gray-600">{formatDate(item.created_at)}</p>
                                   </div>
                                   <p className={getAmountStyle(item.transaction_type)}>{getAmountText(item.transaction_type, item.amount)}</p>
                                 </div>
                               ))}
                               {creditPagination.has_next && (
-                                <Button onClick={() => loadCreditHistory(creditPagination.current_page + 1, true)} disabled={creditLoading}>
+                                <button 
+                                  onClick={() => loadCreditHistory(creditPagination.current_page + 1, true)} 
+                                  disabled={creditLoading}
+                                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-200 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                >
                                   {creditLoading ? '加载中...' : '加载更多'}
-                                </Button>
+                                </button>
                               )}
                             </div>
                           ) : (
-                            <p>暂无积分历史记录。</p>
+                            <p className="text-gray-600">暂无积分历史记录。</p>
                           )}
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-                <TabsContent value="invitations">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>邀请好友</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p>邀请功能暂未开放。</p>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 </TabsContent>
               </main>
           </div>
@@ -564,15 +560,13 @@ const SettingsContent = () => {
 const SettingsPage = () => {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-background-secondary">
-        <Card className="w-full max-w-md mx-4">
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-4 border-brand-primary border-t-transparent mx-auto mb-4"></div>
-              <p className="text-text-secondary">加载中...</p>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 w-full max-w-md mx-4 p-6">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-900 border-t-transparent mx-auto mb-4"></div>
+            <p className="text-gray-600">加载中...</p>
+          </div>
+        </div>
       </div>
     }>
       <SettingsContent />
