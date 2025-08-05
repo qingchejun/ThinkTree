@@ -1,21 +1,14 @@
 /**
- * 思维导图管理页面 - ThinkTree v3.2.2
- * 专门用于管理所有思维导图的页面
+ * 思维导图管理页面 - 复制dashboard卡片效果
  */
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../../context/AuthContext'
-// 移除ToastManager，使用内联提示样式
 import ShareModal from '../../components/share/ShareModal'
-
-import Sidebar from '../../components/common/Sidebar';
-import { Button } from '../../components/ui/Button';
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../../components/ui/Card';
-import { Input } from '../../components/ui/Input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/Select';
-import Pagination from '../../components/ui/Pagination';
+import MindmapThumbnail from '../../components/mindmap/MindmapThumbnail'
+import { Eye, Trash2, Share2, Download, PlusCircle, FileX, Plus } from 'lucide-react'
 
 export default function MindmapsPage() {
   const { user, token, isLoading } = useAuth()
@@ -24,21 +17,7 @@ export default function MindmapsPage() {
   // 页面状态管理
   const [mindmaps, setMindmaps] = useState([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [successMessage, setSuccessMessage] = useState(null) // 成功消息状态
-  const [isClient, setIsClient] = useState(false) // 客户端检查
-
-  // 搜索、排序和分页状态
-  const [searchTerm, setSearchTerm] = useState('');
-  const [sortOrder, setSortOrder] = useState('desc');
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 7; // “新建”卡片占一个位置，所以每页显示7个导图 + 1个新建 = 8个项目
-
-  // 检查是否在客户端
-  useEffect(() => {
-    setIsClient(true)
-  }, [])
-
+  
   // 分享模态框状态
   const [shareModal, setShareModal] = useState({
     isOpen: false,
@@ -46,10 +25,18 @@ export default function MindmapsPage() {
     mindmapTitle: ''
   })
 
+  // 删除确认弹窗状态
+  const [deleteModal, setDeleteModal] = useState({
+    isOpen: false,
+    mindmapId: null,
+    mindmapTitle: '',
+    isDeleting: false
+  })
+
   // 路由保护 - 未登录用户重定向到登录页
   useEffect(() => {
     if (!isLoading && !user) {
-      router.push('/')
+      router.push('/?auth=login')
       return
     }
   }, [user, isLoading, router])
@@ -57,14 +44,14 @@ export default function MindmapsPage() {
   // 获取用户思维导图列表
   useEffect(() => {
     const fetchMindmaps = async () => {
-      if (!token || !user) return
+      if (!token || !user) {
+        setMindmaps([])
+        setLoading(false)
+        return
+      }
 
-
-      // 生产环境真实请求
       try {
         setLoading(true)
-        setError(null)
-
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/mindmaps/`, {
           method: 'GET',
           headers: {
@@ -77,12 +64,12 @@ export default function MindmapsPage() {
           const data = await response.json()
           setMindmaps(data || [])
         } else {
-          const errorData = await response.json()
-          throw new Error(errorData.detail || '获取思维导图列表失败')
+          console.error('获取思维导图列表失败:', response.status)
+          setMindmaps([])
         }
       } catch (err) {
         console.error('获取思维导图列表失败:', err)
-        setError(err.message)
+        setMindmaps([])
       } finally {
         setLoading(false)
       }
@@ -91,26 +78,141 @@ export default function MindmapsPage() {
     fetchMindmaps()
   }, [token, user])
 
-  // 格式化日期显示
-  const formatDate = (dateString) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString('zh-CN', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+  // 处理查看点击
+  const handleView = (e, id) => {
+    e.stopPropagation()
+    router.push(`/mindmap/${id}`)
+  }
+
+  // 处理PNG导出 - 优化版本
+  const handleExport = async (e, mindmap) => {
+    e.stopPropagation()
+    
+    try {
+      console.log(`开始导出思维导图 (PNG):`, mindmap.title)
+      
+      // 使用try-catch包装动态导入，避免chunk加载问题
+      let Markmap, Transformer, exportPNG, getSafeFilename, getTimestamp
+      
+      try {
+        // 分别导入，更容易定位问题
+        const markmapViewModule = await import('markmap-view')
+        Markmap = markmapViewModule.Markmap
+        
+        const markmapLibModule = await import('markmap-lib')
+        Transformer = markmapLibModule.Transformer
+        
+        const exportUtilsModule = await import('../../lib/exportUtils.js')
+        exportPNG = exportUtilsModule.exportPNG
+        getSafeFilename = exportUtilsModule.getSafeFilename
+        getTimestamp = exportUtilsModule.getTimestamp
+      } catch (importError) {
+        console.error('导入模块失败:', importError)
+        // 回退到markdown导出
+        const blob = new Blob([mindmap.content], { type: 'text/markdown' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `${mindmap.title}.md`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+        console.log('已回退到Markdown导出')
+        return
+      }
+      
+      // 创建临时SVG容器
+      const tempContainer = document.createElement('div')
+      tempContainer.style.position = 'absolute'
+      tempContainer.style.left = '-9999px'
+      tempContainer.style.top = '-9999px'
+      tempContainer.style.width = '1600px'
+      tempContainer.style.height = '1200px'
+      document.body.appendChild(tempContainer)
+      
+      const tempSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+      tempSvg.setAttribute('width', '1600')
+      tempSvg.setAttribute('height', '1200')
+      tempContainer.appendChild(tempSvg)
+      
+      try {
+        // 转换markdown内容
+        const transformer = new Transformer()
+        const { root } = transformer.transform(mindmap.content)
+        
+        // 创建markmap实例
+        const markmapInstance = Markmap.create(tempSvg, {
+          duration: 0,
+          maxWidth: 400,
+          spacingVertical: 8,
+          spacingHorizontal: 120,
+          autoFit: true,
+          pan: false,
+          zoom: false,
+        })
+        
+        // 渲染思维导图
+        markmapInstance.setData(root)
+        markmapInstance.fit()
+        
+        // 等待渲染完成
+        await new Promise(resolve => setTimeout(resolve, 800))
+        
+        // 生成文件名
+        const safeTitle = getSafeFilename(mindmap.title)
+        const timestamp = getTimestamp()
+        const filename = `${safeTitle}_${timestamp}`
+        
+        // 导出PNG
+        const result = await exportPNG(markmapInstance, filename, 4)
+        
+        if (result.success) {
+          console.log(`PNG文件导出成功: ${result.filename}`)
+        } else {
+          throw new Error(result.error)
+        }
+        
+      } finally {
+        // 清理临时元素
+        document.body.removeChild(tempContainer)
+      }
+      
+    } catch (error) {
+      console.error('导出思维导图失败:', error)
+      alert(`导出失败: ${error.message}`)
+    }
+  }
+
+  // 处理分享点击
+  const handleShare = (e, mindmap) => {
+    e.stopPropagation()
+    setShareModal({
+      isOpen: true,
+      mindmapId: mindmap.id,
+      mindmapTitle: mindmap.title
     })
   }
 
-  // 删除思维导图
-  const handleDelete = async (mindmapId, title) => {
-    if (!isClient || !window.confirm(`确定要删除思维导图"${title}"吗？此操作不可恢复。`)) {
-      return
-    }
+  // 处理删除点击
+  const handleDelete = (e, mindmap) => {
+    e.stopPropagation()
+    setDeleteModal({
+      isOpen: true,
+      mindmapId: mindmap.id,
+      mindmapTitle: mindmap.title,
+      isDeleting: false
+    })
+  }
+
+  // 确认删除
+  const confirmDelete = async () => {
+    if (!deleteModal.mindmapId) return
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/mindmaps/${mindmapId}`, {
+      setDeleteModal(prev => ({ ...prev, isDeleting: true }))
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/mindmaps/${deleteModal.mindmapId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -120,28 +222,31 @@ export default function MindmapsPage() {
 
       if (response.ok) {
         // 从列表中移除已删除的思维导图
-        setMindmaps(prev => prev.filter(mindmap => mindmap.id !== mindmapId))
-        setSuccessMessage(`思维导图"${title}"已成功删除`)
-        // 3秒后清除成功消息
-        setTimeout(() => setSuccessMessage(null), 3000)
+        setMindmaps(prev => prev.filter(mindmap => mindmap.id !== deleteModal.mindmapId))
       } else {
-        const errorData = await response.json()
-        throw new Error(errorData.detail || '删除失败')
+        console.error('删除思维导图失败:', response.status)
+        alert('删除失败，请重试')
       }
-    } catch (err) {
-      console.error('删除思维导图失败:', err)
-      setError(err.message)
-      // 5秒后清除错误消息
-      setTimeout(() => setError(null), 5000)
+    } catch (error) {
+      console.error('删除思维导图失败:', error)
+      alert('删除失败，请重试')
+    } finally {
+      setDeleteModal({
+        isOpen: false,
+        mindmapId: null,
+        mindmapTitle: '',
+        isDeleting: false
+      })
     }
   }
 
-  // 打开分享模态框
-  const handleShareClick = (mindmapId, title) => {
-    setShareModal({
-      isOpen: true,
-      mindmapId,
-      mindmapTitle: title
+  // 取消删除
+  const cancelDelete = () => {
+    setDeleteModal({
+      isOpen: false,
+      mindmapId: null,
+      mindmapTitle: '',
+      isDeleting: false
     })
   }
 
@@ -154,42 +259,37 @@ export default function MindmapsPage() {
     })
   }
 
-  // 搜索和排序逻辑
-  const filteredAndSortedMindmaps = mindmaps
-    .filter(mindmap => mindmap.title.toLowerCase().includes(searchTerm.toLowerCase()))
-    .sort((a, b) => {
-      const dateA = new Date(a.updated_at);
-      const dateB = new Date(b.updated_at);
-      return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
-    });
-
-  // 分页逻辑
-  const paginatedMindmaps = filteredAndSortedMindmaps.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-
-  const totalPages = Math.ceil(filteredAndSortedMindmaps.length / itemsPerPage);
-
-  // 截断文本显示
-  const truncateText = (text, maxLength = 100) => {
-    if (!text) return ''
-    if (text.length <= maxLength) return text
-    return text.substring(0, maxLength) + '...'
+  // 创建新思维导图
+  const handleCreateNew = () => {
+    router.push('/create')
   }
 
   // 加载状态
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background-secondary">
-        <Card className="w-full max-w-md mx-4">
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <div className="animate-spin w-12 h-12 border-4 border-brand-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-              <p className="text-text-secondary">加载中...</p>
+      <div className="min-h-screen bg-gray-50">
+        <main className="container mx-auto px-6 py-8">
+          <div className="w-full max-w-6xl mx-auto">
+            <h1 className="text-3xl font-bold text-gray-800 mb-8">我的思维导图</h1>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {/* 新建导图卡片骨架屏 */}
+              <div className="cursor-pointer group bg-gray-50 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center p-6 h-full min-h-[200px] animate-pulse">
+                <div className="w-12 h-12 bg-gray-200 rounded-full mb-3"></div>
+                <div className="w-20 h-4 bg-gray-200 rounded"></div>
+              </div>
+              {/* 加载骨架屏 */}
+              {Array.from({ length: 3 }).map((_, index) => (
+                <div key={index} className="bg-white rounded-xl border overflow-hidden min-h-[200px] animate-pulse">
+                  <div className="bg-gray-200 h-32"></div>
+                  <div className="p-4">
+                    <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                    <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+                  </div>
+                </div>
+              ))}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </main>
       </div>
     )
   }
@@ -200,129 +300,168 @@ export default function MindmapsPage() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      <Sidebar />
-      <main className="flex-1 overflow-y-auto p-8">
-        <div className="max-w-7xl mx-auto">
-          {/* 错误和成功消息提示 */}
-          <div className="my-6 space-y-3">
-            {error && <div className="p-4 bg-red-50 text-red-800 border border-red-200 rounded-lg">{error}</div>}
-            {successMessage && <div className="p-4 bg-green-50 text-green-800 border border-green-200 rounded-lg">{successMessage}</div>}
-          </div>
-
-          {/* 搜索和筛选控件 */}
-          <div className="flex justify-between items-center mb-6">
-            <div className="flex-grow max-w-xs">
-              <Input
-                type="text"
-                placeholder="搜索思维导图..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full"
-              />
-            </div>
-            <Select onValueChange={setSortOrder} defaultValue={sortOrder}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="排序方式" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="desc">最新优先</SelectItem>
-                <SelectItem value="asc">最早优先</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* 思维导图列表 */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-8">
-            {/* 固定新建导图入口 */}
-            <Card 
-              className="flex flex-col items-center justify-center text-center border-2 border-dashed border-gray-300 hover:border-gray-400 hover:bg-gray-50 transition-all duration-300 cursor-pointer min-h-[220px]"
-              onClick={() => router.push('/create')}
-            >
-              <div className="flex items-center justify-center w-16 h-16 rounded-full bg-gray-200 mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
+    <div className="min-h-screen bg-gray-50">
+      <main className="container mx-auto px-6 py-8">
+        <div className="w-full max-w-6xl mx-auto">
+          <h1 className="text-3xl font-bold text-gray-800 mb-8">我的思维导图</h1>
+          
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {/* 新建导图卡片骨架屏 */}
+              <div className="cursor-pointer group bg-gray-50 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center p-6 h-full min-h-[200px] animate-pulse">
+                <div className="w-12 h-12 bg-gray-200 rounded-full mb-3"></div>
+                <div className="w-20 h-4 bg-gray-200 rounded"></div>
               </div>
-              <h3 className="text-lg font-semibold text-gray-700">新建导图</h3>
-            </Card>
+              {/* 加载骨架屏 */}
+              {Array.from({ length: 7 }).map((_, index) => (
+                <div key={index} className="bg-white rounded-xl border overflow-hidden min-h-[200px] animate-pulse">
+                  <div className="bg-gray-200 h-32"></div>
+                  <div className="p-4">
+                    <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                    <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : mindmaps && mindmaps.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {/* 创建新项目卡片 */}
+              <div onClick={handleCreateNew} 
+                   className="cursor-pointer group bg-gray-50 rounded-xl border-2 border-dashed border-gray-300 hover:border-blue-500 transition-all duration-300 flex flex-col items-center justify-center p-6 h-full min-h-[200px] hover:scale-105">
+                <PlusCircle className="w-12 h-12 text-green-500 group-hover:text-blue-500 transition-all duration-300"/>
+                <h3 className="font-semibold text-gray-600 group-hover:text-blue-600 transition-colors text-lg">新建导图</h3>
+              </div>
 
-            {loading ? (
-              Array.from({ length: 3 }).map((_, index) => (
-                <Card key={index} className="animate-pulse min-h-[220px]">
-                  <CardHeader>
-                    <div className="h-6 bg-gray-200 rounded w-3/4"></div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
-                    <div className="h-4 bg-gray-200 rounded w-5/6"></div>
-                  </CardContent>
-                  <CardFooter>
-                    <div className="h-8 bg-gray-200 rounded w-full"></div>
-                  </CardFooter>
-                </Card>
-              ))
-            ) : (
-              paginatedMindmaps.map((mindmap) => (
-                <Card key={mindmap.id} className="flex flex-col justify-between hover:shadow-lg transition-shadow duration-300 min-h-[220px]">
-                    <div className="flex-grow p-6">
-                      <CardTitle className="text-lg font-bold text-gray-800 truncate">{mindmap.title}</CardTitle>
-                      <p className="text-sm text-gray-500 h-16 overflow-hidden mt-2">
-                        {truncateText(mindmap.description, 70) || '暂无描述'}
+              {/* 项目卡片 */}
+              {mindmaps.map((mindmap, index) => (
+                <div 
+                  key={mindmap.id} 
+                  className="project-card group"
+                  style={{ animationDelay: `${index * 0.1}s` }}
+                >
+                  <div onClick={() => router.push(`/mindmap/${mindmap.id}`)} className="flex-grow cursor-pointer">
+                    {/* 动态预览图 */}
+                    <div className="card-preview h-32 overflow-hidden relative transition-transform duration-300">
+                      <MindmapThumbnail 
+                        content={mindmap.content} 
+                        title={mindmap.title}
+                        className="w-full h-full"
+                      />
+                      {/* 悬停遮罩效果 */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    </div>
+                    <div className="p-4">
+                      <h3 className="card-title font-semibold text-gray-800 truncate transition-colors duration-200" title={mindmap.title}>
+                        {mindmap.title}
+                      </h3>
+                      <p className="text-sm text-gray-500 mt-1">
+                        {new Date(mindmap.updated_at).toLocaleDateString('zh-CN')} 更新
                       </p>
                     </div>
-                    <CardFooter className="flex justify-between items-center bg-gray-50 p-3 border-t">
-                      <span className="text-xs text-gray-500">{formatDate(mindmap.updated_at)}</span>
-                      <div className="flex items-center space-x-1">
-                        <Button 
-                          variant="default" 
-                          size="sm" 
-                          className="bg-black text-white hover:bg-gray-800 text-xs px-1.5 h-5"
-                          onClick={() => router.push(`/mindmap/${mindmap.id}`)}
-                        >
-                          查看
-                        </Button>
-                        <Button 
-                          variant="default" 
-                          size="sm" 
-                          className="bg-black text-white hover:bg-gray-800 text-xs px-1.5 h-5"
-                          onClick={() => handleDelete(mindmap.id, mindmap.title)}
-                        >
-                          删除
-                        </Button>
-                      </div>
-                    </CardFooter>
-                  </Card>
-              ))
-            )}
-          </div>
-
-          {/* 分页控件 */}
-          {totalPages > 1 && (
-            <Pagination 
-              currentPage={currentPage} 
-              totalPages={totalPages} 
-              onPageChange={setCurrentPage} 
-            />
-          )}
-
-          {/* 空状态 */}
-          {!loading && filteredAndSortedMindmaps.length === 0 && (
-            <div className="text-center py-16 col-span-full">
-              <h3 className="text-xl font-semibold text-gray-800">没有找到思维导图</h3>
-              <p className="text-gray-500 mt-2">开始创建您的第一个思维导图吧！</p>
+                  </div>
+                  <div className="card-actions border-t border-gray-100 p-3 flex justify-end space-x-2 bg-gray-50/50 transition-all duration-300">
+                    <button 
+                      onClick={(e) => handleView(e, mindmap.id)} 
+                      className="action-button text-green-500 hover:bg-green-100 hover:text-green-600"
+                      title="查看思维导图"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
+                    <button 
+                       onClick={(e) => handleExport(e, mindmap)} 
+                       className="action-button text-purple-500 hover:bg-purple-100 hover:text-purple-600"
+                       title="导出为PNG图片"
+                     >
+                       <Download className="w-4 h-4" />
+                     </button>
+                    <button 
+                      onClick={(e) => handleShare(e, mindmap)} 
+                      className="action-button text-blue-500 hover:bg-blue-100 hover:text-blue-600"
+                      title="分享思维导图"
+                    >
+                      <Share2 className="w-4 h-4" />
+                    </button>
+                    <button 
+                      onClick={(e) => handleDelete(e, mindmap)} 
+                      className="action-button text-red-500 hover:bg-red-100 hover:text-red-600"
+                      title="删除思维导图"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-16 border-2 border-dashed rounded-xl bg-gray-50">
+                <FileX className="mx-auto h-12 w-12 text-gray-400" />
+                <h3 className="mt-4 text-lg font-semibold text-gray-800">还没有任何项目</h3>
+                <p className="mt-2 text-sm text-gray-500">点击下面的按钮，开始你的第一次创作吧！</p>
+                <div className="mt-6">
+                  <button onClick={handleCreateNew} className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black">
+                    <Plus className="-ml-1 mr-2 h-5 w-5" />
+                    新建导图
+                  </button>
+                </div>
             </div>
           )}
         </div>
       </main>
 
       {/* 分享模态框 */}
-      {shareModal.isOpen && (
-        <ShareModal
-          mindmapId={shareModal.mindmapId}
-          mindmapTitle={shareModal.mindmapTitle}
-          onClose={handleCloseShareModal}
-        />
+      <ShareModal
+        isOpen={shareModal.isOpen}
+        onClose={handleCloseShareModal}
+        mindmapId={shareModal.mindmapId}
+        mindmapTitle={shareModal.mindmapTitle}
+      />
+
+      {/* 删除确认弹窗 */}
+      {deleteModal.isOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-center mb-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-4">
+                <Trash2 className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-medium text-gray-900">确认删除</h3>
+                <p className="text-sm text-gray-500">此操作无法撤销</p>
+              </div>
+            </div>
+            
+            <p className="text-gray-700 mb-6">
+              确定要删除思维导图 <span className="font-semibold">"{deleteModal.mindmapTitle}"</span> 吗？
+            </p>
+            
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={cancelDelete}
+                disabled={deleteModal.isDeleting}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 disabled:opacity-50"
+              >
+                取消
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={deleteModal.isDeleting}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50 flex items-center"
+              >
+                {deleteModal.isDeleting ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    删除中...
+                  </>
+                ) : (
+                  '确认删除'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
