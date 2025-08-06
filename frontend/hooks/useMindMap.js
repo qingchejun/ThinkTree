@@ -1,7 +1,7 @@
-"""
-自定义 Hook - useMindmap
-封装获取和管理单个思维导图数据的逻辑
-"""
+/**
+ * 自定义 Hook - useMindmap
+ * 封装获取和管理单个思维导图数据的逻辑
+ */
 
 import { useState, useEffect, useMemo } from 'react'
 import { useAuth } from '../../context/AuthContext'

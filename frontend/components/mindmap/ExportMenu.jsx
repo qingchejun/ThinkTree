@@ -1,6 +1,6 @@
-"""
-导出菜单组件
-"""
+/**
+ * 导出菜单组件
+ */
 
 import { Download } from 'lucide-react';
 

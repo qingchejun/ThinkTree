@@ -1,7 +1,7 @@
 
-"""
-删除确认弹窗组件
-"""
+/**
+ * 删除确认弹窗组件
+ */
 
 import { Trash2 } from 'lucide-react'
 

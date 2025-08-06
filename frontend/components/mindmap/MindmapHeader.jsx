@@ -1,6 +1,6 @@
-"""
-思维导图头部组件
-"""
+/**
+ * 思维导图头部组件
+ */
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
