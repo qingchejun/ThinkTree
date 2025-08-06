@@ -1,7 +1,7 @@
-"""
-思维导图查看页面 - ThinkTree v3.0.0 (Refactored)
-显示用户保存的思维导图 + 导出功能
-"""
+/**
+ * 思维导图查看页面 - ThinkTree v3.0.0 (Refactored)
+ * 显示用户保存的思维导图 + 导出功能
+ */
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
