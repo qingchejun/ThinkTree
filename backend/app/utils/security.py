@@ -61,7 +61,38 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     else:
         expire = datetime.utcnow() + timedelta(minutes=settings.access_token_expire_minutes)
     
-    to_encode.update({"exp": expire})
+    to_encode.update({"exp": expire, "type": "access"})
+    
+    # 生成 JWT
+    encoded_jwt = jwt.encode(
+        to_encode, 
+        settings.secret_key, 
+        algorithm="HS256"
+    )
+    
+    return encoded_jwt
+
+
+def create_refresh_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+    """
+    创建 JWT 刷新令牌
+    
+    Args:
+        data: 要编码的数据
+        expires_delta: 过期时间间隔
+        
+    Returns:
+        str: JWT 刷新令牌
+    """
+    to_encode = data.copy()
+    
+    # 设置过期时间 - 默认7天
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(days=7)
+    
+    to_encode.update({"exp": expire, "type": "refresh"})
     
     # 生成 JWT
     encoded_jwt = jwt.encode(
@@ -256,4 +287,18 @@ def get_password_strength(password: str) -> dict:
     else:  # score == 5
         strength_info["strength_level"] = "very_strong"
     
-    return strength_info 
+    return strength_info
+
+
+def get_token_from_cookie(request, cookie_name: str) -> Optional[str]:
+    """
+    从HTTP请求的Cookie中提取令牌
+    
+    Args:
+        request: FastAPI Request对象
+        cookie_name: Cookie名称
+        
+    Returns:
+        str: 令牌值，如果不存在则返回None
+    """
+    return request.cookies.get(cookie_name)

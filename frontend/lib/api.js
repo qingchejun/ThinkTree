@@ -1,10 +1,51 @@
 /**
- * API 调用工具库
+ * API 调用工具库 - 重构支持HttpOnly Cookie认证
  */
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
-// 通用 API 调用函数
+// 令牌刷新状态管理
+let isRefreshing = false
+let refreshPromise = null
+
+// 静默刷新令牌的函数
+async function refreshAccessToken() {
+  if (isRefreshing) {
+    // 如果正在刷新，等待当前刷新完成
+    return refreshPromise
+  }
+  
+  isRefreshing = true
+  refreshPromise = new Promise(async (resolve, reject) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+        method: 'POST',
+        credentials: 'include', // 发送Cookie
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+      
+      if (response.ok) {
+        console.log('🔄 令牌刷新成功')
+        resolve(true)
+      } else {
+        console.log('❌ 令牌刷新失败')
+        resolve(false)
+      }
+    } catch (error) {
+      console.error('令牌刷新异常:', error)
+      resolve(false)
+    } finally {
+      isRefreshing = false
+      refreshPromise = null
+    }
+  })
+  
+  return refreshPromise
+}
+
+// 通用 API 调用函数 - 带自动令牌刷新
 async function apiCall(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`
   
@@ -12,7 +53,7 @@ async function apiCall(endpoint, options = {}) {
     headers: {
       'Content-Type': 'application/json',
     },
-    credentials: 'include',
+    credentials: 'include', // 自动携带Cookie
   }
   
   const config = { 
@@ -23,6 +64,33 @@ async function apiCall(endpoint, options = {}) {
   
   try {
     const response = await fetch(url, config)
+    
+    // 如果返回401，尝试刷新令牌并重试
+    if (response.status === 401) {
+      console.log('🔒 检测到401，尝试刷新令牌')
+      
+      const refreshSuccess = await refreshAccessToken()
+      
+      if (refreshSuccess) {
+        // 令牌刷新成功，重试原请求
+        console.log('🔄 令牌刷新成功，重试原请求')
+        const retryResponse = await fetch(url, config)
+        const retryData = await retryResponse.json()
+        
+        if (!retryResponse.ok) {
+          throw new Error(retryData.detail || '请求失败')
+        }
+        
+        return retryData
+      } else {
+        // 令牌刷新失败，用户需要重新登录
+        console.log('❌ 令牌刷新失败，需要重新登录')
+        // 触发登出逻辑
+        window.location.href = '/?auth=login&reason=session_expired'
+        throw new Error('会话已过期，请重新登录')
+      }
+    }
+    
     const data = await response.json()
     
     if (!response.ok) {
@@ -36,21 +104,19 @@ async function apiCall(endpoint, options = {}) {
   }
 }
 
-// 文件上传
-export async function uploadFile(file, token) {
+// 文件上传 - 不再需要token参数
+export async function uploadFile(file) {
   const formData = new FormData()
   formData.append('file', file)
   
   try {
     const response = await fetch(`${API_BASE_URL}/api/upload`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      },
-      credentials: 'include',
+      credentials: 'include', // 自动携带Cookie
       body: formData,
     })
     
+    // 401错误处理已在通用函数中处理，这里不需要特殊处理
     const data = await response.json()
     
     if (!response.ok) {
@@ -64,70 +130,47 @@ export async function uploadFile(file, token) {
   }
 }
 
-// 处理文本
-export async function processText(text, token) {
+// 处理文本 - 不再需要token参数
+export async function processText(text) {
   if (!text || !text.trim()) {
     throw new Error('文本内容不能为空')
   }
   
   return await apiCall('/api/process-text', {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    },
     body: JSON.stringify({
       text: text.trim()
     })
   })
 }
 
-// 思维导图 CRUD 操作
-export async function createMindMap(mindmapData, token) {
+// 思维导图 CRUD 操作 - 不再需要token参数
+export async function createMindMap(mindmapData) {
   return await apiCall('/api/mindmaps', {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    },
     body: JSON.stringify(mindmapData)
   })
 }
 
-export async function getMindMap(mindmapId, token) {
-  return await apiCall(`/api/mindmaps/${mindmapId}`, {
-    headers: {
-      'Authorization': `Bearer ${token}`
-    }
-  })
+export async function getMindMap(mindmapId) {
+  return await apiCall(`/api/mindmaps/${mindmapId}`)
 }
 
-export async function updateMindMap(mindmapId, mindmapData, token) {
+export async function updateMindMap(mindmapId, mindmapData) {
   return await apiCall(`/api/mindmaps/${mindmapId}`, {
     method: 'PUT',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    },
     body: JSON.stringify(mindmapData)
   })
 }
 
-export async function deleteMindMap(mindmapId, token) {
+export async function deleteMindMap(mindmapId) {
   return await apiCall(`/api/mindmaps/${mindmapId}`, {
-    method: 'DELETE',
-    headers: {
-      'Authorization': `Bearer ${token}`
-    }
+    method: 'DELETE'
   })
 }
 
-export async function listMindMaps(token) {
-  return await apiCall('/api/mindmaps', {
-    headers: {
-      'Authorization': `Bearer ${token}`
-    }
-  })
+export async function listMindMaps() {
+  return await apiCall('/api/mindmaps')
 }
 
 // 分享功能
@@ -157,50 +200,29 @@ export async function login(email, password) {
   })
 }
 
-export async function getProfile(token) {
-  return await apiCall('/api/auth/profile', {
-    headers: {
-      'Authorization': `Bearer ${token}`
-    }
-  })
+// 用户认证相关 API - 不再需要token参数
+export async function getProfile() {
+  return await apiCall('/api/auth/profile')
 }
 
-// 用户设置相关 API
-export async function updateProfile(profileData, token) {
+export async function updateProfile(profileData) {
   return await apiCall('/api/auth/profile', {
     method: 'PUT',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    },
     body: JSON.stringify(profileData)
   })
 }
 
-// 密码更新 API
-export async function updatePassword(token, currentPassword, newPassword, confirmPassword) {
-  return await apiCall('/api/auth/password', {
-    method: 'PUT',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      current_password: currentPassword,
-      new_password: newPassword,
-      confirm_password: confirmPassword
-    })
+// 用户登出
+export async function logout() {
+  return await apiCall('/api/auth/logout', {
+    method: 'POST'
   })
 }
 
-// 邀请码相关 API
-export async function generateInvitationCode(token, description = '') {
+// 邀请码相关 API - 不再需要token参数
+export async function generateInvitationCode(description = '') {
   return await apiCall('/api/invitations/create', {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    },
     body: JSON.stringify({ 
       description: description || null,
       expires_hours: null 
@@ -208,24 +230,16 @@ export async function generateInvitationCode(token, description = '') {
   })
 }
 
-export async function getUserInvitations(token) {
-  return await apiCall('/api/invitations/list', {
-    headers: {
-      'Authorization': `Bearer ${token}`
-    }
-  })
+export async function getUserInvitations() {
+  return await apiCall('/api/invitations/list')
 }
 
-// 积分相关 API
-export async function getCreditHistory(token, page = 1, limit = 20) {
+// 积分相关 API - 不再需要token参数
+export async function getCreditHistory(page = 1, limit = 20) {
   const params = new URLSearchParams({
     page: page.toString(),
     limit: limit.toString()
   });
   
-  return await apiCall(`/api/auth/credits/history?${params}`, {
-    headers: {
-      'Authorization': `Bearer ${token}`
-    }
-  })
+  return await apiCall(`/api/auth/credits/history?${params}`)
 }

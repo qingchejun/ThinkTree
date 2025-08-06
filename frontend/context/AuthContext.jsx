@@ -10,9 +10,8 @@ import { useRouter } from 'next/navigation'
 // 创建认证上下文
 export const AuthContext = createContext({
   user: null,
-  token: null,
   isLoading: true,
-  login: async (token) => {},
+  login: async (userData) => {},
   logout: () => {},
   refreshUser: async () => {},
   showDailyRewardToast: null,
@@ -22,7 +21,6 @@ export const AuthContext = createContext({
 // 认证提供者组件
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showDailyRewardToast, setShowDailyRewardToast] = useState(null)
   const [isClient, setIsClient] = useState(false)
@@ -39,8 +37,8 @@ export function AuthProvider({ children }) {
     setIsClient(true);
   }, []);
 
-  // 获取用户信息
-  const fetchUserProfile = async (authToken, options = {}) => {
+  // 获取用户信息 - 使用HttpOnly Cookie
+  const fetchUserProfile = async (options = {}) => {
     const { skipTimeout = false, timeoutMs = 12000, requestId = 'default' } = options
     
     console.log(`🌐 开始获取用户信息 [${requestId}]`)
@@ -63,9 +61,7 @@ export function AuthProvider({ children }) {
       }
 
       const fetchOptions = {
-        headers: {
-          'Authorization': `Bearer ${authToken}`
-        }
+        credentials: 'include' // 自动携带HttpOnly Cookie
       }
       
       // 只有在设置了controller时才添加signal
@@ -96,10 +92,8 @@ export function AuthProvider({ children }) {
         return userData
       } else {
         console.error('❌ 获取用户信息失败:', response.status, response.statusText)
-        // 令牌无效，清除存储的数据和状态
-        if (response.status === 401 && typeof window !== 'undefined') {
-          localStorage.removeItem('access_token')
-          setToken(null)
+        // Cookie无效，清除状态（Cookie由后端管理，前端无需操作）
+        if (response.status === 401) {
           setUser(null)
         }
         return null
@@ -130,32 +124,27 @@ export function AuthProvider({ children }) {
     }
   }
 
-  // 登录函数
-  const login = async (accessToken) => {
+  // 登录函数 - Cookie认证方式
+  const login = async (userData) => {
     try {
       if (process.env.NODE_ENV === 'development') {
-        console.log('开始处理登录, token:', accessToken?.substring(0, 20) + '...')
+        console.log('开始处理登录，用户数据:', userData)
       }
       
-      // 存储到 localStorage 和状态
-      localStorage.setItem('access_token', accessToken);
-      setToken(accessToken)
-      
-      // 获取用户信息 - 使用唯一ID避免重复请求，跳过超时控制避免AbortController冲突
-      const userData = await fetchUserProfile(accessToken, { 
-        skipTimeout: true, 
-        requestId: `login_${Date.now()}` 
-      })
-      
+      // 直接设置用户数据（Cookie由后端在登录响应时设置）
       if (userData) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('设置用户数据:', userData)
-        }
         setUser(userData)
+        
+        // 检查是否有每日奖励提示
+        if (userData.daily_reward_granted) {
+          setShowDailyRewardToast(true)
+          setTimeout(() => setShowDailyRewardToast(false), 3000)
+        }
+        
         return { success: true }
       } else {
-        console.error('获取用户信息失败') // 调试日志
-        return { success: false, error: '获取用户信息失败' }
+        console.error('用户数据无效')
+        return { success: false, error: '用户数据无效' }
       }
     } catch (error) {
       console.error('登录处理失败:', error)
@@ -163,29 +152,29 @@ export function AuthProvider({ children }) {
     }
   }
 
-  // 退出登录函数
-  const logout = (router = null) => {
+  // 退出登录函数 - Cookie认证方式
+  const logout = async (router = null) => {
     if (process.env.NODE_ENV === 'development') {
       console.log('🚪 用户退出登录')
     }
     
-    // 清除状态
+    try {
+      // 调用后端登出接口，清除HttpOnly Cookie
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/logout`, {
+        method: 'POST',
+        credentials: 'include'
+      })
+    } catch (error) {
+      console.error('调用登出接口失败:', error)
+      // 即使接口调用失败，也继续清除本地状态
+    }
+    
+    // 清除本地状态
     setUser(null)
-    setToken(null)
     
     // 重置认证标志，防止重新初始化
     setAuthInitialized(false)
     setAuthCheckInProgress(false)
-    
-    // 清除 localStorage 中的 token
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('access_token')
-    }
-    
-    // 清除 HttpOnly Cookie
-    if (typeof window !== 'undefined') {
-      document.cookie = "thinktree_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
-    }
     
     // 根据环境变量决定跳转地址
     if (typeof window !== 'undefined') {
@@ -227,52 +216,26 @@ export function AuthProvider({ children }) {
 
       console.log('🔄 开始初始化认证状态');
 
-      // 检查真实的登录状态
+      // 检查HttpOnly Cookie中的认证状态
       try {
-        console.log('🔍 检查真实登录状态');
+        console.log('🍪 使用HttpOnly Cookie检查登录状态');
         
-        // 首先检查localStorage中的token
-        const storedToken = localStorage.getItem('access_token');
-        if (storedToken) {
-          console.log('📦 在localStorage中找到token');
-          setToken(storedToken);
-          
-          // 使用token获取用户信息
-          const userData = await fetchUserProfile(storedToken, { 
-            skipTimeout: true, 
-            requestId: 'auth_init' 
-          });
-          
-          if (userData) {
-            console.log('✅ 通过localStorage token检测到有效登录状态:', userData);
-            setUser(userData);
-            return; // 成功获取用户信息，直接返回
-          } else {
-            console.log('🚫 localStorage token无效，清除并尝试Cookie');
-            localStorage.removeItem('access_token');
-            setToken(null);
-          }
-        }
-        
-        // 如果localStorage没有token或token无效，尝试HttpOnly Cookie
-        console.log('🍪 尝试使用HttpOnly Cookie检查登录状态');
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/profile`, {
-          credentials: 'include'
+        // 调用用户信息接口验证认证状态
+        const userData = await fetchUserProfile({ 
+          skipTimeout: true, 
+          requestId: 'auth_init' 
         });
-
-        if (response.ok) {
-          const userData = await response.json();
-          console.log('✅ 通过Cookie检测到有效登录状态:', userData);
+        
+        if (userData) {
+          console.log('✅ 检测到有效登录状态:', userData);
           setUser(userData);
         } else {
           console.log('❌ 未检测到有效登录状态');
           setUser(null);
-          setToken(null);
         }
       } catch (error) {
         console.error('💥 登录状态检查失败:', error);
         setUser(null);
-        setToken(null);
       } finally {
         console.log('🏁 认证状态检查完成');
         setIsLoading(false);
@@ -285,35 +248,12 @@ export function AuthProvider({ children }) {
     }
   }, [isClient, authInitialized, authCheckInProgress]);
 
-  // 监听localStorage变化，确保多标签页同步
-  useEffect(() => {
-    if (!isClient) return;
-
-    const handleStorageChange = (e) => {
-      if (e.key === 'access_token') {
-        console.log('📡 检测到localStorage token变化:', e.newValue ? '有token' : '无token');
-        
-        if (!e.newValue && user) {
-          // token被删除，清理用户状态
-          console.log('🚪 token被删除，清理用户状态');
-          setUser(null);
-          setToken(null);
-        } else if (e.newValue && !user) {
-          // 有新token但当前无用户，重新验证
-          console.log('🔄 检测到新token，重新验证用户');
-          setAuthInitialized(false); // 触发重新初始化
-        }
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, [isClient, user]);
+  // 注意：不再需要localStorage监听，Cookie由浏览器自动管理
+  // HttpOnly Cookie无法被JavaScript访问，多标签页同步通过服务器状态实现
 
   // 提供给子组件的值
   const contextValue = {
     user,
-    token,
     isLoading,
     loading: isLoading,
     isClient,
@@ -322,7 +262,7 @@ export function AuthProvider({ children }) {
     refreshUser,
     showDailyRewardToast,
     setShowDailyRewardToast,
-    // 辅助状态 - 修复：支持HttpOnly Cookie认证，只要有用户信息即视为已认证
+    // 辅助状态 - HttpOnly Cookie认证，只要有用户信息即视为已认证
     isAuthenticated: !!user,
     isAdmin: !!user && user.is_superuser,
     // 用户积分 - 从用户对象中提取积分信息
@@ -334,15 +274,13 @@ export function AuthProvider({ children }) {
     const currentTimestamp = new Date().toLocaleTimeString()
     console.log(`📊 [${currentTimestamp}] AuthContext状态更新:`, {
       hasUser: !!user,
-      hasToken: !!token,
       isLoading,
       authInitialized,
       authCheckInProgress,
-      isAuthenticated: !!user, // 修复：与上面的逻辑保持一致
+      isAuthenticated: !!user,
       isAdmin: !!user && user.is_superuser,
       userEmail: user?.email,
-      credits: user?.credits || 0,
-      localStorageToken: typeof window !== 'undefined' ? !!localStorage.getItem('access_token') : 'N/A'
+      credits: user?.credits || 0
     })
   }
 

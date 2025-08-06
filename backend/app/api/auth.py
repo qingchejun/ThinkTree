@@ -28,10 +28,12 @@ from ..utils.security import (
     verify_password,
     get_password_hash,
     create_access_token,
+    create_refresh_token,
     get_user_id_from_token,
     validate_email,
     validate_password,
-    get_password_strength
+    get_password_strength,
+    get_token_from_cookie
 )
 from ..utils.email_service import email_service
 from ..utils.invitation_utils import validate_invitation_code, use_invitation_code
@@ -285,21 +287,58 @@ class UserProfileUpdateResponse(BaseModel):
     user: "UserProfileResponse"
 
 
-# 依赖注入：获取当前用户
+# 依赖注入：获取当前用户 - 支持HttpOnly Cookie认证
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    request: Request,
     db: Session = Depends(get_db)
 ) -> User:
     """
-    从 JWT 令牌获取当前用户
+    从 HttpOnly Cookie 中的 Access Token 获取当前用户
     """
-    token = credentials.credentials
-    user_id = get_user_id_from_token(token)
+    # 从Cookie中读取Access Token
+    access_token = get_token_from_cookie(request, "access_token")
     
-    if user_id is None:
+    if not access_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="访问令牌不存在",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # 验证Token
+    from ..utils.security import verify_token
+    payload = verify_token(access_token)
+    
+    if not payload:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="无效的访问令牌",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # 检查令牌类型
+    if payload.get("type") != "access":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="无效的令牌类型",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # 获取用户ID
+    user_id_str = payload.get("sub")
+    if not user_id_str:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="令牌格式错误",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    try:
+        user_id = int(user_id_str)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="令牌格式错误",
             headers={"WWW-Authenticate": "Bearer"},
         )
     
@@ -787,8 +826,9 @@ async def verify_code(request: Request, data: VerifyCodeRequest, db: Session = D
 
     db.commit()
     
-    # iii. 生成JWT登录凭证并返回
+    # iii. 生成JWT登录凭证 - 双令牌策略
     access_token = create_access_token(data={"sub": str(user.id)})
+    refresh_token = create_refresh_token(data={"sub": str(user.id)})
     
     user_credits_record = CreditService.get_user_credits(db, user.id)
     credits_balance = user_credits_record.balance if user_credits_record else 0
@@ -805,22 +845,166 @@ async def verify_code(request: Request, data: VerifyCodeRequest, db: Session = D
         invitation_quota=user.invitation_quota
     )
 
-    response_body = TokenResponse(
-        access_token=access_token,
-        token_type="bearer",
-        user=user_response,
-        daily_reward_granted=daily_reward_granted
-    ).dict()
+    # 不再返回access_token在响应体中，只返回用户信息
+    response_body = {
+        "user": user_response.dict(),
+        "daily_reward_granted": daily_reward_granted
+    }
     response = JSONResponse(content=response_body)
+    
+    # 设置双Cookie安全策略
+    # Access Token Cookie - 短期，用于API请求
     response.set_cookie(
-        key="thinktree_token",
+        key="access_token",
         value=access_token,
         httponly=True,
         secure=True,
         samesite="lax",
-        max_age=1800
+        max_age=15 * 60,  # 15分钟
+        path="/"
     )
+    
+    # Refresh Token Cookie - 长期，仅用于刷新，路径限制
+    response.set_cookie(
+        key="refresh_token", 
+        value=refresh_token,
+        httponly=True,
+        secure=True,
+        samesite="strict",
+        max_age=7 * 24 * 60 * 60,  # 7天
+        path="/api/auth/refresh"
+    )
+    
     return response
+
+# ===================================================================
+# ==================== 令牌刷新和登出端点 =========================
+# ===================================================================
+
+@router.post("/refresh")
+async def refresh_token(request: Request, db: Session = Depends(get_db)):
+    """
+    刷新访问令牌端点 - 使用Refresh Token获取新的Access Token
+    """
+    # 从专用路径的Cookie中读取Refresh Token
+    refresh_token = get_token_from_cookie(request, "refresh_token")
+    
+    if not refresh_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="刷新令牌不存在",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # 验证Refresh Token
+    from ..utils.security import verify_token
+    payload = verify_token(refresh_token)
+    
+    if not payload:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="刷新令牌无效或已过期",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # 检查令牌类型
+    if payload.get("type") != "refresh":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="无效的刷新令牌类型",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # 获取用户ID
+    user_id_str = payload.get("sub")
+    if not user_id_str:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="刷新令牌格式错误",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    try:
+        user_id = int(user_id_str)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="刷新令牌格式错误",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # 验证用户是否存在且状态正常
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user or not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="用户不存在或已被禁用",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # 生成新的Access Token和Refresh Token（刷新令牌轮换）
+    new_access_token = create_access_token(data={"sub": str(user.id)})
+    new_refresh_token = create_refresh_token(data={"sub": str(user.id)})
+    
+    # 返回成功响应并设置新的Cookie
+    response = JSONResponse(content={"success": True, "message": "令牌刷新成功"})
+    
+    # 设置新的Access Token Cookie
+    response.set_cookie(
+        key="access_token",
+        value=new_access_token,
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        max_age=15 * 60,  # 15分钟
+        path="/"
+    )
+    
+    # 设置新的Refresh Token Cookie（令牌轮换）
+    response.set_cookie(
+        key="refresh_token",
+        value=new_refresh_token,
+        httponly=True,
+        secure=True,
+        samesite="strict",
+        max_age=7 * 24 * 60 * 60,  # 7天
+        path="/api/auth/refresh"
+    )
+    
+    return response
+
+
+@router.post("/logout")
+async def logout():
+    """
+    用户登出端点 - 清除HttpOnly Cookie
+    """
+    response = JSONResponse(content={"success": True, "message": "退出登录成功"})
+    
+    # 清除Access Token Cookie
+    response.set_cookie(
+        key="access_token",
+        value="",
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        max_age=0,  # 立即过期
+        path="/"
+    )
+    
+    # 清除Refresh Token Cookie
+    response.set_cookie(
+        key="refresh_token", 
+        value="",
+        httponly=True,
+        secure=True,
+        samesite="strict",
+        max_age=0,  # 立即过期
+        path="/api/auth/refresh"
+    )
+    
+    return response
+
 
 # ===================================================================
 # ======================== 现有路由 (部分) ==========================
