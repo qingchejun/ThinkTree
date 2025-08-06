@@ -2,7 +2,7 @@
 邀请码管理 API 路由
 """
 
-from fastapi import APIRouter, HTTPException, Depends, status, Query
+from fastapi import APIRouter, HTTPException, Depends, status, Query, Request
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import List, Optional
@@ -62,6 +62,7 @@ class CreateInvitationResponse(BaseModel):
 
 @router.get("/stats", response_model=InvitationStatsResponse)
 async def get_invitation_stats(
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -82,6 +83,7 @@ async def get_invitation_stats(
 
 @router.get("/list", response_model=List[InvitationResponse])
 async def get_user_invitations(
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
     include_used: bool = Query(True, description="是否包含已使用的邀请码"),
@@ -127,7 +129,8 @@ async def get_user_invitations(
 
 @router.post("/create", response_model=CreateInvitationResponse)
 async def create_invitation(
-    request: CreateInvitationRequest,
+    request: Request,
+    invitation_request: CreateInvitationRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -154,8 +157,8 @@ async def create_invitation(
         invitation = create_invitation_code(
             db=db,
             generated_by_user_id=current_user.id,
-            description=request.description,
-            expires_hours=request.expires_hours
+            description=invitation_request.description,
+            expires_hours=invitation_request.expires_hours
         )
         
         # 构造响应
@@ -186,6 +189,7 @@ async def create_invitation(
 
 @router.get("/{invitation_id}", response_model=InvitationResponse)
 async def get_invitation_detail(
+    request: Request,
     invitation_id: int,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -219,6 +223,7 @@ async def get_invitation_detail(
 
 @router.delete("/{invitation_id}")
 async def delete_invitation(
+    request: Request,
     invitation_id: int,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -274,7 +279,8 @@ class ValidateInvitationResponse(BaseModel):
 
 @router.post("/validate", response_model=ValidateInvitationResponse)
 async def validate_invitation_code_api(
-    request: ValidateInvitationRequest,
+    request: Request,
+    validation_request: ValidateInvitationRequest,
     db: Session = Depends(get_db)
 ):
     """
@@ -282,7 +288,7 @@ async def validate_invitation_code_api(
     """
     from ..utils.invitation_utils import validate_invitation_code
     
-    is_valid, error_msg, invitation = validate_invitation_code(db, request.code)
+    is_valid, error_msg, invitation = validate_invitation_code(db, validation_request.code)
     
     if not is_valid:
         return ValidateInvitationResponse(

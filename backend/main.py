@@ -43,7 +43,9 @@ async def startup_event():
     else:
         print("Production mode: Using Alembic for database management")
 
-# 配置CORS - 支持环境变量配置允许的域名
+# 🔧 CORS配置 - HttpOnly Cookie跨域认证专用配置
+# 获取前端域名，支持环境变量配置
+frontend_url = os.getenv("FRONTEND_URL", "https://thinkso.io")
 allowed_origins = [
     "http://localhost:3000",  # 本地开发
     "http://localhost:3001",  # 本地开发备用端口
@@ -53,31 +55,40 @@ allowed_origins = [
     "https://thinktree-frontend.onrender.com",  # Render前端部署域名
 ]
 
+# 确保当前前端URL被包含
+if frontend_url not in allowed_origins:
+    allowed_origins.append(frontend_url)
+
 # 从环境变量获取额外的允许域名
 extra_origins = os.getenv("ALLOWED_ORIGINS", "").split(",")
 extra_origins = [origin.strip() for origin in extra_origins if origin.strip()]
 allowed_origins.extend(extra_origins)
 
 # 打印CORS配置以便调试
-print(f"CORS allowed origins: {allowed_origins}")
+print(f"🌐 CORS Configuration for HttpOnly Cookie:")
+print(f"  - Frontend URL (env): {frontend_url}")
+print(f"  - Allowed Origins: {allowed_origins}")
+print(f"  - Allow Credentials: True")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allow_origins=allowed_origins,  # 明确的域名列表，绝不使用通配符
+    allow_credentials=True,  # 🔑 关键：允许携带Cookie
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],  # 支持所有需要的方法
     allow_headers=[
         "Accept",
-        "Accept-Language",
+        "Accept-Language", 
         "Content-Language",
         "Content-Type",
-        "Authorization",
+        "Authorization",  # 保留用于向后兼容
         "X-Requested-With",
         "Origin",
         "Access-Control-Request-Method",
         "Access-Control-Request-Headers",
+        "Cookie",  # 明确允许Cookie头
+        "Set-Cookie",  # 明确允许Set-Cookie头
     ],
-    expose_headers=["*"],
+    expose_headers=["Set-Cookie"],  # 暴露Set-Cookie响应头
     max_age=600,  # 预检请求缓存10分钟
 )
 

@@ -1,8 +1,21 @@
 /**
- * API 调用工具库 - 重构支持HttpOnly Cookie认证
+ * API 调用工具库 - HttpOnly Cookie跨域认证专用配置
+ * 
+ * 🔑 关键配置说明：
+ * - credentials: 'include' - 确保所有请求都携带HttpOnly Cookie
+ * - 自动401处理和令牌刷新
+ * - CORS跨域Cookie认证支持
  */
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+
+// 🌐 全局fetch配置 - 确保所有API请求都支持HttpOnly Cookie
+export const DEFAULT_FETCH_OPTIONS = {
+  credentials: 'include',  // 🔑 关键：跨域请求携带Cookie
+  headers: {
+    'Content-Type': 'application/json',
+  },
+}
 
 // 令牌刷新状态管理
 let isRefreshing = false
@@ -45,21 +58,27 @@ async function refreshAccessToken() {
   return refreshPromise
 }
 
-// 通用 API 调用函数 - 带自动令牌刷新
+// 🚀 通用 API 调用函数 - HttpOnly Cookie认证 + 自动令牌刷新
 async function apiCall(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`
   
-  const defaultOptions = {
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include', // 自动携带Cookie
+  const config = { 
+    ...DEFAULT_FETCH_OPTIONS,  // 使用全局默认配置
+    ...options,
+    headers: { 
+      ...DEFAULT_FETCH_OPTIONS.headers, 
+      ...options.headers 
+    }
   }
   
-  const config = { 
-    ...defaultOptions, 
-    ...options,
-    headers: { ...defaultOptions.headers, ...options.headers }
+  // 调试日志
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`🌐 API Call: ${endpoint}`, {
+      url,
+      method: config.method || 'GET',
+      credentials: config.credentials,
+      hasCredentials: config.credentials === 'include'
+    })
   }
   
   try {
@@ -242,4 +261,25 @@ export async function getCreditHistory(page = 1, limit = 20) {
   });
   
   return await apiCall(`/api/auth/credits/history?${params}`)
+}
+
+// 🌐 便捷的fetch封装 - 确保所有直接fetch调用也支持HttpOnly Cookie
+export async function secureFetch(url, options = {}) {
+  const config = {
+    ...DEFAULT_FETCH_OPTIONS,
+    ...options,
+    headers: {
+      ...DEFAULT_FETCH_OPTIONS.headers,
+      ...options.headers
+    }
+  }
+  
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`🔒 Secure Fetch: ${url}`, {
+      credentials: config.credentials,
+      method: config.method || 'GET'
+    })
+  }
+  
+  return await fetch(url, config)
 }
