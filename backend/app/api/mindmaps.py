@@ -16,76 +16,11 @@ from ..core.ai_processor import ai_processor
 from ..models.mindmap import Mindmap
 from ..models.user import User
 from ..services.credit_service import CreditService
-from ..api.auth import get_current_user
-
-router = APIRouter()
-
-
-# Pydantic 模型定义
-class MindmapCreate(BaseModel):
-    """创建思维导图的请求模型"""
-    title: str
-    content: str
-    description: Optional[str] = None
-    tags: Optional[str] = None  # 逗号分隔的标签
-    is_public: bool = False
-    
-    @validator('title')
-    def title_must_not_be_empty(cls, v):
-        if not v or not v.strip():
-            raise ValueError('标题不能为空')
-        if len(v.strip()) > 200:
-            raise ValueError('标题长度不能超过200字符')
-        return v.strip()
-    
-    @validator('content')
-    def content_must_not_be_empty(cls, v):
-        if not v or not v.strip():
-            raise ValueError('内容不能为空')
-        return v.strip()
-
-
-class MindmapResponse(BaseModel):
-    """思维导图响应模型"""
-    id: str
-    title: str
-    content: str
-    description: Optional[str]
-    tags: List[str]
-    is_public: bool
-    created_at: str
-    updated_at: str
-    user_id: int
-
-
-class MindmapSummaryResponse(BaseModel):
-    """思维导图摘要响应模型 (列表显示用)"""
-    id: str
-    title: str
-    description: Optional[str]
-    tags: List[str]
-    is_public: bool
-    created_at: str
-    updated_at: str
-    content_preview: str
-
-
-class MindmapUpdateRequest(BaseModel):
-    """部分更新思维导图的请求模型"""
-    title: Optional[str] = None
-    description: Optional[str] = None
-    tags: Optional[str] = None
-    is_public: Optional[bool] = None
-    
-    @validator('title')
-    def validate_title(cls, v):
-        if v is not None:
-            if not v or not v.strip():
-                raise ValueError('标题不能为空')
-            if len(v.strip()) > 200:
-                raise ValueError('标题长度不能超过200字符')
-            return v.strip()
-        return v
+from ..services import mindmap_service
+from .auth import get_current_user
+from .schemas.mindmap_schemas import (
+    MindmapCreate, MindmapResponse, MindmapUpdateRequest, FileGenerateRequest
+)
 
 
 # API 端点实现
@@ -198,43 +133,15 @@ async def get_mindmap(
     获取指定ID的思维导图详情
     需要JWT认证，只能获取自己的思维导图
     """
-    try:
-        # 查询思维导图
-        mindmap = db.query(Mindmap).filter(
-            Mindmap.id == mindmap_id,
-            Mindmap.user_id == current_user.id
-        ).first()
-        
-        if not mindmap:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="思维导图不存在或无权访问"
-            )
-        
-        return MindmapResponse(
-            id=str(mindmap.id),
-            title=mindmap.title,
-            content=mindmap.content,
-            description=mindmap.description,
-            tags=mindmap.tags.split(',') if mindmap.tags else [],
-            is_public=mindmap.is_public,
-            created_at=mindmap.created_at.isoformat(),
-            updated_at=mindmap.updated_at.isoformat(),
-            user_id=mindmap.user_id
-        )
-        
-    except HTTPException:
-        raise
-    except SQLAlchemyError as e:
+    mindmap = mindmap_service.get_mindmap_for_user(db, mindmap_id, current_user)
+    
+    if not mindmap:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"数据库查询失败: {str(e)}"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="思维导图不存在或无权访问"
         )
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取思维导图失败: {str(e)}"
-        )
+    
+    return mindmap_service.convert_mindmap_to_response(mindmap)
 
 
 @router.put("/{mindmap_id}", response_model=MindmapResponse)
@@ -248,55 +155,25 @@ async def update_mindmap(
     更新指定ID的思维导图
     需要JWT认证，只能更新自己的思维导图
     """
-    try:
-        # 查询要更新的思维导图
-        mindmap = db.query(Mindmap).filter(
-            Mindmap.id == mindmap_id,
-            Mindmap.user_id == current_user.id
-        ).first()
-        
-        if not mindmap:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="思维导图不存在或无权修改"
-            )
-        
-        # 更新数据
-        mindmap.title = mindmap_data.title
-        mindmap.content = mindmap_data.content
-        mindmap.description = mindmap_data.description
-        mindmap.tags = mindmap_data.tags
-        mindmap.is_public = mindmap_data.is_public
-        
-        db.commit()
-        db.refresh(mindmap)
-        
-        return MindmapResponse(
-            id=str(mindmap.id),
-            title=mindmap.title,
-            content=mindmap.content,
-            description=mindmap.description,
-            tags=mindmap.tags.split(',') if mindmap.tags else [],
-            is_public=mindmap.is_public,
-            created_at=mindmap.created_at.isoformat(),
-            updated_at=mindmap.updated_at.isoformat(),
-            user_id=mindmap.user_id
-        )
-        
-    except HTTPException:
-        raise
-    except SQLAlchemyError as e:
-        db.rollback()
+    mindmap = mindmap_service.get_mindmap_for_user(db, mindmap_id, current_user)
+    
+    if not mindmap:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"数据库更新失败: {str(e)}"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="思维导图不存在或无权修改"
         )
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"更新思维导图失败: {str(e)}"
-        )
+    
+    # 更新数据
+    mindmap.title = mindmap_data.title
+    mindmap.content = mindmap_data.content
+    mindmap.description = mindmap_data.description
+    mindmap.tags = mindmap_data.tags
+    mindmap.is_public = mindmap_data.is_public
+    
+    db.commit()
+    db.refresh(mindmap)
+    
+    return mindmap_service.convert_mindmap_to_response(mindmap)
 
 
 @router.patch("/{mindmap_id}", response_model=MindmapResponse)
@@ -310,58 +187,23 @@ async def patch_mindmap(
     部分更新指定ID的思维导图（支持只更新标题等字段）
     需要JWT认证，只能更新自己的思维导图
     """
-    try:
-        # 查询要更新的思维导图
-        mindmap = db.query(Mindmap).filter(
-            Mindmap.id == mindmap_id,
-            Mindmap.user_id == current_user.id
-        ).first()
-        
-        if not mindmap:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="思维导图不存在或无权修改"
-            )
-        
-        # 只更新提供的字段
-        if mindmap_data.title is not None:
-            mindmap.title = mindmap_data.title
-        if mindmap_data.description is not None:
-            mindmap.description = mindmap_data.description
-        if mindmap_data.tags is not None:
-            mindmap.tags = mindmap_data.tags
-        if mindmap_data.is_public is not None:
-            mindmap.is_public = mindmap_data.is_public
-        
-        db.commit()
-        db.refresh(mindmap)
-        
-        return MindmapResponse(
-            id=str(mindmap.id),
-            title=mindmap.title,
-            content=mindmap.content,
-            description=mindmap.description,
-            tags=mindmap.tags.split(',') if mindmap.tags else [],
-            is_public=mindmap.is_public,
-            created_at=mindmap.created_at.isoformat(),
-            updated_at=mindmap.updated_at.isoformat(),
-            user_id=mindmap.user_id
-        )
-        
-    except HTTPException:
-        raise
-    except SQLAlchemyError as e:
-        db.rollback()
+    mindmap = mindmap_service.get_mindmap_for_user(db, mindmap_id, current_user)
+    
+    if not mindmap:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"数据库更新失败: {str(e)}"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="思维导图不存在或无权修改"
         )
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"更新思维导图失败: {str(e)}"
-        )
+    
+    # 只更新提供的字段
+    update_data = mindmap_data.dict(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(mindmap, key, value)
+    
+    db.commit()
+    db.refresh(mindmap)
+    
+    return mindmap_service.convert_mindmap_to_response(mindmap)
 
 
 @router.delete("/{mindmap_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -374,33 +216,19 @@ async def delete_mindmap(
     删除指定ID的思维导图
     需要JWT认证，只能删除自己的思维导图
     """
-    try:
-        # 查询要删除的思维导图
-        mindmap = db.query(Mindmap).filter(
-            Mindmap.id == mindmap_id,
-            Mindmap.user_id == current_user.id
-        ).first()
-        
-        if not mindmap:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="思维导图不存在或无权删除"
-            )
-        
-        # 删除记录
-        db.delete(mindmap)
-        db.commit()
-        
-        return  # 204 No Content
-        
-    except HTTPException:
-        raise
-    except SQLAlchemyError as e:
-        db.rollback()
+    mindmap = mindmap_service.get_mindmap_for_user(db, mindmap_id, current_user)
+    
+    if not mindmap:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"数据库删除失败: {str(e)}"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="思维导图不存在或无权删除"
         )
+    
+    # 删除记录
+    db.delete(mindmap)
+    db.commit()
+    
+    return  # 204 No Content
 
 
 # 新的请求模型
