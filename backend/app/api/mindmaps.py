@@ -22,6 +22,8 @@ from .schemas.mindmap_schemas import (
     MindmapCreate, MindmapResponse, MindmapUpdateRequest, FileGenerateRequest
 )
 
+router = APIRouter()
+
 
 # API 端点实现
 @router.post("/", response_model=MindmapResponse, status_code=status.HTTP_201_CREATED)
