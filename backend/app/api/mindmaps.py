@@ -3,7 +3,7 @@
 处理用户思维导图的CRUD操作
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
@@ -28,6 +28,7 @@ router = APIRouter()
 # API 端点实现
 @router.post("/", response_model=MindmapResponse, status_code=status.HTTP_201_CREATED)
 async def create_mindmap(
+    request: Request,
     mindmap_data: MindmapCreate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -80,6 +81,7 @@ async def create_mindmap(
 
 @router.get("/", response_model=List[MindmapResponse])
 async def get_user_mindmaps(
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
     skip: int = 0,
@@ -127,6 +129,7 @@ async def get_user_mindmaps(
 
 @router.get("/{mindmap_id}", response_model=MindmapResponse)
 async def get_mindmap(
+    request: Request,
     mindmap_id: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -148,6 +151,7 @@ async def get_mindmap(
 
 @router.put("/{mindmap_id}", response_model=MindmapResponse)
 async def update_mindmap(
+    request: Request,
     mindmap_id: str,
     mindmap_data: MindmapCreate,
     current_user: User = Depends(get_current_user),
@@ -180,6 +184,7 @@ async def update_mindmap(
 
 @router.patch("/{mindmap_id}", response_model=MindmapResponse)
 async def patch_mindmap(
+    request: Request,
     mindmap_id: str,
     mindmap_data: MindmapUpdateRequest,
     current_user: User = Depends(get_current_user),
@@ -210,6 +215,7 @@ async def patch_mindmap(
 
 @router.delete("/{mindmap_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_mindmap(
+    request: Request,
     mindmap_id: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -241,7 +247,8 @@ class FileGenerateRequest(BaseModel):
 
 @router.post("/generate-from-file")
 async def generate_from_file(
-    request: FileGenerateRequest,
+    request: Request,
+    file_request: FileGenerateRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -252,7 +259,7 @@ async def generate_from_file(
     from .upload import get_file_data
     
     # 获取文件数据
-    file_data = get_file_data(request.file_token, current_user.id)
+    file_data = get_file_data(file_request.file_token, current_user.id)
     if not file_data:
         raise HTTPException(
             status_code=404,

@@ -8,7 +8,7 @@ import uuid
 import time
 import asyncio
 from pathlib import Path
-from fastapi import APIRouter, File, UploadFile, HTTPException, BackgroundTasks, Depends
+from fastapi import APIRouter, File, UploadFile, HTTPException, BackgroundTasks, Depends, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -145,6 +145,7 @@ def calculate_credit_cost(text: str) -> int:
 
 @router.post("/upload")
 async def upload_file(
+    request: Request,
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     format_type: str = "standard",
@@ -279,7 +280,8 @@ async def upload_file(
 
 @router.post("/process-text")
 async def process_text(
-    request: TextProcessRequest,
+    request: Request,
+    text_request: TextProcessRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -287,14 +289,14 @@ async def process_text(
     直接处理文本内容生成思维导图
     包含积分检查和扣除逻辑
     """
-    if not request.text.strip():
+    if not text_request.text.strip():
         raise HTTPException(
             status_code=400,
             detail="文本内容不能为空"
         )
     
     # 1. 计算积分成本
-    credit_cost = calculate_credit_cost(request.text)
+    credit_cost = calculate_credit_cost(text_request.text)
     
     # 2. 检查用户积分是否充足
     user_credits = CreditService.get_user_credits(db, current_user.id)
@@ -306,7 +308,7 @@ async def process_text(
                 "message": "积分不足",
                 "required_credits": credit_cost,
                 "current_balance": current_balance,
-                "text_length": len(request.text.strip())
+                "text_length": len(text_request.text.strip())
             }
         )
     
@@ -315,7 +317,7 @@ async def process_text(
         db, 
         current_user.id, 
         credit_cost, 
-        f"生成思维导图 - 文本长度: {len(request.text.strip())} 字符"
+        f"生成思维导图 - 文本长度: {len(text_request.text.strip())} 字符"
     )
     
     if not deduct_success:
@@ -327,7 +329,7 @@ async def process_text(
     # 4. 调用AI服务生成思维导图（使用try-except处理失败情况）
     try:
         mindmap_result = await ai_processor.generate_mindmap_structure(
-            request.text
+            text_request.text
         )
         
         if not mindmap_result["success"]:
@@ -367,7 +369,7 @@ async def process_text(
             "cost_info": {
                 "credits_consumed": credit_cost,
                 "remaining_credits": remaining_balance,
-                "text_length": len(request.text.strip())
+                "text_length": len(text_request.text.strip())
             }
         })
         
@@ -393,14 +395,15 @@ async def process_text(
 
 @router.post("/estimate-credit-cost")
 async def estimate_credit_cost(
-    request: CreditEstimateRequest,
+    request: Request,
+    cost_request: CreditEstimateRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
     预估生成思维导图所需的积分成本
     """
-    if not request.text.strip():
+    if not cost_request.text.strip():
         return JSONResponse(content={
             "text_length": 0,
             "estimated_cost": 0,
@@ -409,14 +412,14 @@ async def estimate_credit_cost(
         })
     
     # 计算积分成本
-    credit_cost = calculate_credit_cost(request.text)
+    credit_cost = calculate_credit_cost(cost_request.text)
     
     # 获取用户当前积分余额
     user_credits = CreditService.get_user_credits(db, current_user.id)
     current_balance = user_credits.balance if user_credits else 0
     
     return JSONResponse(content={
-        "text_length": len(request.text.strip()),
+        "text_length": len(cost_request.text.strip()),
         "estimated_cost": credit_cost,
         "user_balance": current_balance,
         "sufficient_credits": current_balance >= credit_cost,
@@ -425,6 +428,7 @@ async def estimate_credit_cost(
 
 @router.post("/upload/analyze")
 async def analyze_file(
+    request: Request,
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
