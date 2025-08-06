@@ -40,7 +40,7 @@ class GeminiProcessor:
         
         try:
             print(f"正在调用 Gemini API，内容长度: {len(content)} 字符")
-            response = self.model.generate_content(prompt)
+            response = await self.model.generate_content_async(prompt)
             response_text = response.text.strip()
             print(f"Gemini API 响应成功，响应长度: {len(response_text)} 字符")
             
