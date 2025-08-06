@@ -1,30 +1,32 @@
 /**
- * 思维导图查看页面 - ThinkTree v3.0.0
+ * 思维导图查看页面 - ThinkTree v3.0.0 (重构版)
  * 显示用户保存的思维导图 + 导出功能
  */
 'use client'
 
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import { useAuth } from '../../../context/AuthContext'
+import { useMindmap } from '../../../hooks/useMindmap.js'
 import SimpleMarkmapBasic from '../../../components/mindmap/SimpleMarkmapBasic'
 import ShareModal from '../../../components/share/ShareModal'
+import MindmapHeader from '../../../components/mindmap/MindmapHeader.jsx'
+import DeleteConfirmationModal from '../../../components/mindmap/DeleteConfirmationModal.jsx'
 // 移除ToastManager，使用内联提示样式
 import { exportSVG, exportPNG, getSafeFilename, getTimestamp } from '../../../lib/exportUtils.js'
-import { Download, Share2, Trash2, ChevronDown, ArrowLeft, Eye, Star, Check, X, Maximize, Minimize } from 'lucide-react'
 
 export default function ViewMindmapPage() {
-  const { user, token, isLoading } = useAuth()
+  const { user, token, isLoading: isAuthLoading } = useAuth()
   const router = useRouter()
   const params = useParams()
   const searchParams = useSearchParams()
   const mindmapId = params.id
   const exportFormat = searchParams.get('export')
   
+  // 使用自定义Hook获取思维导图数据
+  const { mindmap, setMindmap, loading, error, setError, stableMindmapData } = useMindmap(mindmapId)
+  
   // 页面状态管理
-  const [mindmap, setMindmap] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
   const [successMessage, setSuccessMessage] = useState(null) // 成功消息状态
   
   // 导出功能状态 - 使用 useRef 避免重新渲染
@@ -42,11 +44,6 @@ export default function ViewMindmapPage() {
   // 收藏状态
   const [isFavorited, setIsFavorited] = useState(false)
   
-  // 标题编辑状态
-  const [isEditingTitle, setIsEditingTitle] = useState(false)
-  const [editingTitle, setEditingTitle] = useState('')
-  const [isSavingTitle, setIsSavingTitle] = useState(false)
-  
   // 全屏状态
   const [isFullscreen, setIsFullscreen] = useState(false)
   
@@ -57,65 +54,21 @@ export default function ViewMindmapPage() {
   // Markmap 组件引用
   const markmapRef = useRef(null)
 
-  // 稳定化mindmapData引用，避免不必要的子组件重新渲染
-  const stableMindmapData = useMemo(() => {
-    return mindmap ? {
-      title: mindmap.title,
-      markdown: mindmap.content
-    } : null
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mindmap?.title, mindmap?.content])
-
   // 路由保护 - 未登录用户重定向到登录页
   useEffect(() => {
-    if (!isLoading && !user) {
+    if (!isAuthLoading && !user) {
       router.push('/')
       return
     }
-  }, [user, isLoading, router])
+  }, [user, isAuthLoading, router])
 
-  // 获取思维导图详情
+  // 初始化收藏状态
   useEffect(() => {
-    const fetchMindmap = async () => {
-      if (!mindmapId) return
-
-      try {
-        setLoading(true)
-        setError(null)
-
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/mindmaps/${mindmapId}`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        })
-
-        if (response.ok) {
-          const data = await response.json()
-          setMindmap(data)
-          
-          // 检查是否已收藏
-          const favoriteIds = JSON.parse(localStorage.getItem('favoriteMindmaps') || '[]')
-          setIsFavorited(favoriteIds.includes(data.id))
-        } else if (response.status === 404) {
-          setError('思维导图不存在或您无权访问')
-        } else {
-          const errorData = await response.json()
-          throw new Error(errorData.detail || '获取思维导图失败')
-        }
-      } catch (err) {
-        console.error('获取思维导图失败:', err)
-        setError(err.message)
-      } finally {
-        setLoading(false)
-      }
+    if (mindmap) {
+      const favoriteIds = JSON.parse(localStorage.getItem('favoriteMindmaps') || '[]')
+      setIsFavorited(favoriteIds.includes(mindmap.id))
     }
-
-    if (token && user) { // 确保token和用户信息加载后再获取
-      fetchMindmap()
-    }
-  }, [token, user, mindmapId])
+  }, [mindmap])
 
   // 自动导出功能 - 根据URL参数触发PNG导出
   useEffect(() => {
@@ -124,7 +77,7 @@ export default function ViewMindmapPage() {
         // 等待思维导图完全加载
         await new Promise(resolve => setTimeout(resolve, 2000))
         
-        handleExportPNG()
+        handleExport(exportPNG, 'PNG')
         
         // 导出完成后，移除URL参数
         const newUrl = window.location.pathname
@@ -135,25 +88,8 @@ export default function ViewMindmapPage() {
     }
   }, [exportFormat, mindmap, markmapRef.current])
 
-  // 格式化日期显示
-  const formatDate = (dateString) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString('zh-CN', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  }
-
   // 删除思维导图
-  const handleDelete = () => {
-    setShowDeleteModal(true)
-  }
-
-  // 确认删除
-  const handleConfirmDelete = async () => {
+  const handleDelete = async () => {
     try {
       setIsDeleting(true)
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/mindmaps/${mindmapId}`, {
@@ -179,10 +115,34 @@ export default function ViewMindmapPage() {
     }
   }
 
-  // 取消删除
-  const handleCancelDelete = () => {
-    setShowDeleteModal(false)
-    setIsDeleting(false)
+  // 更新标题
+  const handleUpdateTitle = async (newTitle) => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/mindmaps/${mindmapId}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: newTitle
+        }),
+      })
+
+      if (response.ok) {
+        const updatedMindmap = await response.json()
+        setMindmap(updatedMindmap)
+        setSuccessMessage('标题修改成功')
+        setTimeout(() => setSuccessMessage(null), 3000)
+      } else {
+        const errorData = await response.json()
+        throw new Error(errorData.detail || '标题修改失败')
+      }
+    } catch (err) {
+      console.error('标题修改失败:', err)
+      setError(`标题修改失败: ${err.message}`)
+      setTimeout(() => setError(null), 3000)
+    }
   }
 
   // 打开分享模态框
@@ -194,15 +154,6 @@ export default function ViewMindmapPage() {
     })
   }
 
-  // 关闭分享模态框
-  const handleCloseShareModal = () => {
-    setShareModal({
-      isOpen: false,
-      mindmapId: null,
-      mindmapTitle: ''
-    })
-  }
-
   // 处理收藏/取消收藏
   const handleToggleFavorite = () => {
     const favoriteIds = JSON.parse(localStorage.getItem('favoriteMindmaps') || '[]')
@@ -211,232 +162,81 @@ export default function ViewMindmapPage() {
     if (isCurrentlyFavorited) {
       const newFavoriteIds = favoriteIds.filter(id => id !== mindmap.id)
       localStorage.setItem('favoriteMindmaps', JSON.stringify(newFavoriteIds))
-      setIsFavorited(false)
-      setSuccessMessage(`已取消收藏"${mindmap.title}"`)
     } else {
       favoriteIds.push(mindmap.id)
       localStorage.setItem('favoriteMindmaps', JSON.stringify(favoriteIds))
-      setIsFavorited(true)
-      setSuccessMessage(`已收藏"${mindmap.title}"`)
     }
     
+    setIsFavorited(!isCurrentlyFavorited)
+    setSuccessMessage(isCurrentlyFavorited ? `已取消收藏"${mindmap.title}"` : `已收藏"${mindmap.title}"`)
     setTimeout(() => setSuccessMessage(null), 3000)
   }
 
-  // 开始编辑标题
-  const handleStartEditTitle = () => {
-    setEditingTitle(mindmap.title)
-    setIsEditingTitle(true)
-  }
-
-  // 保存标题
-  const handleSaveTitle = async () => {
-    if (isSavingTitle) return // 防止重复调用
-    
-    if (!editingTitle.trim()) {
-      setError('标题不能为空')
-      return
-    }
-
-    if (editingTitle.trim() === mindmap.title) {
-      setIsEditingTitle(false)
-      return
-    }
-
-    try {
-      setIsSavingTitle(true)
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/mindmaps/${mindmapId}`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title: editingTitle.trim()
-        }),
-      })
-
-      if (response.ok) {
-        const updatedMindmap = await response.json()
-        setMindmap(updatedMindmap)
-        setIsEditingTitle(false)
-        setSuccessMessage('标题修改成功')
-        setTimeout(() => setSuccessMessage(null), 3000)
-      } else {
-        const errorData = await response.json()
-        throw new Error(errorData.detail || '标题修改失败')
-      }
-    } catch (err) {
-      console.error('标题修改失败:', err)
-      setError(`标题修改失败: ${err.message}`)
+  // 统一导出处理函数
+  const handleExport = async (exportFunc, format) => {
+    if (!markmapRef.current || isExportingRef.current) {
+      setError('思维导图未准备就绪或正在导出中，请稍后重试')
       setTimeout(() => setError(null), 3000)
-    } finally {
-      setIsSavingTitle(false)
-    }
-  }
-
-  // 取消编辑标题
-  const handleCancelEditTitle = () => {
-    setEditingTitle('')
-    setIsEditingTitle(false)
-    setIsSavingTitle(false)
-  }
-
-  // 处理键盘事件
-  const handleTitleKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      handleSaveTitle()
-    } else if (e.key === 'Escape') {
-      e.preventDefault()
-      handleCancelEditTitle()
-    }
-  }
-
-  // 导出SVG（最终优化版 + 调试版）
-  const handleExportSVG = async () => {
-    
-    if (!markmapRef.current) {
-      setError('思维导图未准备就绪，请稍后重试')
       return
     }
-
+    isExportingRef.current = true
+    setIsExportingUI(true)
+    setShowExportMenu(false) // 关闭导出菜单
     try {
       // 先设置组件处理状态，防止任何重新渲染
       markmapRef.current.setProcessing(true)
-      
-      // 稍微延迟，确保处理状态已经生效
-      await new Promise(resolve => setTimeout(resolve, 50))
-      
-      // 设置父组件导出状态
-      isExportingRef.current = true
-      setIsExportingUI(true)
-      
-      // 获取markmap实例
+      await new Promise(resolve => setTimeout(resolve, 50)) // 稍微延迟，确保处理状态已经生效
+
       const markmapInstance = markmapRef.current.getMarkmapInstance()
-      
-      if (!markmapInstance) {
-        throw new Error('无法获取思维导图实例')
-      }
-
-      // 生成文件名
-      const safeTitle = getSafeFilename(mindmap.title)
-      const timestamp = getTimestamp()
-      const filename = `${safeTitle}_${timestamp}`
-      
-      const result = exportSVG(markmapInstance, filename)
-      
-      if (result.success) {
-        setSuccessMessage(`SVG文件导出成功: ${result.filename}`)
-        setShowExportMenu(false)
-      } else {
-        throw new Error(result.error)
-      }
-    } catch (error) {
-      setError(`SVG导出失败: ${error.message}`)
+      if (!markmapInstance) throw new Error('无法获取思维导图实例')
+      const filename = `${getSafeFilename(mindmap.title)}_${getTimestamp()}`
+      setSuccessMessage(`正在生成 ${format} 文件，请稍候...`)
+      const result = await exportFunc(markmapInstance, filename, 2) // 2x分辨率
+      if (!result.success) throw new Error(result.error)
+      setSuccessMessage(`${format} 文件导出成功: ${result.filename}`)
+    } catch (err) {
+      console.error(`${format} 导出失败:`, err)
+      setError(`${format} 导出失败: ${err.message}`)
     } finally {
-        isExportingRef.current = false
-        setIsExportingUI(false)
-        // 延迟恢复组件正常状态，确保所有状态变化完成
-        setTimeout(() => {
-          if (markmapRef.current) {
-            markmapRef.current.setProcessing(false)
-          }
-        }, 100)
-      }
+      isExportingRef.current = false
+      setIsExportingUI(false)
+      // 延迟恢复组件正常状态，确保所有状态变化完成
+      setTimeout(() => {
+        if (markmapRef.current) {
+          markmapRef.current.setProcessing(false)
+        }
+      }, 100)
+      setTimeout(() => setSuccessMessage(null), 3000) // 清除成功消息
+      setTimeout(() => setError(null), 3000) // 清除错误消息
     }
-
-  // 导出PNG（最终优化版 + 调试版）
-  const handleExportPNG = async () => {
-    
-    if (!markmapRef.current) {
-      setError('思维导图未准备就绪，请稍后重试')
-      return
-    }
-
-    try {
-      // 先设置组件处理状态，防止任何重新渲染
-      markmapRef.current.setProcessing(true)
-      
-      // 稍微延迟，确保处理状态已经生效
-      await new Promise(resolve => setTimeout(resolve, 50))
-      
-      // 设置isExporting状态
-      isExportingRef.current = true
-      setIsExportingUI(true)
-      
-      // 获取markmap实例
-      const markmapInstance = markmapRef.current.getMarkmapInstance()
-      
-      if (!markmapInstance) {
-        throw new Error('无法获取思维导图实例')
-      }
-
-      // 生成文件名
-      const safeTitle = getSafeFilename(mindmap.title)
-      const timestamp = getTimestamp()
-      const filename = `${safeTitle}_${timestamp}`
-      
-      setSuccessMessage('正在生成PNG文件，请稍候...')
-      
-      const result = await exportPNG(markmapInstance, filename, 2) // 2x分辨率
-      
-      if (result.success) {
-        setSuccessMessage(`PNG文件导出成功: ${result.filename}`)
-        setShowExportMenu(false)
-      } else {
-        throw new Error(result.error)
-      }
-    } catch (error) {
-      setError(`PNG导出失败: ${error.message}`)
-    } finally {
-        isExportingRef.current = false
-        setIsExportingUI(false)
-        // 延迟恢复组件正常状态，确保所有状态变化完成
-        setTimeout(() => {
-          if (markmapRef.current) {
-            markmapRef.current.setProcessing(false)
-          }
-        }, 100)
-      }
-    }
+  }
 
   // 全屏功能处理
-  const handleFullscreen = () => {
+  const handleToggleFullscreen = () => {
     if (!document.fullscreenElement) {
-      // 进入全屏
-      document.documentElement.requestFullscreen().then(() => {
-        setIsFullscreen(true)
-      }).catch((err) => {
+      document.documentElement.requestFullscreen().catch(err => {
         console.error('无法进入全屏模式:', err)
         setError('无法进入全屏模式')
+        setTimeout(() => setError(null), 3000)
       })
     } else {
-      // 退出全屏
-      document.exitFullscreen().then(() => {
-        setIsFullscreen(false)
-      }).catch((err) => {
+      document.exitFullscreen().catch(err => {
         console.error('无法退出全屏模式:', err)
         setError('无法退出全屏模式')
+        setTimeout(() => setError(null), 3000)
       })
     }
   }
 
   // 监听全屏状态变化
   useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement)
-    }
-
+    const handleFullscreenChange = () => setIsFullscreen(!!document.fullscreenElement)
     document.addEventListener('fullscreenchange', handleFullscreenChange)
-    
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange)
-    }
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
   }, [])
 
   // 加载状态
-  if (isLoading || loading) {
+  if (isAuthLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -544,169 +344,22 @@ export default function ViewMindmapPage() {
       <div className="flex-1">
         <div className="h-screen">
           <div className="h-full bg-white border border-gray-200 mx-4 my-4 rounded-lg shadow-sm">
-            {/* 整合的标题栏 */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-              <div className="flex items-center space-x-4 flex-1">
-                <button
-                  onClick={() => router.push('/mindmaps')}
-                  className="action-button text-gray-600 hover:bg-gray-100 hover:text-gray-800"
-                  title="返回控制台"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                </button>
-                <div className="min-w-0 flex-1">
-                  {isEditingTitle ? (
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="text"
-                        value={editingTitle}
-                        onChange={(e) => setEditingTitle(e.target.value)}
-                        onKeyDown={handleTitleKeyDown}
-                        onBlur={(e) => {
-                          // 延迟执行onBlur，让按钮点击事件优先执行
-                          setTimeout(() => {
-                            if (isEditingTitle && !isSavingTitle) {
-                              handleSaveTitle()
-                            }
-                          }, 200)
-                        }}
-                        className="text-xl font-bold text-gray-900 bg-white border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-0 flex-1"
-                        placeholder="请输入标题"
-                        autoFocus
-                        maxLength={100}
-                      />
-                      <button
-                        onClick={handleSaveTitle}
-                        disabled={isSavingTitle}
-                        className="action-button text-green-500 hover:bg-green-100 hover:text-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="保存标题"
-                      >
-                        {isSavingTitle ? (
-                          <div className="animate-spin w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full"></div>
-                        ) : (
-                          <Check className="w-4 h-4" />
-                        )}
-                      </button>
-                      <button
-                        onClick={handleCancelEditTitle}
-                        disabled={isSavingTitle}
-                        className="action-button text-red-500 hover:bg-red-100 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="取消编辑"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ) : (
-                    <h1 
-                      className="text-xl font-bold text-gray-900 truncate cursor-pointer hover:text-blue-600 hover:underline transition-colors"
-                      onClick={handleStartEditTitle}
-                      title="点击编辑标题"
-                    >
-                      {mindmap.title}
-                    </h1>
-                  )}
-                  <p className="text-sm text-gray-500 mt-1">
-                    创建于 {formatDate(mindmap.created_at)}
-                    {mindmap.updated_at !== mindmap.created_at && (
-                      <span> · 更新于 {formatDate(mindmap.updated_at)}</span>
-                    )}
-                  </p>
-                </div>
-              </div>
-              
-              {/* 操作按钮组 */}
-              <div className="flex items-center space-x-2">
-                {/* 全屏按钮 */}
-                <button
-                  onClick={handleFullscreen}
-                  className="action-button text-green-500 hover:bg-green-100 hover:text-green-600"
-                  title={isFullscreen ? "退出全屏" : "进入全屏"}
-                >
-                  {isFullscreen ? (
-                    <Minimize className="w-4 h-4" />
-                  ) : (
-                    <Maximize className="w-4 h-4" />
-                  )}
-                </button>
-                
-                {/* 导出按钮 */}
-                <div className="relative">
-                  <button
-                    onClick={() => setShowExportMenu(!showExportMenu)}
-                    disabled={isExportingUI}
-                    className="action-button text-purple-500 hover:bg-purple-100 hover:text-purple-600 disabled:opacity-50"
-                    title="导出思维导图"
-                  >
-                    {isExportingUI ? (
-                      <div className="animate-spin w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full"></div>
-                    ) : (
-                      <Download className="w-4 h-4" />
-                    )}
-                  </button>
-                  
-                  {/* 导出下拉菜单 */}
-                  {showExportMenu && !isExportingUI && (
-                    <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-2xl border border-gray-100 z-50 overflow-hidden">
-                      <div className="py-2">
-                        <button
-                          onClick={handleExportSVG}
-                          className="flex items-center w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                        >
-                          <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3 flex-shrink-0">
-                            <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v1m0 0h6m-6 0V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4H7" />
-                            </svg>
-                          </div>
-                          <div className="text-left">
-                            <div className="font-semibold text-gray-900">导出为 SVG</div>
-                            <div className="text-xs text-gray-500">矢量格式，可缩放</div>
-                          </div>
-                        </button>
-                        <button
-                          onClick={handleExportPNG}
-                          className="flex items-center w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                        >
-                          <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3 flex-shrink-0">
-                            <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                          </div>
-                          <div className="text-left">
-                            <div className="font-semibold text-gray-900">导出为 PNG</div>
-                            <div className="text-xs text-gray-500">位图格式，高分辨率</div>
-                          </div>
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                
-                <button
-                  onClick={handleShareClick}
-                  className="action-button text-blue-500 hover:bg-blue-100 hover:text-blue-600"
-                  title="分享思维导图"
-                >
-                  <Share2 className="w-4 h-4" />
-                </button>
-                
-                <button
-                  onClick={handleToggleFavorite}
-                  className={`action-button ${isFavorited ? 'text-yellow-500 hover:bg-yellow-100 hover:text-yellow-600' : 'text-gray-400 hover:bg-gray-100 hover:text-yellow-500'}`}
-                  title={isFavorited ? '取消收藏' : '收藏'}
-                >
-                  {isFavorited ? <Star className="w-4 h-4 fill-current" /> : <Star className="w-4 h-4" />}
-                </button>
-                
-                <button
-                  onClick={handleDelete}
-                  className="action-button text-red-500 hover:bg-red-100 hover:text-red-600"
-                  title="删除思维导图"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-            
+            <MindmapHeader
+              mindmap={mindmap}
+              onUpdateTitle={handleUpdateTitle}
+              onDelete={() => setShowDeleteModal(true)}
+              onShare={handleShareClick}
+              onToggleFavorite={handleToggleFavorite}
+              isFavorited={isFavorited}
+              onExportSVG={() => handleExport(exportSVG, 'SVG')}
+              onExportPNG={() => handleExport(exportPNG, 'PNG')}
+              isExportingUI={isExportingUI}
+              isFullscreen={isFullscreen}
+              onToggleFullscreen={handleToggleFullscreen}
+              showExportMenu={showExportMenu}
+              setShowExportMenu={setShowExportMenu}
+            />
+
             {/* 思维导图可视化区域 */}
             <div className="h-[calc(100%-81px)]">
               <SimpleMarkmapBasic 
@@ -729,65 +382,19 @@ export default function ViewMindmapPage() {
       {/* 分享模态框 */}
       <ShareModal
         isOpen={shareModal.isOpen}
-        onClose={handleCloseShareModal}
+        onClose={() => setShareModal({ isOpen: false, mindmapId: null, mindmapTitle: '' })}
         mindmapId={shareModal.mindmapId}
         mindmapTitle={shareModal.mindmapTitle}
       />
 
       {/* 删除确认弹窗 */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full transform transition-all duration-300 scale-100">
-            <div className="p-6">
-              <div className="flex items-center mb-6">
-                <div className="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center mr-4 ring-4 ring-red-100">
-                  <Trash2 className="w-7 h-7 text-red-500" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-1">确认删除</h3>
-                  <p className="text-sm text-gray-500">此操作不可撤销</p>
-                </div>
-              </div>
-              
-              <div className="bg-red-50 rounded-lg p-4 mb-6 border border-red-100">
-                <p className="text-red-800 text-sm leading-relaxed">
-                  确定要删除思维导图 <span className="font-semibold text-red-900">"{mindmap?.title}"</span> 吗？
-                </p>
-                <p className="text-red-600 text-xs mt-2">
-                  ⚠️ 警告：删除后将无法恢复，请谨慎操作
-                </p>
-              </div>
-              
-              <div className="flex justify-end space-x-3">
-                <button
-                  onClick={handleCancelDelete}
-                  disabled={isDeleting}
-                  className="action-button text-gray-600 hover:bg-gray-100 hover:text-gray-800 disabled:opacity-50 px-4 py-2 text-sm font-medium"
-                >
-                  取消
-                </button>
-                <button
-                  onClick={handleConfirmDelete}
-                  disabled={isDeleting}
-                  className="action-button text-red-500 hover:bg-red-100 hover:text-red-600 disabled:opacity-50 px-4 py-2 text-sm font-medium flex items-center bg-red-500 text-white hover:bg-red-600 hover:text-white"
-                >
-                  {isDeleting ? (
-                    <>
-                      <div className="animate-spin -ml-1 mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
-                      删除中...
-                    </>
-                  ) : (
-                    <>
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      确认删除
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <DeleteConfirmationModal
+        isOpen={showDeleteModal}
+        isDeleting={isDeleting}
+        onConfirm={handleDelete}
+        onCancel={() => setShowDeleteModal(false)}
+        mindmapTitle={mindmap?.title}
+      />
     </div>
   )
 }
