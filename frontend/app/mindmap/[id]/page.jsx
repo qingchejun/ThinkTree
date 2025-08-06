@@ -6,13 +6,13 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { useAuth } from '@/context/AuthContext'
-import { useMindmap } from '@/hooks/useMindmap'
-import SimpleMarkmapBasic from '@/components/mindmap/SimpleMarkmapBasic'
-import ShareModal from '@/components/share/ShareModal'
-import MindmapHeader from '@/components/mindmap/MindmapHeader'
-import DeleteConfirmationModal from '@/components/mindmap/DeleteConfirmationModal'
-import { exportSVG, exportPNG, getSafeFilename, getTimestamp } from '@/lib/exportUtils.js'
+import { useAuth } from '../../../context/AuthContext.jsx';
+import { useMindmap } from '../../../hooks/useMindmap.js';
+import SimpleMarkmapBasic from '../../../components/mindmap/SimpleMarkmapBasic.jsx';
+import ShareModal from '../../../components/share/ShareModal.jsx';
+import MindmapHeader from '../../../components/mindmap/MindmapHeader.jsx';
+import DeleteConfirmationModal from '../../../components/mindmap/DeleteConfirmationModal.jsx';
+import { exportSVG, exportPNG, getSafeFilename, getTimestamp } from '../../../lib/exportUtils.js';
 
 export default function ViewMindmapPage() {
   const { user, token, isLoading: isAuthLoading } = useAuth()
