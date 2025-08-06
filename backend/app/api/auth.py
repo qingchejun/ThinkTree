@@ -178,9 +178,15 @@ class UserResponse(BaseModel):
 
 
 class TokenResponse(BaseModel):
-    """令牌响应模型"""
+    """令牌响应模型（已废弃，保留兼容性）"""
     access_token: str
     token_type: str
+    user: UserResponse
+    daily_reward_granted: Optional[bool] = False  # 是否发放了每日奖励
+
+
+class LoginResponse(BaseModel):
+    """新的登录响应模型 - HttpOnly Cookie模式"""
     user: UserResponse
     daily_reward_granted: Optional[bool] = False  # 是否发放了每日奖励
 
@@ -720,7 +726,7 @@ async def initiate_login(request: Request, data: InitiateLoginRequest, db: Sessi
     return InitiateLoginResponse(success=True, message="验证码已发送到您的邮箱，请查收。")
 
 
-@router.post("/verify-code", response_model=TokenResponse)
+@router.post("/verify-code", response_model=LoginResponse)
 @limiter.limit("10/minute")
 async def verify_code(request: Request, data: VerifyCodeRequest, db: Session = Depends(get_db)):
     """
@@ -845,12 +851,12 @@ async def verify_code(request: Request, data: VerifyCodeRequest, db: Session = D
         invitation_quota=user.invitation_quota
     )
 
-    # 不再返回access_token在响应体中，只返回用户信息
-    response_body = {
-        "user": user_response.dict(),
-        "daily_reward_granted": daily_reward_granted
-    }
-    response = JSONResponse(content=response_body)
+    # 构造符合 LoginResponse 的响应
+    login_response = LoginResponse(
+        user=user_response,
+        daily_reward_granted=daily_reward_granted
+    )
+    response = JSONResponse(content=login_response.dict())
     
     # 设置双Cookie安全策略
     # Access Token Cookie - 短期，用于API请求
@@ -1849,25 +1855,41 @@ async def google_callback(request: StarletteRequest, db: Session = Depends(get_d
         except Exception as reward_error:
             print(f"为 Google 用户 {db_user.email} 发放每日奖励失败: {reward_error}")
         
-        # 5. 为该用户创建 JWT 访问令牌
-        jwt_token = create_access_token(data={"sub": str(db_user.id)})
+        # 5. 生成双令牌
+        access_token = create_access_token(data={"sub": str(db_user.id)})
+        refresh_token = create_refresh_token(data={"sub": str(db_user.id)})
         
-        # 6. 重定向回前端，并在 URL 参数中带上 JWT
-        frontend_callback_url = f"https://thinkso.io/auth/callback?token={jwt_token}"
+        # 6. 重定向回前端，不再在URL中传递token
+        frontend_callback_url = "https://thinkso.io/auth/callback?source=google"
         
         if daily_reward_granted:
             frontend_callback_url += "&daily_reward=true"
         
-        # 设置 HttpOnly Cookie 并重定向
+        # 设置双Cookie安全策略并重定向
         response = RedirectResponse(url=frontend_callback_url)
+        
+        # Access Token Cookie - 短期，用于API请求
         response.set_cookie(
-            key="thinktree_token",
-            value=jwt_token,
+            key="access_token",
+            value=access_token,
             httponly=True,
             secure=True,
             samesite="lax",
-            max_age=1800
+            max_age=15 * 60,  # 15分钟
+            path="/"
         )
+        
+        # Refresh Token Cookie - 长期，仅用于刷新，路径限制
+        response.set_cookie(
+            key="refresh_token",
+            value=refresh_token,
+            httponly=True,
+            secure=True,
+            samesite="strict",
+            max_age=7 * 24 * 60 * 60,  # 7天
+            path="/api/auth/refresh"
+        )
+        
         return response
         
     except HTTPException:

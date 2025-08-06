@@ -30,7 +30,7 @@ function AuthCallbackContent() {
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        const token = searchParams.get('token');
+        const source = searchParams.get('source');
         const dailyReward = searchParams.get('daily_reward');
         const error = searchParams.get('error');
         
@@ -44,8 +44,8 @@ function AuthCallbackContent() {
           return;
         }
         
-        // 如果没有 token，重定向到登录页
-        if (!token) {
+        // 如果不是来自认证源，重定向到登录页
+        if (!source) {
           setStatus('error');
           setMessage('未收到认证信息，即将返回登录页面...');
           setTimeout(() => {
@@ -54,26 +54,50 @@ function AuthCallbackContent() {
           return;
         }
         
-        // 使用 AuthContext 的 login 方法处理 token
-        const loginResult = await login(token);
-        
-        if (loginResult.success) {
-          setStatus('success');
+        // 使用HttpOnly Cookie认证 - 检查用户信息
+        try {
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/profile`, {
+            credentials: 'include'
+          });
           
-          // 根据是否有每日奖励显示不同的消息
-          if (dailyReward === 'true') {
-            setMessage('登录成功！🎉 每日登录奖励 +10 积分！正在跳转...');
+          if (response.ok) {
+            const userData = await response.json();
+            
+            // 使用新的Cookie认证方式，直接传递用户数据
+            const loginResult = await login(userData);
+            
+            if (loginResult.success) {
+              setStatus('success');
+              
+              // 根据是否有每日奖励显示不同的消息
+              if (dailyReward === 'true') {
+                setMessage('登录成功！🎉 每日登录奖励 +10 积分！正在跳转...');
+              } else {
+                setMessage('登录成功！正在跳转到工作台...');
+              }
+              
+              // 延迟跳转以显示成功消息
+              setTimeout(() => {
+                router.push('/dashboard');
+              }, dailyReward === 'true' ? 2500 : 1500);
+            } else {
+              setStatus('error');
+              setMessage(loginResult.error || '登录处理失败，请重试');
+              setTimeout(() => {
+                router.push('/');
+              }, 3000);
+            }
           } else {
-            setMessage('登录成功！正在跳转到工作台...');
+            setStatus('error');
+            setMessage('认证失败，请重新登录');
+            setTimeout(() => {
+              router.push('/');
+            }, 3000);
           }
-          
-          // 延迟跳转以显示成功消息
-          setTimeout(() => {
-            router.push('/dashboard');
-          }, dailyReward === 'true' ? 2500 : 1500);
-        } else {
+        } catch (fetchError) {
+          console.error('获取用户信息失败:', fetchError);
           setStatus('error');
-          setMessage(loginResult.error || '登录处理失败，请重试');
+          setMessage('获取用户信息失败，请重试');
           setTimeout(() => {
             router.push('/');
           }, 3000);

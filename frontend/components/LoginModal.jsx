@@ -207,14 +207,16 @@ const LoginModal = ({ isOpen, onClose, initialInvitationCode, autoOpenRegister }
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/verify-code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // 接收HttpOnly Cookie
         body: JSON.stringify({ email, code: fullCode })
       });
       
       if (response.ok) {
         const data = await response.json();
-        const { access_token, user, daily_reward_granted } = data;
+        const { user, daily_reward_granted } = data;
         
-        const loginResult = await login(access_token);
+        // 使用新的Cookie认证方式，直接传递用户数据
+        const loginResult = await login(user);
         
         if (loginResult.success) {
           onClose();
