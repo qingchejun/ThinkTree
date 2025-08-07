@@ -31,7 +31,7 @@ const settingsNavItems = [
 ];
 
 const SettingsContent = () => {
-  const { user, token, loading, refreshUser, isAuthenticated } = useContext(AuthContext);
+  const { user, loading, refreshUser, isAuthenticated } = useContext(AuthContext);
   const router = useRouter();
   const searchParams = useSearchParams();
     const activeTab = searchParams.get('tab') || 'profile';
@@ -143,11 +143,11 @@ const SettingsContent = () => {
 
   // 加载用户详细资料
   const loadProfileData = async () => {
-    if (!token) return;
+    if (!user) return;
     
     try {
       setIsLoading(true);
-      const profile = await getProfile(token);
+      const profile = await getProfile();
       setProfileData(profile);
       setDisplayName(profile.display_name || '');
     } catch (error) {
@@ -160,10 +160,10 @@ const SettingsContent = () => {
 
   // 加载邀请码数据
   const loadInvitations = async () => {
-    if (!token) return;
+    if (!user) return;
     
     try {
-      const invitationsList = await getUserInvitations(token);
+      const invitationsList = await getUserInvitations();
       setInvitations(invitationsList || []);
     } catch (error) {
       console.error('加载邀请码失败:', error);
@@ -174,11 +174,11 @@ const SettingsContent = () => {
   
   // 加载积分历史数据
   const loadCreditHistory = async (page = 1, loadMore = false) => {
-    if (!token) return;
+    if (!user) return;
     
     try {
       setCreditLoading(true);
-      const response = await getCreditHistory(token, page, 20);
+      const response = await getCreditHistory(page, 20);
       
       if (response.success) {
         if (loadMore) {
@@ -217,13 +217,13 @@ const SettingsContent = () => {
       return;
     }
     
-    if (user && token) {
+    if (user) {
         loadProfileData();
         loadInvitations();
         loadCreditHistory();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, token, loading, isAuthenticated, router]);
+  }, [user, loading, isAuthenticated, router]);
 
   if (loading) {
     return (
@@ -245,7 +245,7 @@ const SettingsContent = () => {
   const handleGenerateInvitation = async () => {
     try {
       setIsLoading(true);
-      const response = await generateInvitationCode(token, '用户设置页面生成');
+      const response = await generateInvitationCode('用户设置页面生成');
       if (response.success) {
         showToast('邀请码生成成功！');
         loadInvitations(); // 重新加载邀请码列表
@@ -273,7 +273,7 @@ const SettingsContent = () => {
     const handleSaveProfile = async () => {
     try {
       setIsLoading(true);
-      const response = await updateProfile({ display_name: displayName }, token);
+      const response = await updateProfile({ display_name: displayName });
       
       // 保存头像选择到本地存储
       if (tempAvatar !== currentAvatar && isClient) {

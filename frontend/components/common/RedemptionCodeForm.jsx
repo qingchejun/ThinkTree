@@ -6,7 +6,7 @@ import { Input } from '../ui/Input';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
 
 const RedemptionCodeForm = ({ onRedemptionSuccess, onRedemptionError }) => {
-  const { token } = useContext(AuthContext);
+  const { user } = useContext(AuthContext);
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -21,16 +21,16 @@ const RedemptionCodeForm = ({ onRedemptionSuccess, onRedemptionError }) => {
     setIsLoading(true);
     
     try {
-      if (!token) {
+      if (!user) {
         onRedemptionError('请先登录');
         return;
       }
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/codes/redeem`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ code: code.trim().toUpperCase() })
       });
