@@ -22,28 +22,12 @@ limiter = Limiter(key_func=get_remote_address)
 # 创建FastAPI应用实例
 app = FastAPI(
     title="ThinkSo API",
-    description="ThinkSo 思维导图生成 API - 可通过邀请链接注册，稳定版",
+    description="ThinkSo 思维导图生成 API - 可通过邮请链接注册，稳定版",
     version="3.2.3-stable"
 )
 
-# 添加rate limiting中间件
-app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-
-# 数据库初始化事件 - 仅在开发环境使用
-@app.on_event("startup")
-async def startup_event():
-    """应用启动事件 - 生产环境使用Alembic管理数据库"""
-    print(f"---DIAGNOSTIC-INFO--- Application using DATABASE_URL: {settings.database_url}")
-    # 仅在使用SQLite的开发环境中创建表
-    if "sqlite" in settings.database_url:
-        from app.core.database import create_tables
-        create_tables()
-        print("Development mode: Created tables using SQLAlchemy")
-    else:
-        print("Production mode: Using Alembic for database management")
-
 # 🔧 CORS配置 - HttpOnly Cookie跨域认证专用配置
+# 🚨 重要：CORS中间件必须是第一个添加的中间件，确保全局生效
 # 获取前端域名，支持环境变量配置
 frontend_url = os.getenv("FRONTEND_URL", "https://thinkso.io")
 allowed_origins = [
@@ -91,6 +75,23 @@ app.add_middleware(
     expose_headers=["Set-Cookie"],  # 暴露Set-Cookie响应头
     max_age=600,  # 预检请求缓存10分钟
 )
+
+# 添加其他中间件（必须在CORS之后）
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# 数据库初始化事件 - 仅在开发环境使用
+@app.on_event("startup")
+async def startup_event():
+    """应用启动事件 - 生产环境使用Alembic管理数据库"""
+    print(f"---DIAGNOSTIC-INFO--- Application using DATABASE_URL: {settings.database_url}")
+    # 仅在使用SQLite的开发环境中创建表
+    if "sqlite" in settings.database_url:
+        from app.core.database import create_tables
+        create_tables()
+        print("Development mode: Created tables using SQLAlchemy")
+    else:
+        print("Production mode: Using Alembic for database management")
 
 # 注册路由
 app.include_router(upload.router, prefix="/api", tags=["upload"])
