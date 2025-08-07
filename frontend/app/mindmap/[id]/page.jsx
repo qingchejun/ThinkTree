@@ -92,6 +92,19 @@ export default function ViewMindmapPage() {
   const handleDelete = async () => {
     try {
       setIsDeleting(true)
+      
+      // 先将思维导图添加到回收站
+      const trashedData = JSON.parse(localStorage.getItem('trashedMindmaps') || '[]')
+      const trashedItem = {
+        ...mindmap,
+        deletedAt: new Date().toISOString()
+      }
+      console.log('详情页删除: 添加到回收站的项目:', trashedItem)
+      trashedData.unshift(trashedItem)
+      localStorage.setItem('trashedMindmaps', JSON.stringify(trashedData))
+      console.log('详情页删除: 回收站数据已更新，当前总数:', trashedData.length)
+      
+      // 调用API删除
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/mindmaps/${mindmapId}`, {
         method: 'DELETE',
         credentials: 'include',
@@ -101,9 +114,28 @@ export default function ViewMindmapPage() {
       })
 
       if (response.ok) {
-        setSuccessMessage(`思维导图"${mindmap.title}"已成功删除`)
+        // 从收藏和最近访问中移除
+        const favoriteIds = JSON.parse(localStorage.getItem('favoriteMindmaps') || '[]')
+        const newFavoriteIds = favoriteIds.filter(id => id !== mindmapId)
+        localStorage.setItem('favoriteMindmaps', JSON.stringify(newFavoriteIds))
+        
+        const recentIds = JSON.parse(localStorage.getItem('recentMindmaps') || '[]')
+        const newRecentIds = recentIds.filter(item => item.id !== mindmapId)
+        localStorage.setItem('recentMindmaps', JSON.stringify(newRecentIds))
+        
+        // 通知其他页面数据已变化
+        window.dispatchEvent(new CustomEvent('favoritesChanged'))
+        window.dispatchEvent(new CustomEvent('recentChanged'))
+        window.dispatchEvent(new CustomEvent('trashedChanged'))
+        
+        setSuccessMessage(`思维导图"${mindmap.title}"已移动到回收站`)
         router.push('/mindmaps')
       } else {
+        // 如果API调用失败，从回收站中移除刚刚添加的项目
+        const currentTrashedData = JSON.parse(localStorage.getItem('trashedMindmaps') || '[]')
+        const rollbackTrashedData = currentTrashedData.filter(item => item.id !== mindmapId)
+        localStorage.setItem('trashedMindmaps', JSON.stringify(rollbackTrashedData))
+        
         const errorData = await response.json()
         throw new Error(errorData.detail || '删除失败')
       }
