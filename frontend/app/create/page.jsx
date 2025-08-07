@@ -20,7 +20,7 @@ import { Label } from "@/components/ui/Label";
 
 
 export default function CreatePage() {
-  const { user, token, isLoading } = useAuth();
+  const { user, isLoading } = useAuth();
   const router = useRouter();
   const [mindmapData, setMindmapData] = useState(null);
   const [error, setError] = useState(null);
@@ -118,9 +118,9 @@ export default function CreatePage() {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/mindmaps/`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           title: titleToSave.trim(),
@@ -176,7 +176,6 @@ export default function CreatePage() {
                       onUploadStart={handleUploadStart}
                       onUploadSuccess={handleUploadSuccess}
                       onUploadError={handleUploadError}
-                      token={token}
                       disabled={uploadLoading}
                     />
                   </CardContent>
