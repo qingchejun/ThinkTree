@@ -47,12 +47,19 @@ export default function HomeContent() {
     }
   }, [invitationCode, autoRegister, autoLogin, errorMessage, isLoading, user, router]);
 
-  // 移除自动跳转逻辑 - 让已登录用户也能访问首页
-  // useEffect(() => {
-  //   if (!isLoading && user) {
-  //     router.push('/dashboard');
-  //   }
-  // }, [user, isLoading, router]);
+  // 智能跳转逻辑 - 已登录用户访问根路径时跳转到dashboard
+  useEffect(() => {
+    // 只有在有有效用户数据且不是通过特殊参数访问时才跳转
+    const isValidUser = user && typeof user === 'object' && (user.email || user.id) && !user.message;
+    
+    if (!isLoading && isValidUser) {
+      // 如果URL中没有特殊参数（如邀请码、登录参数等），则跳转
+      if (!invitationCode && !autoRegister && !autoLogin && !errorMessage) {
+        console.log('✅ 检测到有效用户，跳转到dashboard:', user);
+        router.push('/dashboard');
+      }
+    }
+  }, [user, isLoading, invitationCode, autoRegister, autoLogin, errorMessage, router]);
 
   // 加载状态
   if (isLoading) {
@@ -63,7 +70,35 @@ export default function HomeContent() {
     );
   }
 
-  // 显示营销页面（未登录和已登录用户都可以访问）
+  // 用户状态验证
+  const isValidUser = user && typeof user === 'object' && (user.email || user.id) && !user.message;
+
+  // 已登录用户：根据是否有特殊参数决定显示内容
+  if (isValidUser) {
+    // 如果有特殊参数（邀请码、错误信息等），显示首页以处理这些参数
+    if (invitationCode || autoRegister || autoLogin || errorMessage) {
+      return (
+        <LandingPage 
+          invitationCode={invitationCode}
+          autoRegister={autoRegister}
+          errorMessage={errorMessage}
+          onLoginClick={openLoginModal}
+        />
+      );
+    }
+    
+    // 没有特殊参数时，显示跳转加载状态
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-900 border-t-transparent mx-auto mb-4"></div>
+          <p className="text-gray-600">正在跳转到工作台...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 未登录用户：显示营销页面
   return (
     <LandingPage 
       invitationCode={invitationCode}
