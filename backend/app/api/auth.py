@@ -585,7 +585,7 @@ async def _send_login_code_email(email: str, code: str, magic_token: str = None)
     username = email.split('@')[0]
     
     # 2. 构建魔法链接 URL（指向后端 callback 端点）
-    backend_base_url = "https://thinktree-backend.onrender.com"
+    backend_base_url = "https://api.thinkso.io"
     magic_link_url = f"{backend_base_url}/api/auth/callback?token={magic_token}" if magic_token else None
     
     # 3. 使用 Resend 邮件服务
@@ -858,17 +858,17 @@ async def verify_code(request: Request, data: VerifyCodeRequest, db: Session = D
     )
     response = JSONResponse(content=login_response.dict())
     
-    # 设置双Cookie安全策略 - 跨站（cross-site）专用配置
+    # 设置双Cookie安全策略 - 同根域（same-root domain）专用配置
     # Access Token Cookie - 短期，用于API请求
     response.set_cookie(
         key="access_token",
         value=access_token,
         httponly=True,
         secure=True,           # 🔑 必须为 True
-        samesite="none",       # 🔑 跨站必须为 'none'
+        samesite="lax",        # 🔑 同根域使用 'lax' 更安全
+        domain=".thinkso.io",  # 🔑 新增：根域名作用域
         max_age=15 * 60,       # 15分钟
         path="/"
-        # domain 参数已移除 - 自动限定到后端域名
     )
     
     # Refresh Token Cookie - 长期，仅用于刷新，路径限制
@@ -877,10 +877,10 @@ async def verify_code(request: Request, data: VerifyCodeRequest, db: Session = D
         value=refresh_token,
         httponly=True,
         secure=True,           # 🔑 必须为 True
-        samesite="none",       # 🔑 跨站必须为 'none'
+        samesite="lax",        # 🔑 同根域使用 'lax' 更安全
+        domain=".thinkso.io",  # 🔑 新增：根域名作用域
         max_age=7 * 24 * 60 * 60,  # 7天
         path="/api/auth/refresh"
-        # domain 参数已移除 - 自动限定到后端域名
     )
     
     return response
@@ -957,28 +957,28 @@ async def refresh_token(request: Request, db: Session = Depends(get_db)):
     # 返回成功响应并设置新的Cookie
     response = JSONResponse(content={"success": True, "message": "令牌刷新成功"})
     
-    # 设置新的Access Token Cookie - 跨站配置
+    # 设置新的Access Token Cookie - 同根域配置
     response.set_cookie(
         key="access_token",
         value=new_access_token,
         httponly=True,
         secure=True,           # 🔑 必须为 True
-        samesite="none",       # 🔑 跨站必须为 'none'
+        samesite="lax",        # 🔑 同根域使用 'lax' 更安全
+        domain=".thinkso.io",  # 🔑 新增：根域名作用域
         max_age=15 * 60,       # 15分钟
         path="/"
-        # domain 参数已移除
     )
     
-    # 设置新的Refresh Token Cookie（令牌轮换）- 跨站配置
+    # 设置新的Refresh Token Cookie（令牌轮换）- 同根域配置
     response.set_cookie(
         key="refresh_token",
         value=new_refresh_token,
         httponly=True,
         secure=True,           # 🔑 必须为 True
-        samesite="none",       # 🔑 跨站必须为 'none'
+        samesite="lax",        # 🔑 同根域使用 'lax' 更安全
+        domain=".thinkso.io",  # 🔑 新增：根域名作用域
         max_age=7 * 24 * 60 * 60,  # 7天
         path="/api/auth/refresh"
-        # domain 参数已移除
     )
     
     return response
@@ -991,28 +991,28 @@ async def logout():
     """
     response = JSONResponse(content={"success": True, "message": "退出登录成功"})
     
-    # 清除Access Token Cookie - 跨站配置
+    # 清除Access Token Cookie - 同根域配置
     response.set_cookie(
         key="access_token",
         value="",
         httponly=True,
         secure=True,           # 🔑 必须为 True
-        samesite="none",       # 🔑 跨站必须为 'none'
+        samesite="lax",        # 🔑 同根域使用 'lax' 更安全
+        domain=".thinkso.io",  # 🔑 新增：根域名作用域
         max_age=0,             # 立即过期
         path="/"
-        # domain 参数已移除
     )
     
-    # 清除Refresh Token Cookie - 跨站配置
+    # 清除Refresh Token Cookie - 同根域配置
     response.set_cookie(
         key="refresh_token", 
         value="",
         httponly=True,
         secure=True,           # 🔑 必须为 True
-        samesite="none",       # 🔑 跨站必须为 'none'
+        samesite="lax",        # 🔑 同根域使用 'lax' 更安全
+        domain=".thinkso.io",  # 🔑 新增：根域名作用域
         max_age=0,             # 立即过期
         path="/api/auth/refresh"
-        # domain 参数已移除
     )
     
     return response
@@ -1871,7 +1871,7 @@ async def google_callback(request: StarletteRequest, db: Session = Depends(get_d
         if daily_reward_granted:
             frontend_callback_url += "&daily_reward=true"
         
-        # 设置双Cookie安全策略并重定向 - 跨站（cross-site）配置
+        # 设置双Cookie安全策略并重定向 - 同根域（same-root domain）配置
         response = RedirectResponse(url=frontend_callback_url)
         
         # Access Token Cookie - 短期，用于API请求
@@ -1880,10 +1880,10 @@ async def google_callback(request: StarletteRequest, db: Session = Depends(get_d
             value=access_token,
             httponly=True,
             secure=True,           # 🔑 必须为 True
-            samesite="none",       # 🔑 跨站必须为 'none'
+            samesite="lax",        # 🔑 同根域使用 'lax' 更安全
+            domain=".thinkso.io",  # 🔑 新增：根域名作用域
             max_age=15 * 60,       # 15分钟
             path="/"
-            # domain 参数已移除
         )
         
         # Refresh Token Cookie - 长期，仅用于刷新，路径限制
@@ -1892,10 +1892,10 @@ async def google_callback(request: StarletteRequest, db: Session = Depends(get_d
             value=refresh_token,
             httponly=True,
             secure=True,           # 🔑 必须为 True
-            samesite="none",       # 🔑 跨站必须为 'none'
+            samesite="lax",        # 🔑 同根域使用 'lax' 更安全
+            domain=".thinkso.io",  # 🔑 新增：根域名作用域
             max_age=7 * 24 * 60 * 60,  # 7天
             path="/api/auth/refresh"
-            # domain 参数已移除
         )
         
         return response

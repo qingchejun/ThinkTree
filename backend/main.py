@@ -28,29 +28,17 @@ app = FastAPI(
 
 # 🔧 CORS配置 - HttpOnly Cookie跨域认证专用配置
 # 🚨 重要：CORS中间件必须是第一个添加的中间件，确保全局生效
-# 获取前端域名，支持环境变量配置
-frontend_url = os.getenv("FRONTEND_URL", "https://thinkso.io")
+# 🎯 同根域架构：简化CORS配置，专注于thinkso.io根域
 allowed_origins = [
-    "http://localhost:3000",  # 本地开发
-    "http://localhost:3001",  # 本地开发备用端口
-    "http://localhost:3002",  # 本地开发备用端口2
-    "https://thinkso.io",  # 生产域名
-    "https://www.thinkso.io",  # 支持www子域名
-    "https://thinktree-frontend.onrender.com",  # Render前端部署域名
+    "http://localhost:3000",   # 本地开发
+    "https://thinkso.io",      # 生产域名（不带www）
+    "https://www.thinkso.io",  # 生产域名（带www）
 ]
 
-# 确保当前前端URL被包含
-if frontend_url not in allowed_origins:
-    allowed_origins.append(frontend_url)
-
-# 从环境变量获取额外的允许域名
-extra_origins = os.getenv("ALLOWED_ORIGINS", "").split(",")
-extra_origins = [origin.strip() for origin in extra_origins if origin.strip()]
-allowed_origins.extend(extra_origins)
-
 # 打印CORS配置以便调试
-print(f"🌐 CORS Configuration for HttpOnly Cookie:")
-print(f"  - Frontend URL (env): {frontend_url}")
+print(f"🌐 CORS Configuration for Same-Root Domain:")
+print(f"  - Backend: api.thinkso.io")
+print(f"  - Frontend: www.thinkso.io")  
 print(f"  - Allowed Origins: {allowed_origins}")
 print(f"  - Allow Credentials: True")
 
