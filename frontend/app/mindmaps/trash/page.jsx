@@ -198,24 +198,53 @@ export default function TrashPage() {
     try {
       setRestoreModal(prev => ({ ...prev, isRestoring: true }))
       
-      // 这里应该调用API恢复思维导图
-      // 暂时模拟API调用
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      // 从回收站移除
+      // 获取要恢复的思维导图数据
       const trashedData = JSON.parse(localStorage.getItem('trashedMindmaps') || '[]')
-      const updatedTrashedData = trashedData.filter(item => item.id !== restoreModal.mindmapId)
-      localStorage.setItem('trashedMindmaps', JSON.stringify(updatedTrashedData))
+      const mindmapToRestore = trashedData.find(item => item.id === restoreModal.mindmapId)
       
-      // 更新当前列表
-      setTrashedMindmaps(prev => prev.filter(item => item.id !== restoreModal.mindmapId))
+      if (!mindmapToRestore) {
+        throw new Error('找不到要恢复的思维导图')
+      }
       
-      setSuccessMessage(`思维导图"${restoreModal.mindmapTitle}"已成功恢复`)
-      setTimeout(() => setSuccessMessage(null), 3000)
+      // 调用API恢复思维导图 - 重新创建思维导图
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/mindmaps/`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: mindmapToRestore.title,
+          content: mindmapToRestore.content,
+          // 保持原有的创建和更新时间信息（如果需要）
+          restored_from_trash: true,
+          original_id: mindmapToRestore.id
+        })
+      })
+
+      if (response.ok) {
+        const restoredMindmap = await response.json()
+        
+        // 从回收站移除
+        const updatedTrashedData = trashedData.filter(item => item.id !== restoreModal.mindmapId)
+        localStorage.setItem('trashedMindmaps', JSON.stringify(updatedTrashedData))
+        
+        // 更新当前列表
+        setTrashedMindmaps(prev => prev.filter(item => item.id !== restoreModal.mindmapId))
+        
+        // 通知其他页面数据已变化
+        window.dispatchEvent(new CustomEvent('trashedChanged'))
+        
+        setSuccessMessage(`思维导图"${restoreModal.mindmapTitle}"已成功恢复`)
+        setTimeout(() => setSuccessMessage(null), 3000)
+      } else {
+        const errorData = await response.json()
+        throw new Error(errorData.detail || '恢复失败')
+      }
       
     } catch (error) {
       console.error('恢复思维导图失败:', error)
-      setError('恢复失败，请重试')
+      setError(error.message || '恢复失败，请重试')
       setTimeout(() => setError(null), 5000)
     } finally {
       setRestoreModal({
@@ -255,17 +284,17 @@ export default function TrashPage() {
     try {
       setDeleteModal(prev => ({ ...prev, isDeleting: true }))
       
-      // 这里应该调用API永久删除思维导图
-      // 暂时模拟API调用
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      // 从回收站移除
+      // 永久删除只需要从localStorage移除即可
+      // 因为思维导图已经从后端数据库删除了，这里只是清理本地缓存
       const trashedData = JSON.parse(localStorage.getItem('trashedMindmaps') || '[]')
       const updatedTrashedData = trashedData.filter(item => item.id !== deleteModal.mindmapId)
       localStorage.setItem('trashedMindmaps', JSON.stringify(updatedTrashedData))
       
       // 更新当前列表
       setTrashedMindmaps(prev => prev.filter(item => item.id !== deleteModal.mindmapId))
+      
+      // 通知其他页面数据已变化
+      window.dispatchEvent(new CustomEvent('trashedChanged'))
       
       setSuccessMessage(`思维导图"${deleteModal.mindmapTitle}"已永久删除`)
       setTimeout(() => setSuccessMessage(null), 3000)
@@ -307,15 +336,15 @@ export default function TrashPage() {
     try {
       setClearAllModal(prev => ({ ...prev, isClearing: true }))
       
-      // 这里应该调用API清空回收站
-      // 暂时模拟API调用
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      // 清空localStorage
+      // 清空回收站只需要清空localStorage即可
+      // 因为思维导图已经从后端数据库删除了，这里只是清理本地缓存
       localStorage.setItem('trashedMindmaps', JSON.stringify([]))
       
       // 更新当前列表
       setTrashedMindmaps([])
+      
+      // 通知其他页面数据已变化
+      window.dispatchEvent(new CustomEvent('trashedChanged'))
       
       setSuccessMessage('回收站已清空')
       setTimeout(() => setSuccessMessage(null), 3000)
