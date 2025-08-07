@@ -33,8 +33,7 @@ from ..utils.security import (
     validate_email,
     validate_password,
     get_password_strength,
-    get_token_from_cookie,
-    get_cookie_domain
+    get_token_from_cookie
 )
 from ..utils.email_service import email_service
 from ..utils.invitation_utils import validate_invitation_code, use_invitation_code
@@ -859,19 +858,17 @@ async def verify_code(request: Request, data: VerifyCodeRequest, db: Session = D
     )
     response = JSONResponse(content=login_response.dict())
     
-    # 设置双Cookie安全策略 - 支持跨子域
-    cookie_domain = get_cookie_domain()
-    
+    # 设置双Cookie安全策略 - 跨站（cross-site）专用配置
     # Access Token Cookie - 短期，用于API请求
     response.set_cookie(
         key="access_token",
         value=access_token,
         httponly=True,
-        secure=True,
-        samesite="lax",
-        max_age=15 * 60,  # 15分钟
-        path="/",
-        domain=cookie_domain  # 🔑 关键：支持跨子域
+        secure=True,           # 🔑 必须为 True
+        samesite="none",       # 🔑 跨站必须为 'none'
+        max_age=15 * 60,       # 15分钟
+        path="/"
+        # domain 参数已移除 - 自动限定到后端域名
     )
     
     # Refresh Token Cookie - 长期，仅用于刷新，路径限制
@@ -879,11 +876,11 @@ async def verify_code(request: Request, data: VerifyCodeRequest, db: Session = D
         key="refresh_token", 
         value=refresh_token,
         httponly=True,
-        secure=True,
-        samesite="strict",
+        secure=True,           # 🔑 必须为 True
+        samesite="none",       # 🔑 跨站必须为 'none'
         max_age=7 * 24 * 60 * 60,  # 7天
-        path="/api/auth/refresh",
-        domain=cookie_domain  # 🔑 关键：支持跨子域
+        path="/api/auth/refresh"
+        # domain 参数已移除 - 自动限定到后端域名
     )
     
     return response
@@ -959,30 +956,29 @@ async def refresh_token(request: Request, db: Session = Depends(get_db)):
     
     # 返回成功响应并设置新的Cookie
     response = JSONResponse(content={"success": True, "message": "令牌刷新成功"})
-    cookie_domain = get_cookie_domain()
     
-    # 设置新的Access Token Cookie
+    # 设置新的Access Token Cookie - 跨站配置
     response.set_cookie(
         key="access_token",
         value=new_access_token,
         httponly=True,
-        secure=True,
-        samesite="lax",
-        max_age=15 * 60,  # 15分钟
-        path="/",
-        domain=cookie_domain  # 🔑 关键：支持跨子域
+        secure=True,           # 🔑 必须为 True
+        samesite="none",       # 🔑 跨站必须为 'none'
+        max_age=15 * 60,       # 15分钟
+        path="/"
+        # domain 参数已移除
     )
     
-    # 设置新的Refresh Token Cookie（令牌轮换）
+    # 设置新的Refresh Token Cookie（令牌轮换）- 跨站配置
     response.set_cookie(
         key="refresh_token",
         value=new_refresh_token,
         httponly=True,
-        secure=True,
-        samesite="strict",
+        secure=True,           # 🔑 必须为 True
+        samesite="none",       # 🔑 跨站必须为 'none'
         max_age=7 * 24 * 60 * 60,  # 7天
-        path="/api/auth/refresh",
-        domain=cookie_domain  # 🔑 关键：支持跨子域
+        path="/api/auth/refresh"
+        # domain 参数已移除
     )
     
     return response
@@ -994,30 +990,29 @@ async def logout():
     用户登出端点 - 清除HttpOnly Cookie
     """
     response = JSONResponse(content={"success": True, "message": "退出登录成功"})
-    cookie_domain = get_cookie_domain()
     
-    # 清除Access Token Cookie
+    # 清除Access Token Cookie - 跨站配置
     response.set_cookie(
         key="access_token",
         value="",
         httponly=True,
-        secure=True,
-        samesite="lax",
-        max_age=0,  # 立即过期
-        path="/",
-        domain=cookie_domain  # 🔑 关键：支持跨子域
+        secure=True,           # 🔑 必须为 True
+        samesite="none",       # 🔑 跨站必须为 'none'
+        max_age=0,             # 立即过期
+        path="/"
+        # domain 参数已移除
     )
     
-    # 清除Refresh Token Cookie
+    # 清除Refresh Token Cookie - 跨站配置
     response.set_cookie(
         key="refresh_token", 
         value="",
         httponly=True,
-        secure=True,
-        samesite="strict",
-        max_age=0,  # 立即过期
-        path="/api/auth/refresh",
-        domain=cookie_domain  # 🔑 关键：支持跨子域
+        secure=True,           # 🔑 必须为 True
+        samesite="none",       # 🔑 跨站必须为 'none'
+        max_age=0,             # 立即过期
+        path="/api/auth/refresh"
+        # domain 参数已移除
     )
     
     return response
@@ -1876,20 +1871,19 @@ async def google_callback(request: StarletteRequest, db: Session = Depends(get_d
         if daily_reward_granted:
             frontend_callback_url += "&daily_reward=true"
         
-        # 设置双Cookie安全策略并重定向 - 支持跨子域
+        # 设置双Cookie安全策略并重定向 - 跨站（cross-site）配置
         response = RedirectResponse(url=frontend_callback_url)
-        cookie_domain = get_cookie_domain()
         
         # Access Token Cookie - 短期，用于API请求
         response.set_cookie(
             key="access_token",
             value=access_token,
             httponly=True,
-            secure=True,
-            samesite="lax",
-            max_age=15 * 60,  # 15分钟
-            path="/",
-            domain=cookie_domain  # 🔑 关键：支持跨子域
+            secure=True,           # 🔑 必须为 True
+            samesite="none",       # 🔑 跨站必须为 'none'
+            max_age=15 * 60,       # 15分钟
+            path="/"
+            # domain 参数已移除
         )
         
         # Refresh Token Cookie - 长期，仅用于刷新，路径限制
@@ -1897,11 +1891,11 @@ async def google_callback(request: StarletteRequest, db: Session = Depends(get_d
             key="refresh_token",
             value=refresh_token,
             httponly=True,
-            secure=True,
-            samesite="strict",
+            secure=True,           # 🔑 必须为 True
+            samesite="none",       # 🔑 跨站必须为 'none'
             max_age=7 * 24 * 60 * 60,  # 7天
-            path="/api/auth/refresh",
-            domain=cookie_domain  # 🔑 关键：支持跨子域
+            path="/api/auth/refresh"
+            # domain 参数已移除
         )
         
         return response
