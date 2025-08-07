@@ -26,21 +26,32 @@ app = FastAPI(
     version="3.2.3-stable"
 )
 
-# 🔧 CORS配置 - HttpOnly Cookie跨域认证专用配置
+# 🔧 CORS配置 - 基于环境变量的动态白名单
 # 🚨 重要：CORS中间件必须是第一个添加的中间件，确保全局生效
-# 🎯 同根域架构：简化CORS配置，专注于thinkso.io根域
+
+# 初始化一个只包含本地开发地址的基础白名单
 allowed_origins = [
-    "http://localhost:3000",   # 本地开发
-    "https://thinkso.io",      # 生产域名（不带www）
-    "https://www.thinkso.io",  # 生产域名（带www）
+    "http://localhost:3000",
+    "http://localhost:3001"
 ]
 
-# 打印CORS配置以便调试
-print(f"🌐 CORS Configuration for Same-Root Domain:")
-print(f"  - Backend: api.thinkso.io")
-print(f"  - Frontend: www.thinkso.io")  
-print(f"  - Allowed Origins: {allowed_origins}")
-print(f"  - Allow Credentials: True")
+# 从环境变量中获取主要的前端生产URL
+frontend_url = os.getenv("FRONTEND_URL")
+if frontend_url:
+    allowed_origins.append(frontend_url)
+
+# 从环境变量中获取一个用逗号分隔的额外URL列表
+extra_origins_str = os.getenv("ALLOWED_ORIGINS", "")
+if extra_origins_str:
+    # 分割字符串，并把每个干净的URL添加到白名单中
+    extra_origins = [origin.strip() for origin in extra_origins_str.split(',') if origin.strip()]
+    allowed_origins.extend(extra_origins)
+
+# 确保列表中没有重复项
+allowed_origins = list(set(allowed_origins))
+
+# 打印最终的白名单列表以供调试
+print("✅ Initializing CORS with the following allowed origins:", allowed_origins)
 
 app.add_middleware(
     CORSMiddleware,
