@@ -47,12 +47,12 @@ export default function HomeContent() {
     }
   }, [invitationCode, autoRegister, autoLogin, errorMessage, isLoading, user, router]);
 
-  // 如果用户已登录，跳转到工作台
-  useEffect(() => {
-    if (!isLoading && user) {
-      router.push('/dashboard');
-    }
-  }, [user, isLoading, router]);
+  // 移除自动跳转逻辑 - 让已登录用户也能访问首页
+  // useEffect(() => {
+  //   if (!isLoading && user) {
+  //     router.push('/dashboard');
+  //   }
+  // }, [user, isLoading, router]);
 
   // 加载状态
   if (isLoading) {
@@ -63,22 +63,13 @@ export default function HomeContent() {
     );
   }
 
-  // 未登录用户显示营销页面
-  if (!user) {
-    return (
-      <LandingPage 
-        invitationCode={invitationCode}
-        autoRegister={autoRegister}
-        errorMessage={errorMessage}
-        onLoginClick={openLoginModal}
-      />
-    );
-  }
-
-  // 已登录用户会被上面的 useEffect 重定向，这里返回加载状态
+  // 显示营销页面（未登录和已登录用户都可以访问）
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-900 border-t-transparent"></div>
-    </div>
+    <LandingPage 
+      invitationCode={invitationCode}
+      autoRegister={autoRegister}
+      errorMessage={errorMessage}
+      onLoginClick={openLoginModal}
+    />
   );
 }
