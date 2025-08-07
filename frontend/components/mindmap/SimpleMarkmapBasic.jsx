@@ -5,6 +5,7 @@
 
 import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react'
 import { Maximize2, Minimize2, ZoomIn } from 'lucide-react'
+import '../../styles/markmap.css'
 
 const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
   const svgRef = useRef(null)

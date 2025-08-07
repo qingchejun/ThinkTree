@@ -23,7 +23,7 @@ import {
 } from 'lucide-react'
 
 export default function TrashPage() {
-  const { user, token, isLoading } = useAuth()
+  const { user, isLoading } = useAuth()
   const router = useRouter()
   
   // 页面状态管理
@@ -70,7 +70,7 @@ export default function TrashPage() {
   // 获取回收站思维导图列表
   useEffect(() => {
     const fetchTrashedMindmaps = async () => {
-      if (!token || !user) {
+      if (!user) {
         setTrashedMindmaps([])
         setLoading(false)
         return
@@ -82,6 +82,7 @@ export default function TrashPage() {
         
         // 从localStorage获取回收站数据
         const trashedData = JSON.parse(localStorage.getItem('trashedMindmaps') || '[]')
+        console.log('回收站页面: 从localStorage获取的数据:', trashedData)
         
         // 过滤掉超过30天的数据
         const thirtyDaysAgo = new Date()
@@ -91,10 +92,12 @@ export default function TrashPage() {
           const deletedDate = new Date(item.deletedAt)
           return deletedDate > thirtyDaysAgo
         })
+        console.log('回收站页面: 过滤后的有效数据:', validTrashedData)
         
         // 更新localStorage，移除过期数据
         if (validTrashedData.length !== trashedData.length) {
           localStorage.setItem('trashedMindmaps', JSON.stringify(validTrashedData))
+          console.log('回收站页面: 已清理过期数据')
         }
         
         setTrashedMindmaps(validTrashedData)
@@ -107,7 +110,50 @@ export default function TrashPage() {
     }
 
     fetchTrashedMindmaps()
-  }, [token, user])
+  }, [user])
+
+  // 监听localStorage变化，实时更新回收站列表
+  useEffect(() => {
+    const handleStorageChange = () => {
+      // 重新获取回收站列表
+      if (user) {
+        const fetchTrashedMindmaps = async () => {
+          try {
+            const trashedData = JSON.parse(localStorage.getItem('trashedMindmaps') || '[]')
+            
+            // 过滤掉超过30天的数据
+            const thirtyDaysAgo = new Date()
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+            
+            const validTrashedData = trashedData.filter(item => {
+              const deletedDate = new Date(item.deletedAt)
+              return deletedDate > thirtyDaysAgo
+            })
+            
+            // 更新localStorage，移除过期数据
+            if (validTrashedData.length !== trashedData.length) {
+              localStorage.setItem('trashedMindmaps', JSON.stringify(validTrashedData))
+            }
+            
+            setTrashedMindmaps(validTrashedData)
+          } catch (err) {
+            console.error('更新回收站列表失败:', err)
+          }
+        }
+        fetchTrashedMindmaps()
+      }
+    }
+
+    // 监听storage事件
+    window.addEventListener('storage', handleStorageChange)
+    // 自定义事件，用于同一页面的操作
+    window.addEventListener('trashedChanged', handleStorageChange)
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+      window.removeEventListener('trashedChanged', handleStorageChange)
+    }
+  }, [user])
 
   // 格式化日期显示
   const formatDate = (dateString) => {

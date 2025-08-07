@@ -270,8 +270,10 @@ export default function MindmapsPage() {
         ...mindmapToDelete,
         deletedAt: new Date().toISOString()
       }
+      console.log('主页面删除: 添加到回收站的项目:', trashedItem)
       trashedData.unshift(trashedItem)
       localStorage.setItem('trashedMindmaps', JSON.stringify(trashedData))
+      console.log('主页面删除: 回收站数据已更新，当前总数:', trashedData.length)
 
       // 调用API删除（这里可以是软删除或者标记删除）
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/mindmaps/${deleteModal.mindmapId}`, {
@@ -298,6 +300,7 @@ export default function MindmapsPage() {
         // 通知其他页面数据已变化
         window.dispatchEvent(new CustomEvent('favoritesChanged'))
         window.dispatchEvent(new CustomEvent('recentChanged'))
+        window.dispatchEvent(new CustomEvent('trashedChanged'))
         
         setSuccessMessage(`思维导图"${deleteModal.mindmapTitle}"已移动到回收站`)
         // 3秒后清除成功消息
