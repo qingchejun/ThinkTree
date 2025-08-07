@@ -31,6 +31,6 @@ app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 app.include_router(redemption.router, prefix="/api/codes", tags=["redemption"])
 
 # 可选的健康检查接口，用于测试服务是否启动
-@app.get("/")
+@app.get("/health")
 async def health_check():
     return {"status": "ok", "message": "Welcome to ThinkSo API"}
