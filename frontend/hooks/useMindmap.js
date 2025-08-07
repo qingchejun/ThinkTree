@@ -8,14 +8,14 @@ import { useState, useEffect, useMemo } from 'react'
 import { useAuth } from '../context/AuthContext.jsx' // 注意路径和文件扩展名
 
 export function useMindmap(mindmapId) {
-  const { token } = useAuth()
+  const { user } = useAuth()
   const [mindmap, setMindmap] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
   useEffect(() => {
     const fetchMindmap = async () => {
-      if (!mindmapId || !token) return
+      if (!mindmapId || !user) return
 
       try {
         setLoading(true)
@@ -23,8 +23,8 @@ export function useMindmap(mindmapId) {
 
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/mindmaps/${mindmapId}`, {
           method: 'GET',
+          credentials: 'include',
           headers: {
-            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         })
@@ -47,7 +47,7 @@ export function useMindmap(mindmapId) {
     }
 
     fetchMindmap()
-  }, [token, mindmapId])
+  }, [user, mindmapId])
 
   const stableMindmapData = useMemo(() => {
     return mindmap ? {

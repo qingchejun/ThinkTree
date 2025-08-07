@@ -30,7 +30,7 @@ import {
 } from 'lucide-react'
 
 export default function MindmapsPage() {
-  const { user, token, isLoading } = useAuth()
+  const { user, isLoading } = useAuth()
   const router = useRouter()
   
   // 页面状态管理
@@ -76,7 +76,7 @@ export default function MindmapsPage() {
   // 获取用户思维导图列表
   useEffect(() => {
     const fetchMindmaps = async () => {
-      if (!token || !user) {
+      if (!user) {
         setMindmaps([])
         setLoading(false)
         return
@@ -87,8 +87,8 @@ export default function MindmapsPage() {
         setError(null)
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/mindmaps/`, {
           method: 'GET',
+          credentials: 'include',
           headers: {
-            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         })
@@ -109,7 +109,7 @@ export default function MindmapsPage() {
     }
 
     fetchMindmaps()
-  }, [token, user])
+  }, [user])
 
   // 格式化日期显示
   const formatDate = (dateString) => {
@@ -276,8 +276,8 @@ export default function MindmapsPage() {
       // 调用API删除（这里可以是软删除或者标记删除）
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/mindmaps/${deleteModal.mindmapId}`, {
         method: 'DELETE',
+        credentials: 'include',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       })

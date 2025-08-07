@@ -16,7 +16,7 @@ import DeleteConfirmationModal from '../../../components/mindmap/DeleteConfirmat
 import { exportSVG, exportPNG, getSafeFilename, getTimestamp } from '../../../lib/exportUtils.js'
 
 export default function ViewMindmapPage() {
-  const { user, token, isLoading: isAuthLoading } = useAuth()
+  const { user, isLoading: isAuthLoading } = useAuth()
   const router = useRouter()
   const params = useParams()
   const searchParams = useSearchParams()
@@ -94,8 +94,8 @@ export default function ViewMindmapPage() {
       setIsDeleting(true)
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/mindmaps/${mindmapId}`, {
         method: 'DELETE',
+        credentials: 'include',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       })
@@ -120,8 +120,8 @@ export default function ViewMindmapPage() {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/mindmaps/${mindmapId}`, {
         method: 'PATCH',
+        credentials: 'include',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
