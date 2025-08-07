@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 60 * 24 * 7  # 7 天
     
     # 前端配置
+    frontend_url: str = os.getenv("FRONTEND_URL", "https://thinkso.io")
     next_public_api_url: str = "http://localhost:8000"
     
     # Google Gemini AI

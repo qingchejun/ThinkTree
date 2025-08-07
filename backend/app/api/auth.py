@@ -33,7 +33,8 @@ from ..utils.security import (
     validate_email,
     validate_password,
     get_password_strength,
-    get_token_from_cookie
+    get_token_from_cookie,
+    get_cookie_domain
 )
 from ..utils.email_service import email_service
 from ..utils.invitation_utils import validate_invitation_code, use_invitation_code
@@ -858,7 +859,9 @@ async def verify_code(request: Request, data: VerifyCodeRequest, db: Session = D
     )
     response = JSONResponse(content=login_response.dict())
     
-    # 设置双Cookie安全策略
+    # 设置双Cookie安全策略 - 支持跨子域
+    cookie_domain = get_cookie_domain()
+    
     # Access Token Cookie - 短期，用于API请求
     response.set_cookie(
         key="access_token",
@@ -867,7 +870,8 @@ async def verify_code(request: Request, data: VerifyCodeRequest, db: Session = D
         secure=True,
         samesite="lax",
         max_age=15 * 60,  # 15分钟
-        path="/"
+        path="/",
+        domain=cookie_domain  # 🔑 关键：支持跨子域
     )
     
     # Refresh Token Cookie - 长期，仅用于刷新，路径限制
@@ -878,7 +882,8 @@ async def verify_code(request: Request, data: VerifyCodeRequest, db: Session = D
         secure=True,
         samesite="strict",
         max_age=7 * 24 * 60 * 60,  # 7天
-        path="/api/auth/refresh"
+        path="/api/auth/refresh",
+        domain=cookie_domain  # 🔑 关键：支持跨子域
     )
     
     return response
@@ -954,6 +959,7 @@ async def refresh_token(request: Request, db: Session = Depends(get_db)):
     
     # 返回成功响应并设置新的Cookie
     response = JSONResponse(content={"success": True, "message": "令牌刷新成功"})
+    cookie_domain = get_cookie_domain()
     
     # 设置新的Access Token Cookie
     response.set_cookie(
@@ -963,7 +969,8 @@ async def refresh_token(request: Request, db: Session = Depends(get_db)):
         secure=True,
         samesite="lax",
         max_age=15 * 60,  # 15分钟
-        path="/"
+        path="/",
+        domain=cookie_domain  # 🔑 关键：支持跨子域
     )
     
     # 设置新的Refresh Token Cookie（令牌轮换）
@@ -974,7 +981,8 @@ async def refresh_token(request: Request, db: Session = Depends(get_db)):
         secure=True,
         samesite="strict",
         max_age=7 * 24 * 60 * 60,  # 7天
-        path="/api/auth/refresh"
+        path="/api/auth/refresh",
+        domain=cookie_domain  # 🔑 关键：支持跨子域
     )
     
     return response
@@ -986,6 +994,7 @@ async def logout():
     用户登出端点 - 清除HttpOnly Cookie
     """
     response = JSONResponse(content={"success": True, "message": "退出登录成功"})
+    cookie_domain = get_cookie_domain()
     
     # 清除Access Token Cookie
     response.set_cookie(
@@ -995,7 +1004,8 @@ async def logout():
         secure=True,
         samesite="lax",
         max_age=0,  # 立即过期
-        path="/"
+        path="/",
+        domain=cookie_domain  # 🔑 关键：支持跨子域
     )
     
     # 清除Refresh Token Cookie
@@ -1006,7 +1016,8 @@ async def logout():
         secure=True,
         samesite="strict",
         max_age=0,  # 立即过期
-        path="/api/auth/refresh"
+        path="/api/auth/refresh",
+        domain=cookie_domain  # 🔑 关键：支持跨子域
     )
     
     return response
@@ -1865,8 +1876,9 @@ async def google_callback(request: StarletteRequest, db: Session = Depends(get_d
         if daily_reward_granted:
             frontend_callback_url += "&daily_reward=true"
         
-        # 设置双Cookie安全策略并重定向
+        # 设置双Cookie安全策略并重定向 - 支持跨子域
         response = RedirectResponse(url=frontend_callback_url)
+        cookie_domain = get_cookie_domain()
         
         # Access Token Cookie - 短期，用于API请求
         response.set_cookie(
@@ -1876,7 +1888,8 @@ async def google_callback(request: StarletteRequest, db: Session = Depends(get_d
             secure=True,
             samesite="lax",
             max_age=15 * 60,  # 15分钟
-            path="/"
+            path="/",
+            domain=cookie_domain  # 🔑 关键：支持跨子域
         )
         
         # Refresh Token Cookie - 长期，仅用于刷新，路径限制
@@ -1887,7 +1900,8 @@ async def google_callback(request: StarletteRequest, db: Session = Depends(get_d
             secure=True,
             samesite="strict",
             max_age=7 * 24 * 60 * 60,  # 7天
-            path="/api/auth/refresh"
+            path="/api/auth/refresh",
+            domain=cookie_domain  # 🔑 关键：支持跨子域
         )
         
         return response

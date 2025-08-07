@@ -302,3 +302,42 @@ def get_token_from_cookie(request, cookie_name: str) -> Optional[str]:
         str: 令牌值，如果不存在则返回None
     """
     return request.cookies.get(cookie_name)
+
+
+def get_cookie_domain() -> str:
+    """
+    根据FRONTEND_URL动态获取Cookie的domain参数
+    
+    Examples:
+        FRONTEND_URL=https://www.thinkso.io -> .thinkso.io
+        FRONTEND_URL=https://thinktree-frontend.onrender.com -> .onrender.com
+        FRONTEND_URL=http://localhost:3000 -> localhost
+        
+    Returns:
+        str: Cookie的domain值
+    """
+    from ..core.config import settings
+    from urllib.parse import urlparse
+    
+    try:
+        parsed_url = urlparse(settings.frontend_url)
+        hostname = parsed_url.hostname or "localhost"
+        
+        # 本地开发环境
+        if hostname == "localhost" or hostname == "127.0.0.1":
+            return "localhost"
+        
+        # 生产环境 - 提取根域名
+        parts = hostname.split('.')
+        if len(parts) >= 2:
+            # 对于 www.thinkso.io -> .thinkso.io
+            # 对于 thinktree-frontend.onrender.com -> .onrender.com
+            root_domain = '.'.join(parts[-2:])
+            return f".{root_domain}"
+        else:
+            # 单一域名情况
+            return hostname
+            
+    except Exception as e:
+        print(f"Error parsing FRONTEND_URL for cookie domain: {e}")
+        return ".thinkso.io"  # 默认值
