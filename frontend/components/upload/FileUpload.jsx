@@ -36,11 +36,8 @@ const getErrorMessage = (detail, defaultMessage = '处理失败') => {
   return defaultMessage
 }
 
-export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadError, token }) {
-  const { user, token: authToken, refreshUser } = useAuth()
-  
-  // 优先使用传入的token，如果没有则使用AuthContext的token
-  const activeToken = token || authToken
+export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadError }) {
+  const { user, refreshUser } = useAuth()
   const [dragActive, setDragActive] = useState(false)
   const [textInput, setTextInput] = useState('')
   const [uploadMode, setUploadMode] = useState('file') // 'file' or 'text'
@@ -68,9 +65,9 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
       const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
       const response = await fetch(`${API_BASE_URL}/api/estimate-credit-cost`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${activeToken}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ text: text.trim() })
       })
@@ -100,7 +97,7 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
     } else {
       setCreditEstimate(null)
     }
-  }, [textInput, uploadMode, activeToken]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [textInput, uploadMode]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // 处理积分不足的友好提示
   const showInsufficientCreditsAlert = (requiredCredits, currentBalance) => {
@@ -170,9 +167,7 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
       const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
       const response = await fetch(`${API_BASE_URL}/api/upload/analyze`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${activeToken}`
-        },
+        credentials: 'include',
         body: formData,
       })
 
@@ -206,9 +201,9 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
       const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
       const response = await fetch(`${API_BASE_URL}/api/mindmaps/generate-from-file`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${activeToken}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           file_token: fileAnalysis.file_token
@@ -256,9 +251,9 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
       const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
       const response = await fetch(`${API_BASE_URL}/api/process-text`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${activeToken}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           text: textInput.trim()
