@@ -81,6 +81,18 @@ export function AuthProvider({ children }) {
         const userData = await response.json()
         console.log('✅ 获取用户信息成功:', userData)
         
+        // 🔍 验证响应数据是否为有效的用户数据
+        if (!userData || typeof userData !== 'object' || userData.message) {
+          console.log('⚠️ 响应数据无效，可能是测试接口:', userData)
+          return null
+        }
+        
+        // 进一步验证用户数据结构
+        if (!userData.email && !userData.id) {
+          console.log('⚠️ 用户数据结构无效，缺少必要字段:', userData)
+          return null
+        }
+        
         // 检查是否发放了每日奖励
         if (userData.daily_reward_granted) {
           console.log('🎉 检测到每日奖励发放')

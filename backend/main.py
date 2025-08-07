@@ -1,7 +1,6 @@
 # main.py  —— CORS Final Test (Corrected Version) ——
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
 
 app = FastAPI(title="CORS Final Test API")
 
@@ -19,19 +18,7 @@ app.add_middleware(
     allow_headers=["*"],   # 关键修正：同上
 )
 
-# --- 模拟的测试接口 ---
-class LoginPayload(BaseModel):
-    email: str
-
-@app.get("/api/auth/profile")
-async def test_profile():
-    return {"message": "CORS test for GET /profile successful!"}
-
-@app.post("/api/auth/initiate-login")
-async def test_initiate_login(payload: LoginPayload):
-    return {
-        "message": f"CORS test for POST /initiate-login successful for {payload.email}!"
-    }
+# --- 测试接口已移除，使用真正的业务接口 ---
 
 @app.get("/health")
 async def health_check():

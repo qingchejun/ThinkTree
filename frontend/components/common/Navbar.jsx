@@ -65,8 +65,11 @@ const Navbar = () => {
     return null;
   }
 
-  if (!user) {
-    // 如果用户未登录，可以显示一个简化的导航栏或登录按钮
+  // 🔍 更严格的用户状态判断 - 确保user对象有效且包含必要信息
+  const isValidUser = user && typeof user === 'object' && (user.email || user.id) && !user.message;
+  
+  if (!isValidUser) {
+    // 如果用户未登录或用户数据无效，显示简化的导航栏
     return (
       <header className="bg-white/95 backdrop-blur-lg sticky top-0 z-40 border-b border-gray-200 flex-shrink-0">
         <div className="container mx-auto px-6 py-3 flex justify-between items-center">
