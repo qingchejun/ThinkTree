@@ -28,7 +28,7 @@ import {
 } from 'lucide-react'
 
 export default function RecentPage() {
-  const { user, token, isLoading } = useAuth()
+  const { user, isLoading } = useAuth()
   const router = useRouter()
   
   // 页面状态管理
@@ -68,7 +68,7 @@ export default function RecentPage() {
   // 获取最近打开的思维导图列表
   useEffect(() => {
     const fetchRecent = async () => {
-      if (!token || !user) {
+      if (!user) {
         setMindmaps([])
         setLoading(false)
         return
@@ -81,8 +81,8 @@ export default function RecentPage() {
         // 获取所有思维导图
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/mindmaps/`, {
           method: 'GET',
+          credentials: 'include',
           headers: {
-            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         })
@@ -116,7 +116,53 @@ export default function RecentPage() {
     }
 
     fetchRecent()
-  }, [token, user])
+  }, [user])
+
+  // 监听localStorage变化，实时更新最近访问列表
+  useEffect(() => {
+    const handleStorageChange = () => {
+      // 重新获取最近访问列表
+      if (user) {
+        const fetchRecent = async () => {
+          try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/mindmaps/`, {
+              method: 'GET',
+              credentials: 'include',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            })
+
+            if (response.ok) {
+              const data = await response.json()
+              const recentIds = JSON.parse(localStorage.getItem('recentMindmaps') || '[]')
+              const recentMindmaps = recentIds
+                .map(recentItem => {
+                  const mindmap = data.find(m => m.id === recentItem.id)
+                  return mindmap ? { ...mindmap, lastVisited: recentItem.lastVisited } : null
+                })
+                .filter(Boolean)
+                .slice(0, 20)
+              setMindmaps(recentMindmaps || [])
+            }
+          } catch (err) {
+            console.error('更新最近访问列表失败:', err)
+          }
+        }
+        fetchRecent()
+      }
+    }
+
+    // 监听storage事件
+    window.addEventListener('storage', handleStorageChange)
+    // 自定义事件，用于同一页面的操作
+    window.addEventListener('recentChanged', handleStorageChange)
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+      window.removeEventListener('recentChanged', handleStorageChange)
+    }
+  }, [user])
 
   // 格式化日期显示
   const formatDate = (dateString) => {
@@ -296,6 +342,9 @@ export default function RecentPage() {
       localStorage.setItem('favoriteMindmaps', JSON.stringify(favoriteIds))
       setSuccessMessage(`已收藏"${mindmap.title}"`)
     }
+    
+    // 通知其他页面收藏状态已变化
+    window.dispatchEvent(new CustomEvent('favoritesChanged'))
     
     setTimeout(() => setSuccessMessage(null), 3000)
   }

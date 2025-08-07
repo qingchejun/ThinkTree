@@ -9,7 +9,7 @@ import { useAuth } from '../../context/AuthContext'
 // 移除ToastManager，使用内联提示样式
 
 export default function ShareModal({ isOpen, onClose, mindmapId, mindmapTitle }) {
-  const { token } = useAuth()
+  const { user } = useAuth()
   const [loading, setLoading] = useState(false)
   const [shareInfo, setShareInfo] = useState(null)
   const [error, setError] = useState(null)
@@ -23,11 +23,11 @@ export default function ShareModal({ isOpen, onClose, mindmapId, mindmapTitle })
 
   // 获取分享信息
   useEffect(() => {
-    if (isOpen && mindmapId && token) {
+    if (isOpen && mindmapId && user) {
       fetchShareInfo()
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, mindmapId, token])
+  }, [isOpen, mindmapId, user])
 
   const fetchShareInfo = async () => {
     try {
@@ -38,8 +38,8 @@ export default function ShareModal({ isOpen, onClose, mindmapId, mindmapTitle })
         `${process.env.NEXT_PUBLIC_API_URL}/api/mindmaps/${mindmapId}/share`,
         {
           method: 'GET',
+          credentials: 'include',
           headers: {
-            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         }
@@ -70,8 +70,8 @@ export default function ShareModal({ isOpen, onClose, mindmapId, mindmapTitle })
         `${process.env.NEXT_PUBLIC_API_URL}/api/mindmaps/${mindmapId}/share`,
         {
           method: 'POST',
+          credentials: 'include',
           headers: {
-            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         }
@@ -110,8 +110,8 @@ export default function ShareModal({ isOpen, onClose, mindmapId, mindmapTitle })
         `${process.env.NEXT_PUBLIC_API_URL}/api/mindmaps/${mindmapId}/share`,
         {
           method: 'DELETE',
+          credentials: 'include',
           headers: {
-            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         }

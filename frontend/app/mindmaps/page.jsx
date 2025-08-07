@@ -285,6 +285,20 @@ export default function MindmapsPage() {
       if (response.ok) {
         // 从当前列表中移除
         setMindmaps(prev => prev.filter(mindmap => mindmap.id !== deleteModal.mindmapId))
+        
+        // 从收藏和最近访问中移除
+        const favoriteIds = JSON.parse(localStorage.getItem('favoriteMindmaps') || '[]')
+        const newFavoriteIds = favoriteIds.filter(id => id !== deleteModal.mindmapId)
+        localStorage.setItem('favoriteMindmaps', JSON.stringify(newFavoriteIds))
+        
+        const recentIds = JSON.parse(localStorage.getItem('recentMindmaps') || '[]')
+        const newRecentIds = recentIds.filter(item => item.id !== deleteModal.mindmapId)
+        localStorage.setItem('recentMindmaps', JSON.stringify(newRecentIds))
+        
+        // 通知其他页面数据已变化
+        window.dispatchEvent(new CustomEvent('favoritesChanged'))
+        window.dispatchEvent(new CustomEvent('recentChanged'))
+        
         setSuccessMessage(`思维导图"${deleteModal.mindmapTitle}"已移动到回收站`)
         // 3秒后清除成功消息
         setTimeout(() => setSuccessMessage(null), 3000)
@@ -323,6 +337,9 @@ export default function MindmapsPage() {
       setSuccessMessage(`已收藏"${mindmap.title}"`)
     }
     
+    // 通知其他页面收藏状态已变化
+    window.dispatchEvent(new CustomEvent('favoritesChanged'))
+    
     setTimeout(() => setSuccessMessage(null), 3000)
   }
 
@@ -353,6 +370,9 @@ export default function MindmapsPage() {
     // 保持最多20条记录
     const limitedRecords = recentIds.slice(0, 20)
     localStorage.setItem('recentMindmaps', JSON.stringify(limitedRecords))
+    
+    // 通知其他页面访问记录已变化
+    window.dispatchEvent(new CustomEvent('recentChanged'))
   }
 
   // 取消删除

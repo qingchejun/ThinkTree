@@ -757,7 +757,7 @@ const DashboardClient = ({ initialData }) => {
         if (response.ok) {
           const data = await response.json();
           // 只显示前7个项目，其余的可以通过"查看全部"链接查看
-          setProjects((data || []).slice(0, 7));
+          setProjects((data || []).slice(0, 9));
         } else {
           console.error('获取思维导图列表失败:', response.status);
           setProjects([]);
