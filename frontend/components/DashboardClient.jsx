@@ -58,13 +58,11 @@ const useAsync = (asyncFunction) => {
 
 // 自定义Hook：用于API调用
 const useApi = () => {
-  const { token } = useAuth();
-  
   const apiCall = async (url, options = {}) => {
     const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${url}`, {
       ...options,
+      credentials: 'include',
       headers: {
-        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
         ...options.headers,
       },
@@ -382,8 +380,8 @@ const RecentProjects = React.memo(({ mindmaps, onCardClick, onCreateNew, loading
         
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/mindmaps/${deleteModal.mindmapId}`, {
           method: 'DELETE',
+          credentials: 'include',
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
             'Content-Type': 'application/json',
           },
         });
@@ -722,7 +720,7 @@ RecentProjects.displayName = 'RecentProjects';
 // ======================= 4. 主组件：创作中心 ========================
 // ===================================================================
 const DashboardClient = ({ initialData }) => {
-  const { logout, isLoading, user, token } = useAuth();
+  const { logout, isLoading, user } = useAuth();
   const router = useRouter();
   const { apiCall } = useApi();
 
@@ -740,7 +738,7 @@ const DashboardClient = ({ initialData }) => {
   // 获取用户思维导图列表
   useEffect(() => {
     const fetchProjects = async () => {
-      if (!token || !user) {
+      if (!user) {
         setProjects([]);
         setProjectsLoading(false);
         return;
@@ -750,8 +748,8 @@ const DashboardClient = ({ initialData }) => {
         setProjectsLoading(true);
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/mindmaps/`, {
           method: 'GET',
+          credentials: 'include',
           headers: {
-            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         });
@@ -773,7 +771,7 @@ const DashboardClient = ({ initialData }) => {
     };
 
     fetchProjects();
-  }, [token, user]);
+  }, [user]);
 
   const handleCreateMindMap = async (creationData) => {
     try {
