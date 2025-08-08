@@ -1,11 +1,18 @@
-# main.py  —— CORS Final Test (Corrected Version) ——
+# main.py - ThinkSo API 服务
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.core import register_exception_handlers
 
-app = FastAPI(title="CORS Final Test API")
+app = FastAPI(
+    title="ThinkSo API",
+    description="AI思维导图生成服务",
+    version="3.2.3"
+)
 
-# ★ 绝对最简且正确的 CORS 配置
-# 确保这是第一个被添加的中间件，并且在所有路由注册之前
+# 注册全局异常处理系统
+register_exception_handlers(app)
+
+# CORS 中间件配置
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -14,18 +21,16 @@ app.add_middleware(
         "http://localhost:3000",  # 本地开发环境的前端端口号
     ],
     allow_credentials=True,
-    allow_methods=["*"],   # 关键修正：必须是 ["*"] 或显式列出方法
-    allow_headers=["*"],   # 关键修正：同上
+    allow_methods=["*"],
+    allow_headers=["*"]
 )
 
-# --- 测试接口已移除，使用真正的业务接口 ---
-
+# 健康检查接口
 @app.get("/health")
 async def health_check():
-    # Render平台需要的健康检查接口
     return {"status": "ok"}
 
-# --- 如果您有其他路由，请确保在这里（CORS中间件之后）加载 ---
+# 注册业务路由
 from app.api import upload, mindmaps, auth, share, invitations, admin, redemption
 
 app.include_router(upload.router, prefix="/api", tags=["upload"])
