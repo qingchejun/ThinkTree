@@ -4,46 +4,26 @@
  */
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
-import { useAuth } from '../context/AuthContext.jsx' // 注意路径和文件扩展名
-import { getMindMap } from '../lib/api'
+import { useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { getMindmap } from '../lib/api/mindmaps'
+import { useAuth } from '../context/AuthContext.jsx'
 
 export function useMindmap(mindmapId) {
   const { user } = useAuth()
-  const [mindmap, setMindmap] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-
-  useEffect(() => {
-    const fetchMindmap = async () => {
-      if (!mindmapId || !user) return
-      try {
-        setLoading(true)
-        setError(null)
-        const data = await getMindMap(mindmapId)
-        setMindmap(data)
-      } catch (err) {
-        if (err.code === 404) {
-          setError('思维导图不存在或您无权访问')
-        } else if (err.code === 402) {
-          setError('积分不足，请先充值或兑换积分')
-        } else {
-          setError(err.message || '获取思维导图失败')
-        }
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchMindmap()
-  }, [user, mindmapId])
+  const enabled = Boolean(mindmapId && user)
+  const query = useQuery({
+    queryKey: ['mindmap', mindmapId],
+    queryFn: () => getMindmap(mindmapId),
+    enabled,
+    staleTime: 60 * 1000,
+    refetchOnWindowFocus: true,
+  })
 
   const stableMindmapData = useMemo(() => {
-    return mindmap ? {
-      title: mindmap.title,
-      markdown: mindmap.content
-    } : null
-  }, [mindmap?.title, mindmap?.content])
+    const m = query.data
+    return m ? { title: m.title, markdown: m.content } : null
+  }, [query.data?.title, query.data?.content])
 
-  return { mindmap, setMindmap, loading, error, setError, stableMindmapData }
+  return { mindmap: query.data, setMindmap: () => {}, loading: query.isLoading, error: query.error, setError: () => {}, stableMindmapData }
 }

@@ -5,6 +5,7 @@ import React from 'react';
 import { usePathname } from 'next/navigation'; // 引入 usePathname
 import { GoogleReCaptchaProvider } from 'react-google-recaptcha-v3'
 import { AuthProvider } from '../context/AuthContext'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ModalProvider, useModal } from '../context/ModalContext';
 import { ToastContainer } from '../components/common/Toast'
 import { DailyRewardToast } from '../components/common/DailyRewardToast'
@@ -29,6 +30,7 @@ function LayoutWrapper({ children }) {
 }
 
 export default function RootLayout({ children }) {
+  const queryClient = new QueryClient()
   // reCAPTCHA Site Key - 从环境变量获取
   const recaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
   
@@ -46,18 +48,22 @@ export default function RootLayout({ children }) {
       <body className={`${inter.className} antialiased`}>
         {recaptchaSiteKey ? (
           <GoogleReCaptchaProvider reCaptchaKey={recaptchaSiteKey}>
+            <QueryClientProvider client={queryClient}>
+              <AuthProvider>
+                <ModalProvider>
+                  <LayoutWrapper>{children}</LayoutWrapper>
+                </ModalProvider>
+              </AuthProvider>
+            </QueryClientProvider>
+          </GoogleReCaptchaProvider>
+        ) : (
+          <QueryClientProvider client={queryClient}>
             <AuthProvider>
               <ModalProvider>
                 <LayoutWrapper>{children}</LayoutWrapper>
               </ModalProvider>
             </AuthProvider>
-          </GoogleReCaptchaProvider>
-        ) : (
-          <AuthProvider>
-            <ModalProvider>
-              <LayoutWrapper>{children}</LayoutWrapper>
-            </ModalProvider>
-          </AuthProvider>
+          </QueryClientProvider>
         )}
       </body>
     </html>
