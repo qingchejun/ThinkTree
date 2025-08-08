@@ -301,10 +301,21 @@ async def get_current_user(
     """
     从 HttpOnly Cookie 中的 Access Token 获取当前用户
     """
+    # 【调试日志】详细输出请求信息
+    print(f"🔍 [get_current_user] 请求路径: {request.url.path}")
+    print(f"🔍 [get_current_user] 请求来源: {request.headers.get('origin', 'unknown')}")
+    print(f"🔍 [get_current_user] 原始Cookie头: {request.headers.get('cookie', 'none')}")
+    print(f"🔍 [get_current_user] 解析后的cookies: {dict(request.cookies)}")
+    
     # 从Cookie中读取Access Token
     access_token = get_token_from_cookie(request, "access_token")
     
+    print(f"🔍 [get_current_user] 查找access_token结果: {'找到' if access_token else '未找到'}")
+    if access_token:
+        print(f"🔍 [get_current_user] access_token长度: {len(access_token)}")
+    
     if not access_token:
+        print(f"❌ [get_current_user] 访问令牌不存在，返回401")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="访问令牌不存在",
@@ -2154,12 +2165,12 @@ async def magic_link_callback(token: str, db: Session = Depends(get_db)):
         frontend_callback_url += "&daily_reward=true"
     
     # 创建重定向响应并设置Cookie（跨站点：不设置domain，SameSite=None）
-    response = RedirectResponse(url=frontend_callback_url)
+    response = RedirectResponse(url=frontend_callback_url, status_code=302)
     
     print(f"✅ 魔法链接登录成功，用户: {user.email}, 重定向到: {frontend_callback_url}")
     print(f"🍪 设置访问令牌Cookie，长度: {len(access_token)}")
     
-    # 设置访问令牌Cookie
+    # 设置访问令牌Cookie - 必须是 Path="/"
     response.set_cookie(
         key="access_token",
         value=access_token,
@@ -2170,7 +2181,7 @@ async def magic_link_callback(token: str, db: Session = Depends(get_db)):
         path="/"
     )
     
-    # 设置刷新令牌Cookie  
+    # 设置刷新令牌Cookie - Path="/api/auth/refresh" 
     response.set_cookie(
         key="refresh_token", 
         value=refresh_token,
@@ -2180,6 +2191,76 @@ async def magic_link_callback(token: str, db: Session = Depends(get_db)):
         samesite="none",
         path="/api/auth/refresh"
     )
+    
+    # 调试：输出响应头信息
+    print(f"🔍 响应状态码: {response.status_code}")
+    print(f"🔍 响应头数量: {len(response.headers)}")
+    for header_name, header_value in response.headers.items():
+        if header_name.lower() == 'set-cookie':
+            print(f"🍪 Set-Cookie: {header_value}")
+    
+    return response
+
+
+@router.get("/debug-cookies")
+async def debug_cookies(request: Request):
+    """
+    调试端点：检查请求中的Cookie
+    """
+    cookies_dict = dict(request.cookies)
+    print(f"🍪 调试Cookie - 请求来源: {request.headers.get('origin', 'unknown')}")
+    print(f"🍪 调试Cookie - User-Agent: {request.headers.get('user-agent', 'unknown')}")
+    print(f"🍪 调试Cookie - 原始Cookie头: {request.headers.get('cookie', 'none')}")
+    print(f"🍪 调试Cookie - 解析后的cookies: {cookies_dict}")
+    
+    return {
+        "cookies": cookies_dict,
+        "cookie_count": len(cookies_dict),
+        "has_access_token": "access_token" in cookies_dict,
+        "has_refresh_token": "refresh_token" in cookies_dict,
+        "origin": request.headers.get('origin', 'unknown'),
+        "user_agent": request.headers.get('user-agent', 'unknown')[:100] + "..." if len(request.headers.get('user-agent', '')) > 100 else request.headers.get('user-agent', 'unknown')
+    }
+
+
+@router.get("/debug-set-cookie-example")
+async def debug_set_cookie_example():
+    """
+    调试端点：生成Set-Cookie响应头示例
+    """
+    # 生成示例token
+    access_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ"
+    refresh_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwOTg3NjU0MzIxIiwibmFtZSI6IkphbmUgRG9lIiwiaWF0IjoxNjE2MjM5MDIyfQ"
+    
+    response = RedirectResponse(url="https://thinkso.io/auth/callback?source=magic_link", status_code=302)
+    
+    # 设置access_token Cookie - Path="/"
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        max_age=15 * 60,  # 15分钟
+        httponly=True,
+        secure=True,
+        samesite="none",
+        path="/"
+    )
+    
+    # 设置refresh_token Cookie - Path="/api/auth/refresh" 
+    response.set_cookie(
+        key="refresh_token", 
+        value=refresh_token,
+        max_age=7 * 24 * 60 * 60,  # 7天
+        httponly=True,
+        secure=True,
+        samesite="none",
+        path="/api/auth/refresh"
+    )
+    
+    # 输出响应头信息用于调试
+    print("🔍 生成的Set-Cookie响应头示例:")
+    for header_name, header_value in response.headers.items():
+        if header_name.lower() == 'set-cookie':
+            print(f"Set-Cookie: {header_value}")
     
     return response
 
