@@ -2090,8 +2090,11 @@ async def magic_link_callback(token: str, db: Session = Depends(get_db)):
         LoginToken.expires_at > now
     ).first()
 
+    print(f"🔍 魔法链接回调: token={token}, 找到记录={'是' if login_token else '否'}")
+    
     if not login_token:
         # 重定向到登录页面并显示错误
+        print(f"❌ 魔法链接无效或已过期: {token}")
         return RedirectResponse(url=f"{settings.frontend_url}/?auth=login&error=invalid_token")
 
     # 将该 token 标记为已使用
@@ -2153,6 +2156,9 @@ async def magic_link_callback(token: str, db: Session = Depends(get_db)):
     # 创建重定向响应并设置Cookie（跨站点：不设置domain，SameSite=None）
     response = RedirectResponse(url=frontend_callback_url)
     
+    print(f"✅ 魔法链接登录成功，用户: {user.email}, 重定向到: {frontend_callback_url}")
+    print(f"🍪 设置访问令牌Cookie，长度: {len(access_token)}")
+    
     # 设置访问令牌Cookie
     response.set_cookie(
         key="access_token",
@@ -2172,7 +2178,7 @@ async def magic_link_callback(token: str, db: Session = Depends(get_db)):
         httponly=True,
         secure=True,
         samesite="none",
-        path="/"
+        path="/api/auth/refresh"
     )
     
     return response
