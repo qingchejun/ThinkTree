@@ -17,6 +17,7 @@ from ..models.mindmap import Mindmap
 from ..models.user import User
 from ..services.credit_service import CreditService
 from ..services import mindmap_service
+from ..services.mindmap_service import MindmapService
 from .auth import get_current_user
 from .schemas.mindmap_schemas import (
     MindmapCreate, MindmapResponse, MindmapUpdateRequest, FileGenerateRequest
@@ -38,32 +39,16 @@ async def create_mindmap(
     需要JWT认证
     """
     try:
-        # 创建新的思维导图记录
-        new_mindmap = Mindmap(
+        service = MindmapService(db)
+        new_mindmap = service.create(
+            user=current_user,
             title=mindmap_data.title,
             content=mindmap_data.content,
             description=mindmap_data.description,
             tags=mindmap_data.tags,
             is_public=mindmap_data.is_public,
-            user_id=current_user.id
         )
-        
-        db.add(new_mindmap)
-        db.commit()
-        db.refresh(new_mindmap)
-        
-        # 返回创建成功的思维导图
-        return MindmapResponse(
-            id=str(new_mindmap.id),
-            title=new_mindmap.title,
-            content=new_mindmap.content,
-            description=new_mindmap.description,
-            tags=new_mindmap.tags.split(',') if new_mindmap.tags else [],
-            is_public=new_mindmap.is_public,
-            created_at=new_mindmap.created_at.isoformat(),
-            updated_at=new_mindmap.updated_at.isoformat(),
-            user_id=new_mindmap.user_id
-        )
+        return mindmap_service.convert_mindmap_to_response(new_mindmap)
         
     except SQLAlchemyError as e:
         db.rollback()
@@ -79,41 +64,42 @@ async def create_mindmap(
         )
 
 
-@router.get("/", response_model=List[MindmapResponse])
+from .schemas.mindmap_schemas import MindmapListResponse, MindmapSummaryResponse
+
+@router.get("/", response_model=MindmapListResponse)
 async def get_user_mindmaps(
     request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-    skip: int = 0,
-    limit: int = 100
+    limit: int = 20,
+    cursor: Optional[str] = None
 ):
     """
     获取当前用户的所有思维导图列表
     需要JWT认证
     """
     try:
-        # 查询当前用户的思维导图
-        mindmaps = db.query(Mindmap).filter(
-            Mindmap.user_id == current_user.id
-        ).order_by(
-            Mindmap.updated_at.desc()
-        ).offset(skip).limit(limit).all()
-        
-        # 转换为完整响应格式，包含完整content用于缩略图生成
-        return [
-            MindmapResponse(
-                id=str(mindmap.id),
-                title=mindmap.title,
-                content=mindmap.content,
-                description=mindmap.description,
-                tags=mindmap.tags.split(',') if mindmap.tags else [],
-                is_public=mindmap.is_public,
-                created_at=mindmap.created_at.isoformat(),
-                updated_at=mindmap.updated_at.isoformat(),
-                user_id=mindmap.user_id
-            )
-            for mindmap in mindmaps
-        ]
+        service = MindmapService(db)
+        items, next_cursor, has_next = service.list_for_user_paginated(
+            user_id=current_user.id, limit=limit, cursor=cursor
+        )
+        return MindmapListResponse(
+            items=[
+                MindmapSummaryResponse(
+                    id=str(m.id),
+                    title=m.title,
+                    description=m.description,
+                    tags=m.tags.split(',') if m.tags else [],
+                    is_public=m.is_public,
+                    created_at=m.created_at.isoformat() if m.created_at else "",
+                    updated_at=m.updated_at.isoformat() if m.updated_at else "",
+                    content_preview=m.content[:100] + "..." if len(m.content) > 100 else m.content,
+                )
+                for m in items
+            ],
+            has_next=has_next,
+            next_cursor=next_cursor,
+        )
         
     except SQLAlchemyError as e:
         raise HTTPException(
@@ -148,7 +134,7 @@ async def get_mindmap(
             detail="无效的思维导图ID"
         )
 
-    mindmap = mindmap_service.get_mindmap_for_user(db, mindmap_id, current_user)
+    mindmap = MindmapService(db).get_for_user(mindmap_id, current_user)
     
     if not mindmap:
         raise HTTPException(
@@ -180,7 +166,7 @@ async def update_mindmap(
             detail="无效的思维导图ID"
         )
 
-    mindmap = mindmap_service.get_mindmap_for_user(db, mindmap_id, current_user)
+    mindmap = MindmapService(db).get_for_user(mindmap_id, current_user)
     
     if not mindmap:
         raise HTTPException(
@@ -195,9 +181,14 @@ async def update_mindmap(
     mindmap.tags = mindmap_data.tags
     mindmap.is_public = mindmap_data.is_public
     
-    db.commit()
-    db.refresh(mindmap)
-    
+    mindmap = MindmapService(db).update_full(
+        mindmap=mindmap,
+        title=mindmap_data.title,
+        content=mindmap_data.content,
+        description=mindmap_data.description,
+        tags=mindmap_data.tags,
+        is_public=mindmap_data.is_public,
+    )
     return mindmap_service.convert_mindmap_to_response(mindmap)
 
 
@@ -222,7 +213,7 @@ async def patch_mindmap(
             detail="无效的思维导图ID"
         )
 
-    mindmap = mindmap_service.get_mindmap_for_user(db, mindmap_id, current_user)
+    mindmap = MindmapService(db).get_for_user(mindmap_id, current_user)
     
     if not mindmap:
         raise HTTPException(
@@ -232,12 +223,7 @@ async def patch_mindmap(
     
     # 只更新提供的字段
     update_data = mindmap_data.dict(exclude_unset=True)
-    for key, value in update_data.items():
-        setattr(mindmap, key, value)
-    
-    db.commit()
-    db.refresh(mindmap)
-    
+    mindmap = MindmapService(db).patch(mindmap=mindmap, updates=update_data)
     return mindmap_service.convert_mindmap_to_response(mindmap)
 
 
@@ -261,7 +247,7 @@ async def delete_mindmap(
             detail="无效的思维导图ID"
         )
 
-    mindmap = mindmap_service.get_mindmap_for_user(db, mindmap_id, current_user)
+    mindmap = MindmapService(db).get_for_user(mindmap_id, current_user)
     
     if not mindmap:
         raise HTTPException(
@@ -269,9 +255,7 @@ async def delete_mindmap(
             detail="思维导图不存在或无权删除"
         )
     
-    # 删除记录
-    db.delete(mindmap)
-    db.commit()
+    MindmapService(db).delete(mindmap=mindmap)
     
     return  # 204 No Content
 

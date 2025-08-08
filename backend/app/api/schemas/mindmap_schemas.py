@@ -50,6 +50,13 @@ class MindmapSummaryResponse(BaseModel):
     updated_at: str
     content_preview: str
 
+
+class MindmapListResponse(BaseModel):
+    """游标分页列表响应"""
+    items: List[MindmapSummaryResponse]
+    has_next: bool
+    next_cursor: Optional[str] = None
+
 class MindmapUpdateRequest(BaseModel):
     """部分更新思维导图的请求模型"""
     title: Optional[str] = None
