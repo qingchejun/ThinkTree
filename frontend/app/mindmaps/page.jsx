@@ -95,7 +95,8 @@ export default function MindmapsPage() {
 
         if (response.ok) {
           const data = await response.json()
-          setMindmaps(data || [])
+          const items = Array.isArray(data) ? data : (data?.items || [])
+          setMindmaps(items)
         } else {
           const errorData = await response.json()
           throw new Error(errorData.detail || '获取思维导图列表失败')
