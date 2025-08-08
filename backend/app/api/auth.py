@@ -2140,16 +2140,42 @@ async def magic_link_callback(token: str, db: Session = Depends(get_db)):
 
     db.commit()
     
-    # 为该用户创建 JWT 访问令牌
-    jwt_token = create_access_token(data={"sub": str(user.id)})
+    # 生成双令牌
+    access_token = create_access_token(data={"sub": str(user.id)})
+    refresh_token = create_refresh_token(data={"sub": str(user.id)})
     
-    # 重定向回前端首页，并在 URL 参数中带上 JWT
-    frontend_callback_url = f"{settings.frontend_url}/auth/callback?token={jwt_token}"
+    # 重定向回前端，使用source参数标识魔法链接登录
+    frontend_callback_url = f"{settings.frontend_url}/auth/callback?source=magic_link"
     
     if daily_reward_granted:
         frontend_callback_url += "&daily_reward=true"
     
-    return RedirectResponse(url=frontend_callback_url)
+    # 创建重定向响应并设置Cookie（跨站点：不设置domain，SameSite=None）
+    response = RedirectResponse(url=frontend_callback_url)
+    
+    # 设置访问令牌Cookie
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        max_age=15 * 60,  # 15分钟
+        httponly=True,
+        secure=True,
+        samesite="none",
+        path="/"
+    )
+    
+    # 设置刷新令牌Cookie  
+    response.set_cookie(
+        key="refresh_token", 
+        value=refresh_token,
+        max_age=7 * 24 * 60 * 60,  # 7天
+        httponly=True,
+        secure=True,
+        samesite="none",
+        path="/"
+    )
+    
+    return response
 
 
 @router.get("/google/test-info")
