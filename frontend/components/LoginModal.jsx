@@ -46,6 +46,7 @@ const LoginModal = ({ isOpen, onClose, initialInvitationCode, autoOpenRegister }
   const { executeRecaptcha } = useGoogleReCaptcha();
 
   const inputRefs = useRef([]);
+  const emailInputRef = useRef(null);
 
   // 初始化客户端状态
   useEffect(() => {
@@ -64,6 +65,18 @@ const LoginModal = ({ isOpen, onClose, initialInvitationCode, autoOpenRegister }
       inputRefs.current[0]?.focus();
     }
   }, [view]);
+
+  // 当弹窗打开时自动聚焦到邮箱输入框
+  useEffect(() => {
+    if (isOpen && view === 'initial' && emailInputRef.current) {
+      // 添加延迟确保DOM已经渲染完成
+      const timer = setTimeout(() => {
+        emailInputRef.current?.focus();
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, view]);
 
   // 处理邮件发送请求
   const handleInitiateLogin = async (e) => {
@@ -326,6 +339,7 @@ const LoginModal = ({ isOpen, onClose, initialInvitationCode, autoOpenRegister }
             {/* 邮箱输入表单 */}
             <form onSubmit={handleInitiateLogin} className="w-full">
               <input
+                ref={emailInputRef}
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
