@@ -858,17 +858,14 @@ async def verify_code(request: Request, data: VerifyCodeRequest, db: Session = D
     )
     response = JSONResponse(content=login_response.dict())
     
-    # 设置双Cookie安全策略 - 同根域（same-root domain）专用配置
-    from ..utils.security import get_cookie_domain
-    cookie_domain = get_cookie_domain()
+    # 设置双Cookie安全策略（跨站点：不设置 domain，使用主机专用Cookie；SameSite=None）
     # Access Token Cookie - 短期，用于API请求
     response.set_cookie(
         key="access_token",
         value=access_token,
         httponly=True,
         secure=True,           # 🔑 必须为 True
-        samesite="lax",        # 🔑 同根域使用 'lax' 更安全
-        domain=cookie_domain,  # 🔑 根域名作用域/本地localhost
+        samesite="none",      # 🔑 跨站点必须为 None
         max_age=15 * 60,       # 15分钟
         path="/"
     )
@@ -879,8 +876,7 @@ async def verify_code(request: Request, data: VerifyCodeRequest, db: Session = D
         value=refresh_token,
         httponly=True,
         secure=True,           # 🔑 必须为 True
-        samesite="lax",        # 🔑 同根域使用 'lax' 更安全
-        domain=cookie_domain,  # 🔑 根域名作用域/本地localhost
+        samesite="none",      # 🔑 跨站点必须为 None
         max_age=7 * 24 * 60 * 60,  # 7天
         path="/api/auth/refresh"
     )
@@ -959,28 +955,24 @@ async def refresh_token(request: Request, db: Session = Depends(get_db)):
     # 返回成功响应并设置新的Cookie
     response = JSONResponse(content={"success": True, "message": "令牌刷新成功"})
     
-    # 设置新的Access Token Cookie - 同根域配置
-    from ..utils.security import get_cookie_domain
-    cookie_domain = get_cookie_domain()
+    # 设置新的Access Token Cookie（跨站点：不设置domain，SameSite=None）
     response.set_cookie(
         key="access_token",
         value=new_access_token,
         httponly=True,
         secure=True,           # 🔑 必须为 True
-        samesite="lax",        # 🔑 同根域使用 'lax' 更安全
-        domain=cookie_domain,  # 🔑 根域名作用域/本地localhost
+        samesite="none",      # 🔑 跨站点必须为 None
         max_age=15 * 60,       # 15分钟
         path="/"
     )
     
-    # 设置新的Refresh Token Cookie（令牌轮换）- 同根域配置
+    # 设置新的Refresh Token Cookie（令牌轮换）
     response.set_cookie(
         key="refresh_token",
         value=new_refresh_token,
         httponly=True,
         secure=True,           # 🔑 必须为 True
-        samesite="lax",        # 🔑 同根域使用 'lax' 更安全
-        domain=cookie_domain,  # 🔑 根域名作用域/本地localhost
+        samesite="none",      # 🔑 跨站点必须为 None
         max_age=7 * 24 * 60 * 60,  # 7天
         path="/api/auth/refresh"
     )
@@ -995,28 +987,24 @@ async def logout():
     """
     response = JSONResponse(content={"success": True, "message": "退出登录成功"})
     
-    # 清除Access Token Cookie - 同根域配置
-    from ..utils.security import get_cookie_domain
-    cookie_domain = get_cookie_domain()
+    # 清除Access Token Cookie（跨站点：不设置domain）
     response.set_cookie(
         key="access_token",
         value="",
         httponly=True,
         secure=True,           # 🔑 必须为 True
-        samesite="lax",        # 🔑 同根域使用 'lax' 更安全
-        domain=cookie_domain,  # 🔑 根域名作用域/本地localhost
+        samesite="none",
         max_age=0,             # 立即过期
         path="/"
     )
     
-    # 清除Refresh Token Cookie - 同根域配置
+    # 清除Refresh Token Cookie
     response.set_cookie(
         key="refresh_token", 
         value="",
         httponly=True,
         secure=True,           # 🔑 必须为 True
-        samesite="lax",        # 🔑 同根域使用 'lax' 更安全
-        domain=cookie_domain,  # 🔑 根域名作用域/本地localhost
+        samesite="none",
         max_age=0,             # 立即过期
         path="/api/auth/refresh"
     )
@@ -1877,9 +1865,7 @@ async def google_callback(request: StarletteRequest, db: Session = Depends(get_d
         if daily_reward_granted:
             frontend_callback_url += "&daily_reward=true"
         
-        # 设置双Cookie安全策略并重定向 - 同根域（same-root domain）配置
-        from ..utils.security import get_cookie_domain
-        cookie_domain = get_cookie_domain()
+        # 设置双Cookie安全策略并重定向（跨站点：不设置domain，SameSite=None）
         response = RedirectResponse(url=frontend_callback_url)
         
         # Access Token Cookie - 短期，用于API请求
@@ -1888,8 +1874,7 @@ async def google_callback(request: StarletteRequest, db: Session = Depends(get_d
             value=access_token,
             httponly=True,
             secure=True,           # 🔑 必须为 True
-            samesite="lax",        # 🔑 同根域使用 'lax' 更安全
-            domain=cookie_domain,  # 🔑 根域名作用域/本地localhost
+            samesite="none",      # 🔑 跨站点必须为 None
             max_age=15 * 60,       # 15分钟
             path="/"
         )
@@ -1900,8 +1885,7 @@ async def google_callback(request: StarletteRequest, db: Session = Depends(get_d
             value=refresh_token,
             httponly=True,
             secure=True,           # 🔑 必须为 True
-            samesite="lax",        # 🔑 同根域使用 'lax' 更安全
-            domain=cookie_domain,  # 🔑 根域名作用域/本地localhost
+            samesite="none",      # 🔑 跨站点必须为 None
             max_age=7 * 24 * 60 * 60,  # 7天
             path="/api/auth/refresh"
         )
