@@ -6,6 +6,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useAuth } from '../context/AuthContext.jsx' // 注意路径和文件扩展名
+import { getMindMap } from '../lib/api'
 
 export function useMindmap(mindmapId) {
   const { user } = useAuth()
@@ -16,31 +17,19 @@ export function useMindmap(mindmapId) {
   useEffect(() => {
     const fetchMindmap = async () => {
       if (!mindmapId || !user) return
-
       try {
         setLoading(true)
         setError(null)
-
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/mindmaps/${mindmapId}`, {
-          method: 'GET',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        })
-
-        if (response.ok) {
-          const data = await response.json()
-          setMindmap(data)
-        } else if (response.status === 404) {
-          setError('思维导图不存在或您无权访问')
-        } else {
-          const errorData = await response.json()
-          throw new Error(errorData.detail || '获取思维导图失败')
-        }
+        const data = await getMindMap(mindmapId)
+        setMindmap(data)
       } catch (err) {
-        console.error('获取思维导图失败:', err)
-        setError(err.message)
+        if (err.code === 404) {
+          setError('思维导图不存在或您无权访问')
+        } else if (err.code === 402) {
+          setError('积分不足，请先充值或兑换积分')
+        } else {
+          setError(err.message || '获取思维导图失败')
+        }
       } finally {
         setLoading(false)
       }

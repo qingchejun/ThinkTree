@@ -4,6 +4,7 @@
 """
 
 from typing import Optional
+import uuid
 from sqlalchemy.orm import Session
 from uuid import UUID
 
@@ -16,8 +17,13 @@ def get_mindmap_for_user(db: Session, mindmap_id: str, user: User) -> Optional[M
     根据ID和用户获取思维导图，确保权限。
     这是被多个API端点重复使用的核心查询逻辑。
     """
+    try:
+        mindmap_uuid = uuid.UUID(str(mindmap_id))
+    except Exception:
+        return None
+
     return db.query(Mindmap).filter(
-        Mindmap.id == mindmap_id,
+        Mindmap.id == mindmap_uuid,
         Mindmap.user_id == user.id
     ).first()
 

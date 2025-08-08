@@ -138,6 +138,16 @@ async def get_mindmap(
     获取指定ID的思维导图详情
     需要JWT认证，只能获取自己的思维导图
     """
+    # 基础UUID校验（服务层已二次兜底）
+    import uuid
+    try:
+        _ = uuid.UUID(str(mindmap_id))
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="无效的思维导图ID"
+        )
+
     mindmap = mindmap_service.get_mindmap_for_user(db, mindmap_id, current_user)
     
     if not mindmap:
@@ -161,6 +171,15 @@ async def update_mindmap(
     更新指定ID的思维导图
     需要JWT认证，只能更新自己的思维导图
     """
+    import uuid
+    try:
+        _ = uuid.UUID(str(mindmap_id))
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="无效的思维导图ID"
+        )
+
     mindmap = mindmap_service.get_mindmap_for_user(db, mindmap_id, current_user)
     
     if not mindmap:
@@ -194,6 +213,15 @@ async def patch_mindmap(
     部分更新指定ID的思维导图（支持只更新标题等字段）
     需要JWT认证，只能更新自己的思维导图
     """
+    import uuid
+    try:
+        _ = uuid.UUID(str(mindmap_id))
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="无效的思维导图ID"
+        )
+
     mindmap = mindmap_service.get_mindmap_for_user(db, mindmap_id, current_user)
     
     if not mindmap:
@@ -224,6 +252,15 @@ async def delete_mindmap(
     删除指定ID的思维导图
     需要JWT认证，只能删除自己的思维导图
     """
+    import uuid
+    try:
+        _ = uuid.UUID(str(mindmap_id))
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="无效的思维导图ID"
+        )
+
     mindmap = mindmap_service.get_mindmap_for_user(db, mindmap_id, current_user)
     
     if not mindmap:

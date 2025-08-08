@@ -30,6 +30,19 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
     },
   }))
 
+  // 估算是否为超大图
+  const isLargeMindmap = () => {
+    try {
+      const md = mindmapData?.markdown || ''
+      const lines = md.split('\n').length
+      // 粗略估计节点数（标题+列表项作为节点）
+      const nodeLike = (md.match(/^(#|\s*[-*]|\s*\d+\.)/gm) || []).length
+      return lines > 1200 || nodeLike > 500
+    } catch {
+      return false
+    }
+  }
+
   // 展开折叠控制函数
   const toggleMarkmapFold = (shouldCollapse) => {
     // 防止重复操作
@@ -299,7 +312,14 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
         // 设置数据
         mmRef.current.setData(root)
         
-        // 延迟执行fit以确保渲染完成
+        // 超大图默认进入“概览模式”（折叠到深度=1）
+        if (isLargeMindmap()) {
+          try {
+            toggleMarkmapFold(true)
+          } catch {}
+        }
+
+        // 延迟执行fit以确保渲染完成（合并首次 fit）
         setTimeout(() => {
           if (mmRef.current && !isProcessingRef.current) {
             mmRef.current.fit()

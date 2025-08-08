@@ -58,7 +58,38 @@ async function refreshAccessToken() {
   return refreshPromise
 }
 
-// 🚀 通用 API 调用函数 - HttpOnly Cookie认证 + 自动令牌刷新
+// 内部：带超时与 AbortController 的 fetch
+async function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
+  const controller = new AbortController()
+  const id = setTimeout(() => controller.abort(), timeoutMs)
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal })
+    return response
+  } finally {
+    clearTimeout(id)
+  }
+}
+
+// 指数退避 + 抖动（仅用于 GET 幂等请求）
+async function getWithRetry(url, config, maxRetries = 2) {
+  let attempt = 0
+  let lastError = null
+  while (attempt <= maxRetries) {
+    try {
+      const resp = await fetchWithTimeout(url, config, 15000)
+      return resp
+    } catch (err) {
+      lastError = err
+      attempt += 1
+      if (attempt > maxRetries) break
+      const backoff = 300 * Math.pow(2, attempt - 1) + Math.random() * 200
+      await new Promise(r => setTimeout(r, backoff))
+    }
+  }
+  throw lastError || new Error('网络错误')
+}
+
+// 🚀 通用 API 调用函数 - HttpOnly Cookie认证 + 自动令牌刷新 + 超时/重试
 async function apiCall(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`
   
@@ -82,7 +113,10 @@ async function apiCall(endpoint, options = {}) {
   }
   
   try {
-    const response = await fetch(url, config)
+    const isGet = (config.method || 'GET').toUpperCase() === 'GET'
+    const response = isGet 
+      ? await getWithRetry(url, config, 2)
+      : await fetchWithTimeout(url, config, 15000)
     
     // 如果返回401，尝试刷新令牌并重试
     if (response.status === 401) {
@@ -110,10 +144,20 @@ async function apiCall(endpoint, options = {}) {
       }
     }
     
-    const data = await response.json()
+    const data = await response.json().catch(() => ({}))
     
     if (!response.ok) {
-      throw new Error(data.detail || '请求失败')
+      // 402: 积分不足，返回结构化错误
+      if (response.status === 402) {
+        const err = new Error(data?.message || '积分不足')
+        err.code = 402
+        err.meta = data || {}
+        throw err
+      }
+      const err = new Error(data.detail || data.message || '请求失败')
+      err.code = response.status
+      err.meta = data || {}
+      throw err
     }
     
     return data

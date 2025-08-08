@@ -859,6 +859,8 @@ async def verify_code(request: Request, data: VerifyCodeRequest, db: Session = D
     response = JSONResponse(content=login_response.dict())
     
     # 设置双Cookie安全策略 - 同根域（same-root domain）专用配置
+    from ..utils.security import get_cookie_domain
+    cookie_domain = get_cookie_domain()
     # Access Token Cookie - 短期，用于API请求
     response.set_cookie(
         key="access_token",
@@ -866,7 +868,7 @@ async def verify_code(request: Request, data: VerifyCodeRequest, db: Session = D
         httponly=True,
         secure=True,           # 🔑 必须为 True
         samesite="lax",        # 🔑 同根域使用 'lax' 更安全
-        domain=".thinkso.io",  # 🔑 新增：根域名作用域
+        domain=cookie_domain,  # 🔑 根域名作用域/本地localhost
         max_age=15 * 60,       # 15分钟
         path="/"
     )
@@ -878,7 +880,7 @@ async def verify_code(request: Request, data: VerifyCodeRequest, db: Session = D
         httponly=True,
         secure=True,           # 🔑 必须为 True
         samesite="lax",        # 🔑 同根域使用 'lax' 更安全
-        domain=".thinkso.io",  # 🔑 新增：根域名作用域
+        domain=cookie_domain,  # 🔑 根域名作用域/本地localhost
         max_age=7 * 24 * 60 * 60,  # 7天
         path="/api/auth/refresh"
     )
@@ -958,13 +960,15 @@ async def refresh_token(request: Request, db: Session = Depends(get_db)):
     response = JSONResponse(content={"success": True, "message": "令牌刷新成功"})
     
     # 设置新的Access Token Cookie - 同根域配置
+    from ..utils.security import get_cookie_domain
+    cookie_domain = get_cookie_domain()
     response.set_cookie(
         key="access_token",
         value=new_access_token,
         httponly=True,
         secure=True,           # 🔑 必须为 True
         samesite="lax",        # 🔑 同根域使用 'lax' 更安全
-        domain=".thinkso.io",  # 🔑 新增：根域名作用域
+        domain=cookie_domain,  # 🔑 根域名作用域/本地localhost
         max_age=15 * 60,       # 15分钟
         path="/"
     )
@@ -976,7 +980,7 @@ async def refresh_token(request: Request, db: Session = Depends(get_db)):
         httponly=True,
         secure=True,           # 🔑 必须为 True
         samesite="lax",        # 🔑 同根域使用 'lax' 更安全
-        domain=".thinkso.io",  # 🔑 新增：根域名作用域
+        domain=cookie_domain,  # 🔑 根域名作用域/本地localhost
         max_age=7 * 24 * 60 * 60,  # 7天
         path="/api/auth/refresh"
     )
@@ -992,13 +996,15 @@ async def logout():
     response = JSONResponse(content={"success": True, "message": "退出登录成功"})
     
     # 清除Access Token Cookie - 同根域配置
+    from ..utils.security import get_cookie_domain
+    cookie_domain = get_cookie_domain()
     response.set_cookie(
         key="access_token",
         value="",
         httponly=True,
         secure=True,           # 🔑 必须为 True
         samesite="lax",        # 🔑 同根域使用 'lax' 更安全
-        domain=".thinkso.io",  # 🔑 新增：根域名作用域
+        domain=cookie_domain,  # 🔑 根域名作用域/本地localhost
         max_age=0,             # 立即过期
         path="/"
     )
@@ -1010,7 +1016,7 @@ async def logout():
         httponly=True,
         secure=True,           # 🔑 必须为 True
         samesite="lax",        # 🔑 同根域使用 'lax' 更安全
-        domain=".thinkso.io",  # 🔑 新增：根域名作用域
+        domain=cookie_domain,  # 🔑 根域名作用域/本地localhost
         max_age=0,             # 立即过期
         path="/api/auth/refresh"
     )
@@ -1872,6 +1878,8 @@ async def google_callback(request: StarletteRequest, db: Session = Depends(get_d
             frontend_callback_url += "&daily_reward=true"
         
         # 设置双Cookie安全策略并重定向 - 同根域（same-root domain）配置
+        from ..utils.security import get_cookie_domain
+        cookie_domain = get_cookie_domain()
         response = RedirectResponse(url=frontend_callback_url)
         
         # Access Token Cookie - 短期，用于API请求
@@ -1881,7 +1889,7 @@ async def google_callback(request: StarletteRequest, db: Session = Depends(get_d
             httponly=True,
             secure=True,           # 🔑 必须为 True
             samesite="lax",        # 🔑 同根域使用 'lax' 更安全
-            domain=".thinkso.io",  # 🔑 新增：根域名作用域
+            domain=cookie_domain,  # 🔑 根域名作用域/本地localhost
             max_age=15 * 60,       # 15分钟
             path="/"
         )
@@ -1893,7 +1901,7 @@ async def google_callback(request: StarletteRequest, db: Session = Depends(get_d
             httponly=True,
             secure=True,           # 🔑 必须为 True
             samesite="lax",        # 🔑 同根域使用 'lax' 更安全
-            domain=".thinkso.io",  # 🔑 新增：根域名作用域
+            domain=cookie_domain,  # 🔑 根域名作用域/本地localhost
             max_age=7 * 24 * 60 * 60,  # 7天
             path="/api/auth/refresh"
         )

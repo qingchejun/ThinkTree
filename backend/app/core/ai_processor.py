@@ -6,6 +6,8 @@ AI 处理模块 - Google Gemini 集成
 import json
 import re
 import html
+import asyncio
+import random
 from typing import Dict, List, Any, Optional
 import google.generativeai as genai
 from google.generativeai.types import HarmCategory, HarmBlockThreshold
@@ -85,6 +87,58 @@ class GeminiProcessor:
         
         return text
     
+    # 全局并发信号量（限制同时调用 Gemini 的并发数）
+    _concurrency_sem = asyncio.Semaphore(5)
+
+    # 可重试错误关键字（网络抖动/限流/暂时不可用）
+    _retryable_error_keywords = (
+        "UNAVAILABLE",
+        "temporarily",
+        "TEMPORARILY",
+        "Rate limit",
+        "rate limit",
+        "429",
+        "deadline",
+        "timeout",
+        "Timed out",
+        "Retry"
+    )
+
+    async def _call_model_with_timeout_and_retry(self, prompt: str, max_retries: int = 3, timeout_seconds: int = 30):
+        """调用模型，带超时与退避重试。"""
+        attempt = 0
+        last_exception: Optional[Exception] = None
+        while attempt < max_retries:
+            attempt += 1
+            try:
+                async with self._concurrency_sem:
+                    # 超时保护
+                    response = await asyncio.wait_for(
+                        self.model.generate_content_async(
+                            prompt,
+                            safety_settings={
+                                HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+                                HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+                                HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+                                HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+                            }
+                        ),
+                        timeout=timeout_seconds,
+                    )
+                    return response
+            except Exception as e:  # 包含超时/网络/限流等
+                last_exception = e
+                message = str(e)
+                # 判断是否可重试
+                is_retryable = any(k in message for k in self._retryable_error_keywords)
+                if attempt >= max_retries or not is_retryable:
+                    break
+                # 指数退避 + 抖动
+                backoff_ms = 0.3 * (2 ** (attempt - 1)) + random.random() * 0.2
+                await asyncio.sleep(backoff_ms)
+        # 重试失败，抛出最后一个异常
+        raise last_exception if last_exception else RuntimeError("Unknown AI error")
+
     async def generate_mindmap_structure(self, content: str) -> Dict[str, Any]:
         """
         核心功能：将文本内容转换为思维导图结构
@@ -102,18 +156,11 @@ class GeminiProcessor:
         
         try:
             print(f"正在调用 Gemini API，内容长度: {len(content)} 字符")
-            
-            # 第三层防护：平台安全设置层 (Platform Safety Settings Layer)
-            safety_settings = {
-                HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_ONLY_HIGH,
-                HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_ONLY_HIGH,
-                HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_ONLY_HIGH,
-                HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_ONLY_HIGH,
-            }
-            
-            response = await self.model.generate_content_async(
-                prompt,
-                safety_settings=safety_settings
+
+            response = await self._call_model_with_timeout_and_retry(
+                prompt=prompt,
+                max_retries=3,
+                timeout_seconds=30,
             )
             response_text = response.text.strip()
             print(f"Gemini API 响应成功，响应长度: {len(response_text)} 字符")
@@ -140,6 +187,14 @@ class GeminiProcessor:
                 }
             }
             
+        except asyncio.TimeoutError:
+            error_msg = "AI请求超时，请稍后重试"
+            print(f"Gemini API 调用失败: {error_msg}")
+            return {
+                "success": False,
+                "error": error_msg,
+                "code": "AI_TIMEOUT"
+            }
         except Exception as e:
             error_msg = f"AI生成失败: {str(e)}"
             print(f"Gemini API 调用失败: {error_msg}")
@@ -152,10 +207,18 @@ class GeminiProcessor:
                 error_msg = "API权限被拒绝，请检查API密钥权限"
             elif "QUOTA_EXCEEDED" in str(e):
                 error_msg = "API调用次数已达上限，请稍后重试"
+            elif any(k in str(e) for k in self._retryable_error_keywords):
+                # 经过重试仍失败，归类为暂时性错误
+                return {
+                    "success": False,
+                    "error": "AI服务暂时不可用，请稍后重试",
+                    "code": "AI_TEMPORARY_UNAVAILABLE"
+                }
             
             return {
                 "success": False,
-                "error": error_msg
+                "error": error_msg,
+                "code": "AI_ERROR"
             }
     
     def _clean_markdown_response(self, text: str) -> str:
