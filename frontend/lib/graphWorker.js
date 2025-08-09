@@ -88,15 +88,18 @@ self.onmessage = (evt) => {
       // 布局（Worker 内完成）
       const layoutStart = performance.now()
       const dg = new dagre.graphlib.Graph()
-      // 更紧凑的层间/节点间距，贴近 Markmap 的紧凑风格
-      dg.setGraph({ rankdir: 'LR', nodesep: 24, ranksep: 36 })
+      // 紧凑且更“树形”的层叠布局
+      dg.setGraph({ rankdir: 'LR', nodesep: 20, ranksep: 60, edgesep: 12, ranker: 'tight-tree' })
       dg.setDefaultEdgeLabel(() => ({}))
       g0.nodes.forEach((n) => dg.setNode(n.id, { width: 180, height: 32 }))
       g0.edges.forEach((e) => dg.setEdge(e.source, e.target))
       dagre.layout(dg)
+      // 列对齐：同一 level 的所有节点共享统一的 X，形成整齐的列
+      const columnWidth = 220
       const laidNodes = g0.nodes.map((n) => {
         const p = dg.node(n.id)
-        return { ...n, position: { x: p.x, y: p.y } }
+        const x = (n.level || 0) * columnWidth
+        return { ...n, position: { x, y: p.y } }
       })
       const layoutEnd = performance.now()
       const t1 = performance.now()

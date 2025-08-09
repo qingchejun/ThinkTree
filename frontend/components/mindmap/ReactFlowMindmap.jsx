@@ -306,8 +306,8 @@ export default function ReactFlowMindmap({ markdown, mindmapId }) {
           commit(apply, inverse)
         }}
       >
-        {/* 背景：网格更浅，提升“线条”可读性 */}
-        <Background gap={24} size={1} color="#eef1f5" />
+        {/* 背景：更像文档大纲的浅色栅格 */}
+        <Background gap={32} size={1} color="#f3f4f6" />
         {/* 连接线样式：使用默认 smoothstep，增强层级从属可见度 */}
         <Controls showInteractive={false} />
         {showMiniMap && miniMapReady && (
@@ -328,8 +328,10 @@ export default function ReactFlowMindmap({ markdown, mindmapId }) {
           .minimap-simplified .react-flow__minimap-node { display: none; }
           .minimap-simplified .react-flow__minimap-mask { stroke: #9ca3af; stroke-width: 1; }
           /* 统一边样式，增强从属层级的可见度 */
-          .react-flow__edge-path { stroke: #64748b !important; stroke-width: 2.2px !important; opacity: 0.98 !important; }
+          /* 风格：卡片 + 树形导览线 */
+          .react-flow__edge-path { stroke: #94a3b8 !important; stroke-width: 2px !important; opacity: 1 !important; }
           .react-flow__connection-path { stroke: #64748b !important; }
+          .react-flow__node { filter: drop-shadow(0 1px 1px rgba(0,0,0,0.04)); border-radius: 8px; }
         `}</style>
       ) : null}
       {metrics && (
