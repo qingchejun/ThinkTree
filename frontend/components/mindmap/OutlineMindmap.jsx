@@ -41,9 +41,14 @@ function decodeLabel(raw) {
   return s
 }
 
+function stripHtmlTags(s) {
+  if (!s) return ''
+  return String(s).replace(/<[^>]*>/g, '')
+}
+
 function astToTree(root) {
   function walk(node, level = 0) {
-    const label = decodeLabel(extractText(node?.content))
+    const label = stripHtmlTags(decodeLabel(extractText(node?.content)))
     const children = Array.isArray(node?.children) ? node.children.map((c) => walk(c, level + 1)) : []
     return { label, level, children }
   }
@@ -249,8 +254,9 @@ export default function OutlineMindmap({ markdown, mindmapId }) {
 
   return (
     <div ref={containerRef} className="w-full h-full overflow-auto p-6 bg-white relative">
-      {/* 顶部工具（仅按钮在上方右侧）*/}
-      <div className="flex items-center justify-end gap-2 mb-4">
+      {/* 顶部：左侧标题 + 右侧按钮（顶端对齐） */}
+      <div className="flex items-start justify-between mb-3">
+        <h1 className="text-[28px] font-bold text-[#2c3e50] leading-tight m-0">{tree ? highlight(tree.label || '（空）', search) : '...'}</h1>
         <div className="flex items-center gap-2">
           <button onClick={collapseToLevel1} className="px-3 py-1 text-xs border rounded bg-white hover:bg-slate-50">折叠到一级</button>
           <button onClick={() => expandToSemanticLevel(2)} className="px-3 py-1 text-xs border rounded bg-white hover:bg-slate-50">展开到二级</button>
@@ -262,7 +268,8 @@ export default function OutlineMindmap({ markdown, mindmapId }) {
       <div className="grid grid-cols-12 gap-6 mt-0">
         <div className="col-span-9 max-w-3xl">
           {tree ? (
-            <NodeView node={tree} />
+            // 仅渲染根的子章节，标题已在顶部输出
+            (tree.children || []).map((c) => <ChapterBlock key={c.id} node={c} />)
           ) : (
             <div className="w-full h-full flex items-center justify-center text-slate-500">正在生成大纲...</div>
           )}
