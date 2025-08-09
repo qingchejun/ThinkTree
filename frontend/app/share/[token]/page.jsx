@@ -164,9 +164,9 @@ export default function SharePage() {
         target="_blank"
         rel="noopener noreferrer"
         className="fixed right-4 bottom-4 z-50 px-4 py-2 rounded-full bg-black/80 text-white text-sm shadow-lg backdrop-blur hover:bg-black transition"
-        title="使用 ThinkSo 部署"
+        title="使用 ThinkSo 生成"
       >
-        使用 ThinkSo 部署
+        使用 ThinkSo 生成
       </a>
     </div>
   )

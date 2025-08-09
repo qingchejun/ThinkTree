@@ -16,10 +16,10 @@ import Navbar from '../components/common/Navbar'
 const inter = Inter({ subsets: ['latin'] })
 
 // 新的 Wrapper 组件，用于根据路由判断是否显示 Navbar
-function LayoutWrapper({ children }) {
+function LayoutWrapper({ children, hideNavbar = false }) {
   return (
     <>
-      <Navbar />
+      {!hideNavbar && <Navbar />}
       <main>
         {children}
       </main>
@@ -33,6 +33,8 @@ export default function RootLayout({ children }) {
   const queryClient = new QueryClient()
   // reCAPTCHA Site Key - 从环境变量获取
   const recaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+  const pathname = usePathname();
+  const hideNavbar = pathname?.startsWith('/share')
   
   return (
     <html lang="zh-CN">
@@ -51,7 +53,7 @@ export default function RootLayout({ children }) {
             <QueryClientProvider client={queryClient}>
               <AuthProvider>
                 <ModalProvider>
-                  <LayoutWrapper>{children}</LayoutWrapper>
+                  <LayoutWrapper hideNavbar={hideNavbar}>{children}</LayoutWrapper>
                 </ModalProvider>
               </AuthProvider>
             </QueryClientProvider>
@@ -60,7 +62,7 @@ export default function RootLayout({ children }) {
           <QueryClientProvider client={queryClient}>
             <AuthProvider>
               <ModalProvider>
-                <LayoutWrapper>{children}</LayoutWrapper>
+                <LayoutWrapper hideNavbar={hideNavbar}>{children}</LayoutWrapper>
               </ModalProvider>
             </AuthProvider>
           </QueryClientProvider>
