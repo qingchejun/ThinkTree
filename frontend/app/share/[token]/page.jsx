@@ -151,70 +151,23 @@ export default function SharePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* 思维导图信息区 */}
-      {(mindmap.description || (mindmap.tags && mindmap.tags.length > 0)) && (
-        <div className="bg-blue-50 border-b border-blue-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            {mindmap.description && (
-              <p className="text-blue-900 mb-3">{mindmap.description}</p>
-            )}
-            {mindmap.tags && mindmap.tags.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                <span className="text-blue-800 text-sm font-medium">标签:</span>
-                {mindmap.tags.map((tag, index) => (
-                  <span
-                    key={index}
-                    className="inline-block bg-blue-200 text-blue-800 text-sm px-3 py-1 rounded-full"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* 思维导图展示区 */}
-      <div className="flex-1">
-        <div className="h-screen">
-          <div className="h-full bg-white border border-gray-200 mx-4 my-4 rounded-lg shadow-sm">
-            {/* 标题栏 */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-              <div className="flex items-center space-x-4 flex-1">
-                <div className="min-w-0 flex-1">
-                  <h1 className="text-xl font-bold text-gray-900 truncate">
-                    {mindmap.title}
-                  </h1>
-                  <p className="text-sm text-gray-500 mt-1">
-                    创建于 {formatDate(mindmap.created_at)}
-                    {mindmap.updated_at !== mindmap.created_at && (
-                      <span> · 更新于 {formatDate(mindmap.updated_at)}</span>
-                    )}
-                  </p>
-                </div>
-              </div>
-              
-              {/* 分享页面标识 */}
-              <div className="flex items-center space-x-2">
-                <div className="px-3 py-1 bg-gray-100 text-gray-600 text-sm rounded-full">
-                  🔗 分享查看
-                </div>
-              </div>
-            </div>
-            
-            {/* 思维导图可视化区域 */}
-            <div className="h-[calc(100%-81px)]">
-              {stableMindmapData && (
-                <SimpleMarkmapBasic
-                  mindmapData={stableMindmapData}
-                />
-              )}
-            </div>
-          </div>
-        </div>
+    <div className="h-screen bg-white">
+      {/* 纯画布模式，仅保留画布与内部按钮 */}
+      <div className="h-screen">
+        {stableMindmapData && (
+          <SimpleMarkmapBasic mindmapData={stableMindmapData} />
+        )}
       </div>
+      {/* 右下角浮窗：使用 ThinkSo 部署 */}
+      <a
+        href="https://thinkso.io"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed right-4 bottom-4 z-50 px-4 py-2 rounded-full bg-black/80 text-white text-sm shadow-lg backdrop-blur hover:bg-black transition"
+        title="使用 ThinkSo 部署"
+      >
+        使用 ThinkSo 部署
+      </a>
     </div>
   )
 }
