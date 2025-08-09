@@ -236,7 +236,13 @@ export default function ReactFlowMindmap({ markdown, mindmapId }) {
       },
     }))
     const keep = new Set(vNodes.map(n => n.id))
-    const vEdges = rfData.edges.filter(e => keep.has(e.source) && keep.has(e.target))
+    const vEdges = rfData.edges
+      .filter(e => keep.has(e.source) && keep.has(e.target))
+      .map(e => ({
+        ...e,
+        type: e.type || 'straight',
+        style: { stroke: '#64748b', strokeWidth: 2.2, opacity: 0.98, ...(e.style || {}) },
+      }))
     return { nodes: vNodes, edges: vEdges }
   }, [rfData, collapsedSet, matchedIds])
 
@@ -319,8 +325,8 @@ export default function ReactFlowMindmap({ markdown, mindmapId }) {
           .minimap-simplified .react-flow__minimap-node { display: none; }
           .minimap-simplified .react-flow__minimap-mask { stroke: #9ca3af; stroke-width: 1; }
           /* 统一边样式，增强从属层级的可见度 */
-          .react-flow__edge-path { stroke: #cbd5e1 !important; stroke-width: 1.5px; }
-          .react-flow__connection-path { stroke: #cbd5e1 !important; }
+          .react-flow__edge-path { stroke: #64748b !important; stroke-width: 2.2px !important; opacity: 0.98 !important; }
+          .react-flow__connection-path { stroke: #64748b !important; }
         `}</style>
       ) : null}
       {metrics && (
