@@ -160,12 +160,13 @@ export default function OutlineMindmap({ markdown, mindmapId }) {
   }, [matchesId])
 
   const highlight = (label, term) => {
-    if (!term) return label
-    const idx = label.toLowerCase().indexOf(term.toLowerCase())
+    const text = stripHtmlTags(label || '')
+    if (!term) return text
+    const idx = text.toLowerCase().indexOf(term.toLowerCase())
     if (idx === -1) return label
     return (
       <>
-        {label.slice(0, idx)}<mark className="bg-yellow-200 px-0.5 rounded-sm">{label.slice(idx, idx + term.length)}</mark>{label.slice(idx + term.length)}
+        {text.slice(0, idx)}<mark className="bg-yellow-200 px-0.5 rounded-sm">{text.slice(idx, idx + term.length)}</mark>{text.slice(idx + term.length)}
       </>
     )
   }
@@ -186,7 +187,7 @@ export default function OutlineMindmap({ markdown, mindmapId }) {
   const ArticleBlock = ({ node }) => {
     const expanded = expandedSet.has(node.id)
     return (
-      <div className="article border-b border-[#f0f0f0] bg-white">
+      <div className="article border-b border-[#f0f0f0] bg-white rounded-md overflow-hidden shadow-sm">
         <div className="article-header px-4 py-2 text-[16px] font-semibold text-[#2c3e50] border-l-4 border-[#3498db] cursor-pointer hover:bg-[#f8f9fa]"
              onClick={() => toggle(node)}>
           <span className="mr-2 text-black">{expanded ? '▾' : '▸'}</span>
@@ -195,7 +196,7 @@ export default function OutlineMindmap({ markdown, mindmapId }) {
         {expanded && node.children && node.children.length > 0 && (
           <div className="article-content bg-[#fafafa] px-6 py-4">
             {node.children?.map((c) => (
-              <ContentItems key={c.id} node={c} />
+              <ContentItems key={c.id} node={{...c, label: stripHtmlTags(c.label)}} />
             ))}
           </div>
         )}
@@ -206,7 +207,7 @@ export default function OutlineMindmap({ markdown, mindmapId }) {
   const ChapterBlock = ({ node }) => {
     const expanded = expandedSet.has(node.id)
     return (
-      <div ref={(el) => el && idToRef.current.set(node.id, el)} id={`sec-${node.id}`} className="chapter mb-4 border border-[#e0e0e0] rounded-lg overflow-hidden">
+      <div ref={(el) => el && idToRef.current.set(node.id, el)} id={`sec-${node.id}`} className="chapter mb-4 border border-[#e0e0e0] rounded-lg overflow-hidden shadow-sm">
         <div className="chapter-header bg-[#e8f4fd] px-5 py-3 text-[20px] font-bold text-[#2c3e50] cursor-pointer hover:bg-[#d6eafd] flex items-center"
              onClick={() => toggle(node)}>
           <span className="mr-2 text-black">{expanded ? '▾' : '▸'}</span>
@@ -256,7 +257,7 @@ export default function OutlineMindmap({ markdown, mindmapId }) {
     <div ref={containerRef} className="w-full h-full overflow-auto p-6 bg-white relative">
       {/* 顶部：左侧标题 + 右侧按钮（顶端对齐） */}
       <div className="flex items-start justify-between mb-3">
-        <h1 className="text-[28px] font-bold text-[#2c3e50] leading-tight m-0">{tree ? highlight(tree.label || '（空）', search) : '...'}</h1>
+        <h1 className="text-[28px] font-bold text-[#2c3e50] leading-tight m-0">{tree ? stripHtmlTags(tree.label || '（空）') : '...'}</h1>
         <div className="flex items-center gap-2">
           <button onClick={collapseToLevel1} className="px-3 py-1 text-xs border rounded bg-white hover:bg-slate-50">折叠到一级</button>
           <button onClick={() => expandToSemanticLevel(2)} className="px-3 py-1 text-xs border rounded bg-white hover:bg-slate-50">展开到二级</button>
@@ -282,8 +283,8 @@ export default function OutlineMindmap({ markdown, mindmapId }) {
             <ul className="space-y-1 text-sm">
               {toc.map(item => (
                 <li key={item.id}>
-                  <button onClick={() => jumpTo(item.id)} className="text-slate-700 hover:text-indigo-600 hover:underline">
-                    {item.index + 1}. {item.label}
+                  <button onClick={() => jumpTo(item.id)} className={`text-left ${/* active state to be set below */''} w-full text-slate-700 hover:text-indigo-600 hover:underline`}>
+                    {item.index + 1}. {stripHtmlTags(item.label)}
                   </button>
                 </li>
               ))}
