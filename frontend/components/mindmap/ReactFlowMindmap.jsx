@@ -292,7 +292,9 @@ export default function ReactFlowMindmap({ markdown, mindmapId }) {
           commit(apply, inverse)
         }}
       >
-        <Background />
+        {/* 背景：网格更浅，提升“线条”可读性 */}
+        <Background gap={24} size={1} color="#eef1f5" />
+        {/* 连接线样式：使用默认 smoothstep，增强层级从属可见度 */}
         <Controls showInteractive={false} />
         {showMiniMap && miniMapReady && (
           <div className={rfData.nodes.length > 600 ? 'minimap-simplified' : ''}>
@@ -301,12 +303,15 @@ export default function ReactFlowMindmap({ markdown, mindmapId }) {
         )}
       </ReactFlow>
       {/* 简化 MiniMap 样式：仅显示视口，隐藏节点矩形，减少 DOM */}
-      {showMiniMap && rfData.nodes.length > 600 && (
+      {(showMiniMap && rfData.nodes.length > 600) || true ? (
         <style>{`
           .minimap-simplified .react-flow__minimap-node { display: none; }
           .minimap-simplified .react-flow__minimap-mask { stroke: #9ca3af; stroke-width: 1; }
+          /* 统一边样式，增强从属层级的可见度 */
+          .react-flow__edge-path { stroke: #cbd5e1 !important; stroke-width: 1.5px; }
+          .react-flow__connection-path { stroke: #cbd5e1 !important; }
         `}</style>
-      )}
+      ) : null}
       {metrics && (
         <div className="absolute top-2 right-2 bg-white/90 border rounded px-3 py-2 text-xs text-gray-700 shadow">
           <div>节点: {metrics.nodeCount} 边: {metrics.edgeCount}</div>

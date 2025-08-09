@@ -88,9 +88,10 @@ self.onmessage = (evt) => {
       // 布局（Worker 内完成）
       const layoutStart = performance.now()
       const dg = new dagre.graphlib.Graph()
-      dg.setGraph({ rankdir: 'LR', nodesep: 40, ranksep: 60 })
+      // 更紧凑的层间/节点间距，贴近 Markmap 的紧凑风格
+      dg.setGraph({ rankdir: 'LR', nodesep: 24, ranksep: 36 })
       dg.setDefaultEdgeLabel(() => ({}))
-      g0.nodes.forEach((n) => dg.setNode(n.id, { width: 180, height: 36 }))
+      g0.nodes.forEach((n) => dg.setNode(n.id, { width: 180, height: 32 }))
       g0.edges.forEach((e) => dg.setEdge(e.source, e.target))
       dagre.layout(dg)
       const laidNodes = g0.nodes.map((n) => {
