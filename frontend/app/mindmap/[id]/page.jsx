@@ -453,7 +453,21 @@ export default function ViewMindmapPage() {
             {/* 思维导图可视化区域 */}
             <div className="h-[calc(100%-81px)]">
               {useRF ? (
-                <OutlineMindmap editable={isEditMode} markdown={stableMindmapData?.markdown || ''} mindmapId={mindmapId} />
+                <OutlineMindmap
+                  editable={isEditMode}
+                  markdown={stableMindmapData?.markdown || ''}
+                  mindmapId={mindmapId}
+                  meta={{
+                    title: mindmap?.title,
+                    description: mindmap?.description,
+                    tags: mindmap?.tags,
+                    is_public: mindmap?.is_public,
+                  }}
+                  onSaved={() => {
+                    setSuccessMessage('已保存更改')
+                    setTimeout(() => setSuccessMessage(null), 2000)
+                  }}
+                />
               ) : (
                 <SimpleMarkmapBasic ref={markmapRef} mindmapData={stableMindmapData} />
               )}

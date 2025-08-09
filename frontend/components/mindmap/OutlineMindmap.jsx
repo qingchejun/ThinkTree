@@ -55,7 +55,7 @@ function astToTree(root) {
   return walk(root, 0)
 }
 
-export default function OutlineMindmap({ markdown, mindmapId, editable = false, onSaved }) {
+export default function OutlineMindmap({ markdown, mindmapId, editable = false, onSaved, meta }) {
   const [tree, setTree] = React.useState(null)
   const [expandedSet, setExpandedSet] = React.useState(new Set())
   const [search, setSearch] = React.useState('')
@@ -64,6 +64,7 @@ export default function OutlineMindmap({ markdown, mindmapId, editable = false, 
   const [editing, setEditing] = React.useState({ id: null, text: '' })
   const [dirty, setDirty] = React.useState(false)
   const [saving, setSaving] = React.useState(false)
+  const [saveError, setSaveError] = React.useState('')
 
   React.useEffect(() => {
     try {
@@ -172,7 +173,7 @@ export default function OutlineMindmap({ markdown, mindmapId, editable = false, 
     const pad = Math.min(depth, 3) * 16
     items.push(
       <div key={`${node.id}-ci`} style={{ marginLeft: pad }}>
-        <div className="relative pl-5 mb-2 text-[14px] leading-[22px] text-[#2c3e50]">
+        <div className={`relative pl-5 mb-2 text-[14px] leading-[22px] text-[#2c3e50] ${editable ? 'hover:border hover:border-dashed hover:border-purple-300 rounded-sm' : ''}`}>
           <span className="absolute left-0 top-2 w-1.5 h-1.5 rounded-full bg-[#3498db]" aria-hidden />
           {editable && editing.id === node.id ? (
             <input
@@ -199,7 +200,7 @@ export default function OutlineMindmap({ markdown, mindmapId, editable = false, 
     const expanded = expandedSet.has(node.id)
     return (
       <div className="article border-b border-[#f0f0f0] bg-white rounded-md overflow-hidden shadow-sm">
-        <div className="article-header px-4 py-2 text-[16px] font-semibold text-[#2c3e50] border-l-4 border-[#3498db] hover:bg-[#f8f9fa] flex items-center">
+        <div className={`article-header px-4 py-2 text-[16px] font-semibold text-[#2c3e50] border-l-4 border-[#3498db] hover:bg-[#f8f9fa] flex items-center ${editable ? 'hover:border hover:border-dashed hover:border-purple-300 rounded-sm' : ''}`}>
           <button
             className="mr-2 text-black"
             onClick={(e) => { e.stopPropagation(); toggle(node) }}
@@ -236,7 +237,7 @@ export default function OutlineMindmap({ markdown, mindmapId, editable = false, 
     const expanded = expandedSet.has(node.id)
     return (
       <div ref={(el) => el && idToRef.current.set(node.id, el)} id={`sec-${node.id}`} className="chapter mb-4 border border-[#e0e0e0] rounded-lg overflow-hidden shadow-sm">
-        <div className="chapter-header bg-[#e8f4fd] px-5 py-3 text-[20px] font-bold text-[#2c3e50] hover:bg-[#d6eafd] flex items-center">
+        <div className={`chapter-header bg-[#e8f4fd] px-5 py-3 text-[20px] font-bold text-[#2c3e50] hover:bg-[#d6eafd] flex items-center ${editable ? 'hover:border hover:border-dashed hover:border-purple-300 rounded-sm' : ''}`}>
           <button
             className="mr-2 text-black"
             onClick={(e) => { e.stopPropagation(); toggle(node) }}
@@ -316,7 +317,25 @@ export default function OutlineMindmap({ markdown, mindmapId, editable = false, 
     if (node.level === 0) {
       return (
         <section className="mb-4">
-          <h1 className="text-[28px] font-bold text-[#2c3e50] mb-3">{highlight(node.label || '（空）', search)}</h1>
+          {editable && editing.id === node.id ? (
+            <input
+              className="border px-2 py-1 rounded text-[24px] font-bold w-full mb-3"
+              value={editing.text}
+              onChange={(e) => setEditing({ id: node.id, text: e.target.value })}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') commitEdit(node.id)
+                if (e.key === 'Escape') cancelEdit()
+              }}
+              autoFocus
+            />
+          ) : (
+            <h1
+              className={`text-[28px] font-bold mb-3 ${editable ? 'text-purple-700 hover:border hover:border-dashed hover:border-purple-300 rounded-sm' : 'text-[#2c3e50]'}`}
+              onDoubleClick={() => { if (editable) beginEdit(node) }}
+            >
+              {highlight(node.label || '（空）', search)}
+            </h1>
+          )}
           {node.children?.map((c) => (
             <ChapterBlock key={c.id} node={c} />
           ))}
@@ -345,7 +364,30 @@ export default function OutlineMindmap({ markdown, mindmapId, editable = false, 
     <div ref={containerRef} className={`w-full h-full overflow-auto p-6 bg-white relative ${editable ? 'editing' : ''}`}>
       {/* 顶部：左侧标题 + 右侧按钮（顶端对齐） */}
       <div className="flex items-start justify-between mb-3">
-        <h1 className={`text-[28px] font-bold leading-tight m-0 ${editable ? 'text-purple-700' : 'text-[#2c3e50]'}`}>{tree ? stripHtmlTags(tree.label || '（空）') : '...'}</h1>
+        {editable && editing.id === 'root' ? (
+          <input
+            className="border px-2 py-1 rounded text-[24px] font-bold w-full max-w-3xl"
+            value={editing.text}
+            onChange={(e) => setEditing({ id: 'root', text: e.target.value })}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') commitEdit('root')
+              if (e.key === 'Escape') cancelEdit()
+            }}
+            autoFocus
+          />
+        ) : (
+          <h1
+            className={`text-[28px] font-bold leading-tight m-0 ${editable ? 'text-purple-700 hover:border hover:border-dashed hover:border-purple-300 rounded-sm' : 'text-[#2c3e50]'}`}
+            onDoubleClick={() => { if (editable && tree) setEditing({ id: 'root', text: tree.label || '' }) }}
+          >
+            {tree ? stripHtmlTags(tree.label || '（空）') : '...'}
+          </h1>
+        )}
+        {editable && (
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-200">
+            编辑模式
+          </span>
+        )}
       </div>
 
       {/* 内容与 TOC */}
@@ -376,19 +418,39 @@ export default function OutlineMindmap({ markdown, mindmapId, editable = false, 
                     setSaving(true)
                     try {
                       const markdownOut = treeToMarkdown(tree)
-                      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/mindmaps/${mindmapId}`, {
-                        method: 'PATCH',
+                      // 使用 PUT 全量更新，沿用当前 meta 的其他字段
+                      const payload = {
+                        title: (meta?.title || tree.label || '思维导图'),
+                        content: markdownOut,
+                        description: meta?.description ?? null,
+                        tags: Array.isArray(meta?.tags) ? meta.tags.join(',') : (meta?.tags || null),
+                        is_public: Boolean(meta?.is_public)
+                      }
+                      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/mindmaps/${mindmapId}`, {
+                        method: 'PUT',
                         credentials: 'include',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ content: markdownOut })
+                        body: JSON.stringify(payload)
                       })
+                      if (!res.ok) {
+                        const data = await res.json().catch(() => ({}))
+                        throw new Error(data.detail || '保存失败')
+                      }
                       setDirty(false)
-                    } catch (_) {}
+                      setSaveError('')
+                      if (typeof onSaved === 'function') onSaved()
+                    } catch (e) {
+                      console.error(e)
+                      setSaveError(e?.message || '保存失败，请稍后重试')
+                    }
                     setSaving(false)
                   }}
                   className={`w-full px-3 py-2 text-xs rounded ${dirty ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-200 text-gray-500'}`}
                 >{saving ? '保存中...' : dirty ? '保存更改' : '已保存'}</button>
               </div>
+            )}
+            {saveError && (
+              <div className="mb-3 text-xs text-red-600">{saveError}</div>
             )}
             {/* 搜索框：位于按钮下方、目录上方，左侧与目录左侧对齐 */}
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="搜索..." className="w-full px-2 py-1 text-xs border rounded mb-3" />
@@ -405,6 +467,11 @@ export default function OutlineMindmap({ markdown, mindmapId, editable = false, 
           </div>
         </aside>
       </div>
+      <style jsx>{`
+        :global(.editing) {
+          cursor: text;
+        }
+      `}</style>
     </div>
   )
 }

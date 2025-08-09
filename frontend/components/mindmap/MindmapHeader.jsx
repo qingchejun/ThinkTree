@@ -133,6 +133,11 @@ export default function MindmapHeader({
       </div>
 
       <div className="flex items-center space-x-2">
+        {isEditMode && (
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-200">
+            编辑模式
+          </span>
+        )}
         {extraActions.map((el, idx) => (
           <span key={idx}>{el}</span>
         ))}
