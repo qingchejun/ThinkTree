@@ -10,7 +10,8 @@ import { useAuth } from '../../../context/AuthContext'
 import { useMindmap } from '../../../hooks/useMindmap.js'
 import SimpleMarkmapBasic from '../../../components/mindmap/SimpleMarkmapBasic'
 import dynamic from 'next/dynamic'
-const ReactFlowMindmap = dynamic(() => import('../../../components/mindmap/ReactFlowMindmap'), { ssr: false })
+// 暂时隐藏 ReactFlow，保留代码但不再作为默认“高级画布”
+const OutlineMindmap = dynamic(() => import('../../../components/mindmap/OutlineMindmap.jsx'), { ssr: false })
 import ShareModal from '../../../components/share/ShareModal'
 import MindmapHeader from '../../../components/mindmap/MindmapHeader.jsx'
 import DeleteConfirmationModal from '../../../components/mindmap/DeleteConfirmationModal.jsx'
@@ -449,7 +450,7 @@ export default function ViewMindmapPage() {
             {/* 思维导图可视化区域 */}
             <div className="h-[calc(100%-81px)]">
               {useRF ? (
-                <ReactFlowMindmap markdown={stableMindmapData?.markdown || ''} mindmapId={mindmapId} />
+                <OutlineMindmap markdown={stableMindmapData?.markdown || ''} />
               ) : (
                 <SimpleMarkmapBasic ref={markmapRef} mindmapData={stableMindmapData} />
               )}
