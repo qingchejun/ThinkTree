@@ -70,6 +70,38 @@ export default function ViewMindmapPage() {
     }
   }, [mindmap])
 
+  // 记录访问历史
+  useEffect(() => {
+    if (mindmap && mindmap.id) {
+      const recordVisit = () => {
+        const recentIds = JSON.parse(localStorage.getItem('recentMindmaps') || '[]')
+        const existingIndex = recentIds.findIndex(item => item.id === mindmap.id)
+        
+        const visitRecord = {
+          id: mindmap.id,
+          lastVisited: new Date().toISOString()
+        }
+        
+        if (existingIndex !== -1) {
+          // 更新现有记录
+          recentIds[existingIndex] = visitRecord
+        } else {
+          // 添加新记录到开头
+          recentIds.unshift(visitRecord)
+        }
+        
+        // 保持最多20条记录
+        const limitedRecords = recentIds.slice(0, 20)
+        localStorage.setItem('recentMindmaps', JSON.stringify(limitedRecords))
+        
+        // 通知其他页面数据已变化
+        window.dispatchEvent(new CustomEvent('recentChanged'))
+      }
+      
+      recordVisit()
+    }
+  }, [mindmap])
+
   // 自动导出功能 - 根据URL参数触发PNG导出
   useEffect(() => {
     if (exportFormat === 'png' && mindmap && markmapRef.current && !isExportingRef.current) {

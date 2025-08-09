@@ -89,6 +89,8 @@ export default function RecentPage() {
 
         if (response.ok) {
           const data = await response.json()
+          // 获取思维导图列表 - 后端返回的是 {items: [...], has_next: boolean, next_cursor: string}
+          const mindmaps = data.items || []
           
           // 获取最近访问记录
           const recentIds = JSON.parse(localStorage.getItem('recentMindmaps') || '[]')
@@ -96,7 +98,7 @@ export default function RecentPage() {
           // 根据最近访问顺序排序并过滤
           const recentMindmaps = recentIds
             .map(recentItem => {
-              const mindmap = data.find(m => m.id === recentItem.id)
+              const mindmap = mindmaps.find(m => m.id === recentItem.id)
               return mindmap ? { ...mindmap, lastVisited: recentItem.lastVisited } : null
             })
             .filter(Boolean)
@@ -135,10 +137,12 @@ export default function RecentPage() {
 
             if (response.ok) {
               const data = await response.json()
+              // 获取思维导图列表 - 后端返回的是 {items: [...], has_next: boolean, next_cursor: string}
+              const mindmaps = data.items || []
               const recentIds = JSON.parse(localStorage.getItem('recentMindmaps') || '[]')
               const recentMindmaps = recentIds
                 .map(recentItem => {
-                  const mindmap = data.find(m => m.id === recentItem.id)
+                  const mindmap = mindmaps.find(m => m.id === recentItem.id)
                   return mindmap ? { ...mindmap, lastVisited: recentItem.lastVisited } : null
                 })
                 .filter(Boolean)
@@ -463,7 +467,7 @@ export default function RecentPage() {
                       {/* 动态预览图 */}
                       <div className="card-preview h-32 overflow-hidden relative transition-transform duration-300">
                         <MindmapThumbnail 
-                          content={mindmap.content} 
+                          content={mindmap.content_preview || mindmap.content} 
                           title={mindmap.title}
                           className="w-full h-full"
                         />

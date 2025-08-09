@@ -88,8 +88,10 @@ export default function FavoritesPage() {
 
         if (response.ok) {
           const data = await response.json()
-          // 过滤出收藏的思维导图（假设有is_favorite字段，如果没有则使用localStorage）
-          const favorites = data.filter(mindmap => {
+          // 获取思维导图列表 - 后端返回的是 {items: [...], has_next: boolean, next_cursor: string}
+          const mindmaps = data.items || []
+          // 过滤出收藏的思维导图
+          const favorites = mindmaps.filter(mindmap => {
             const favoriteIds = JSON.parse(localStorage.getItem('favoriteMindmaps') || '[]')
             return favoriteIds.includes(mindmap.id)
           })
@@ -126,7 +128,9 @@ export default function FavoritesPage() {
 
             if (response.ok) {
               const data = await response.json()
-              const favorites = data.filter(mindmap => {
+              // 获取思维导图列表 - 后端返回的是 {items: [...], has_next: boolean, next_cursor: string}
+              const mindmaps = data.items || []
+              const favorites = mindmaps.filter(mindmap => {
                 const favoriteIds = JSON.parse(localStorage.getItem('favoriteMindmaps') || '[]')
                 return favoriteIds.includes(mindmap.id)
               })
@@ -392,7 +396,7 @@ export default function FavoritesPage() {
                       {/* 动态预览图 */}
                       <div className="card-preview h-32 overflow-hidden relative transition-transform duration-300">
                         <MindmapThumbnail 
-                          content={mindmap.content} 
+                          content={mindmap.content_preview || mindmap.content} 
                           title={mindmap.title}
                           className="w-full h-full"
                         />
