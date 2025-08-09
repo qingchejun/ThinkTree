@@ -20,6 +20,7 @@ export default function MindmapHeader({
   onToggleFullscreen,
   showExportMenu, // 从父组件接收
   setShowExportMenu, // 从父组件接收
+  extraActions = [],
 }) {
   const router = useRouter();
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -130,6 +131,9 @@ export default function MindmapHeader({
       </div>
 
       <div className="flex items-center space-x-2">
+        {extraActions.map((el, idx) => (
+          <span key={idx}>{el}</span>
+        ))}
         <button
           onClick={onToggleFullscreen}
           className="action-button text-green-500 hover:bg-green-100 hover:text-green-600"

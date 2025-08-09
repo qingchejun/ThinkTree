@@ -9,6 +9,8 @@ import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import { useAuth } from '../../../context/AuthContext'
 import { useMindmap } from '../../../hooks/useMindmap.js'
 import SimpleMarkmapBasic from '../../../components/mindmap/SimpleMarkmapBasic'
+import dynamic from 'next/dynamic'
+const ReactFlowMindmap = dynamic(() => import('../../../components/mindmap/ReactFlowMindmap'), { ssr: false })
 import ShareModal from '../../../components/share/ShareModal'
 import MindmapHeader from '../../../components/mindmap/MindmapHeader.jsx'
 import DeleteConfirmationModal from '../../../components/mindmap/DeleteConfirmationModal.jsx'
@@ -22,6 +24,15 @@ export default function ViewMindmapPage() {
   const searchParams = useSearchParams()
   const mindmapId = params.id
   const exportFormat = searchParams.get('export')
+  const rfParam = searchParams.get('rf')
+  const [useRF, setUseRF] = useState(false)
+
+  // 特性开关：URL ?rf=1 优先，其次 localStorage('rf_beta')
+  useEffect(() => {
+    const fromUrl = rfParam === '1'
+    const fromLocal = typeof window !== 'undefined' && localStorage.getItem('rf_beta') === '1'
+    setUseRF(!!(fromUrl || fromLocal))
+  }, [rfParam])
   
   // 使用自定义Hook获取思维导图数据
   const { mindmap, setMindmap, loading, error, setError, stableMindmapData } = useMindmap(mindmapId)
@@ -422,14 +433,26 @@ export default function ViewMindmapPage() {
               onToggleFullscreen={handleToggleFullscreen}
               showExportMenu={showExportMenu}
               setShowExportMenu={setShowExportMenu}
+              extraActions={[
+                (
+                  <button key="rf-toggle" onClick={() => {
+                    const next = !useRF
+                    setUseRF(next)
+                    if (typeof window !== 'undefined') localStorage.setItem('rf_beta', next ? '1' : '0')
+                  }} className="px-2 py-1 text-xs border rounded">
+                    {useRF ? '切换Markmap' : '高级画布(beta)'}
+                  </button>
+                )
+              ]}
             />
 
             {/* 思维导图可视化区域 */}
             <div className="h-[calc(100%-81px)]">
-              <SimpleMarkmapBasic 
-                ref={markmapRef}
-                mindmapData={stableMindmapData}
-              />
+              {useRF ? (
+                <ReactFlowMindmap markdown={stableMindmapData?.markdown || ''} />
+              ) : (
+                <SimpleMarkmapBasic ref={markmapRef} mindmapData={stableMindmapData} />
+              )}
             </div>
           </div>
         </div>
