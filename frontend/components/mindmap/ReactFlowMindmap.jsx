@@ -78,6 +78,10 @@ export default function ReactFlowMindmap({ markdown, mindmapId }) {
     return window.localStorage.getItem('rfMiniMap') === '1'
   })
   const [miniMapReady, setMiniMapReady] = useState(false)
+  const edgeOptions = useMemo(() => ({
+    type: 'smoothstep',
+    style: { stroke: '#94a3b8', strokeWidth: 2.4, opacity: 0.95 },
+  }), [])
 
   useEffect(() => {
     if (!markdown) return
@@ -270,6 +274,7 @@ export default function ReactFlowMindmap({ markdown, mindmapId }) {
         edges={visible.edges}
         fitView
         nodeTypes={nodeTypes}
+        defaultEdgeOptions={edgeOptions}
         onConnect={(params) => {
           const { source, target } = params
           if (!source || !target) return
