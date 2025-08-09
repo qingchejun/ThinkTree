@@ -121,7 +121,9 @@ export default function OutlineMindmap({ markdown, mindmapId }) {
     setExpandedSet(next)
   }
 
-  const expandToLevel = (maxLevel = 2) => {
+  // 语义层级：把根视为“一级”，因此需要把语义层级减一映射到实际 level
+  const expandToSemanticLevel = (semanticMax = 2) => {
+    const maxLevel = Math.max(0, (semanticMax | 0) - 1)
     const next = new Set()
     function visit(n) { if (n.level <= maxLevel) next.add(n.id); n.children?.forEach(visit) }
     if (tree) visit(tree)
@@ -227,7 +229,7 @@ export default function OutlineMindmap({ markdown, mindmapId }) {
         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="搜索..." className="px-2 py-1 text-xs border rounded w-56" />
         <div className="flex items-center gap-2">
           <button onClick={collapseToLevel1} className="px-3 py-1 text-xs border rounded bg-white hover:bg-slate-50">折叠到一级</button>
-          <button onClick={() => expandToLevel(2)} className="px-3 py-1 text-xs border rounded bg-white hover:bg-slate-50">展开到二级</button>
+          <button onClick={() => expandToSemanticLevel(2)} className="px-3 py-1 text-xs border rounded bg-white hover:bg-slate-50">展开到二级</button>
           <button onClick={expandAll} className="px-3 py-1 text-xs border rounded bg-white hover:bg-slate-50">展开全部</button>
         </div>
       </div>
