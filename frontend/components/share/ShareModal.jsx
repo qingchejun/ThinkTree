@@ -14,6 +14,7 @@ export default function ShareModal({ isOpen, onClose, mindmapId, mindmapTitle })
   const [shareInfo, setShareInfo] = useState(null)
   const [error, setError] = useState(null)
   const [successMessage, setSuccessMessage] = useState(null) // 成功消息状态
+  const [mode, setMode] = useState('markmap') // 'markmap' | 'outline'
   const [isClient, setIsClient] = useState(false) // 客户端检查
 
   // 检查是否在客户端
@@ -144,7 +145,8 @@ export default function ShareModal({ isOpen, onClose, mindmapId, mindmapTitle })
     if (!shareInfo?.share_url || !isClient) return
 
     try {
-      const fullUrl = `${window.location.origin}${shareInfo.share_url}`
+      const base = `${window.location.origin}${shareInfo.share_url}`
+      const fullUrl = mode === 'outline' ? `${base}?mode=outline` : base
       
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(fullUrl)
@@ -239,6 +241,20 @@ export default function ShareModal({ isOpen, onClose, mindmapId, mindmapTitle })
               {shareInfo.is_shared ? (
                 // 已分享状态
                 <div className="space-y-5">
+                  {/* 模式切换 */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-800 mb-2">分享模式</label>
+                    <div className="flex items-center gap-4 text-sm">
+                      <label className="inline-flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="share-mode" value="markmap" checked={mode==='markmap'} onChange={() => setMode('markmap')} />
+                        <span>Markmap（默认）</span>
+                      </label>
+                      <label className="inline-flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="share-mode" value="outline" checked={mode==='outline'} onChange={() => setMode('outline')} />
+                        <span>高级画布（beta）</span>
+                      </label>
+                    </div>
+                  </div>
                   <div className="bg-green-50 border border-green-200 rounded-xl p-5">
                     <div className="flex items-center">
                       <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
@@ -257,16 +273,11 @@ export default function ShareModal({ isOpen, onClose, mindmapId, mindmapTitle })
 
                   {/* 分享链接 */}
                   <div>
-                    <label className="block text-sm font-semibold text-gray-800 mb-3">
-                      分享链接
-                    </label>
+                    <label className="block text-sm font-semibold text-gray-800 mb-3">分享链接</label>
                     <div className="flex items-center space-x-3">
-                      <input
-                        type="text"
-                        readOnly
-                        value={isClient ? `${window.location.origin}${shareInfo.share_url}` : shareInfo.share_url || ''}
-                        className="flex-1 px-4 py-3 border border-gray-200 rounded-lg text-sm bg-gray-50 text-gray-700 font-mono focus:outline-none focus:ring-2 focus:ring-gray-300"
-                      />
+                      <input type="text" readOnly
+                        value={isClient ? (mode==='outline' ? `${window.location.origin}${shareInfo.share_url}?mode=outline` : `${window.location.origin}${shareInfo.share_url}`) : ''}
+                        className="flex-1 px-4 py-3 border border-gray-200 rounded-lg text-sm bg-gray-50 text-gray-700 font-mono focus:outline-none focus:ring-2 focus:ring-gray-300" />
                       <button
                         onClick={handleCopyLink}
                         className="px-6 py-3 bg-black text-white text-sm font-semibold rounded-lg hover:bg-gray-800 transition-colors flex items-center space-x-2 shadow-sm"
@@ -301,6 +312,20 @@ export default function ShareModal({ isOpen, onClose, mindmapId, mindmapTitle })
               ) : (
                 // 未分享状态
                 <div className="space-y-6">
+                  {/* 模式切换 */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-800 mb-2">分享模式</label>
+                    <div className="flex items-center gap-4 text-sm">
+                      <label className="inline-flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="share-mode" value="markmap" checked={mode==='markmap'} onChange={() => setMode('markmap')} />
+                        <span>Markmap（默认）</span>
+                      </label>
+                      <label className="inline-flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="share-mode" value="outline" checked={mode==='outline'} onChange={() => setMode('outline')} />
+                        <span>高级画布（beta）</span>
+                      </label>
+                    </div>
+                  </div>
                   <div className="bg-blue-50 border border-blue-200 rounded-xl p-5">
                     <div className="flex items-start">
                       <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-4 flex-shrink-0 mt-0.5">

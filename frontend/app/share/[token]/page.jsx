@@ -5,11 +5,14 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import SimpleMarkmapBasic from '../../../components/mindmap/SimpleMarkmapBasic'
+import dynamic from 'next/dynamic'
+const OutlineMindmap = dynamic(() => import('../../../components/mindmap/OutlineMindmap.jsx'), { ssr: false })
 
 export default function SharePage() {
   const params = useParams()
+  const searchParams = useSearchParams()
   const router = useRouter()
   const shareToken = params.token
   
@@ -155,7 +158,11 @@ export default function SharePage() {
       {/* 纯画布模式，仅保留画布与内部按钮 */}
       <div className="h-screen">
         {stableMindmapData && (
-          <SimpleMarkmapBasic mindmapData={stableMindmapData} />
+          (searchParams?.get('mode') === 'outline') ? (
+            <OutlineMindmap markdown={stableMindmapData.markdown} />
+          ) : (
+            <SimpleMarkmapBasic mindmapData={stableMindmapData} />
+          )
         )}
       </div>
       {/* 右下角浮窗：使用 ThinkSo 部署 */}
