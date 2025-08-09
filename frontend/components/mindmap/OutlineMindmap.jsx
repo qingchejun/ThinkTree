@@ -77,16 +77,8 @@ export default function OutlineMindmap({ markdown, mindmapId }) {
       }
       const treeData = withIds(astToTree(root))
       setTree(treeData)
-      // 尝试恢复展开状态
-      const key = `outline_expanded_${mindmapId || 'default'}`
-      const saved = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem(key) || '[]') : []
-      if (saved.length > 0) {
-        setExpandedSet(new Set(saved))
-      } else {
-        // 默认仅显示“一级目录本身”，不展示其子级
-        // 因为 children 展示条件为 (isRoot || expanded)，此处保持为空即可
-        setExpandedSet(new Set())
-      }
+      // 默认仅显示“一级目录本身”，不展示其子级（不再从缓存恢复，满足“默认折叠到一级”需求）
+      setExpandedSet(new Set())
     } catch (e) {
       setTree({ label: '解析失败', level: 0, children: [] })
     }
