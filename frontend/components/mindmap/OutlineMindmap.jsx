@@ -16,9 +16,34 @@ function extractText(value) {
   return String(value)
 }
 
+function decodeLabel(raw) {
+  let s = String(raw || '')
+  // %E4%B8%AD%E6%96%87
+  if (/%[0-9A-Fa-f]{2}/.test(s)) {
+    try { s = decodeURIComponent(s) } catch {}
+  }
+  // \u4e2d\u6587
+  s = s.replace(/\\u([0-9a-fA-F]{4})/g, (_, g1) => {
+    try { return String.fromCharCode(parseInt(g1, 16)) } catch { return _ }
+  })
+  // 实体与数字实体
+  s = s.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+  s = s.replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => {
+    try { return String.fromCodePoint(parseInt(hex, 16)) } catch { return _ }
+  })
+  s = s.replace(/&#(\d+);/g, (_, dec) => {
+    try { return String.fromCodePoint(parseInt(dec, 10)) } catch { return _ }
+  })
+  // \xHH
+  s = s.replace(/\\x([0-9a-fA-F]{2})/g, (_, h) => {
+    try { return String.fromCharCode(parseInt(h, 16)) } catch { return _ }
+  })
+  return s
+}
+
 function astToTree(root) {
   function walk(node, level = 0) {
-    const label = extractText(node?.content)
+    const label = decodeLabel(extractText(node?.content))
     const children = Array.isArray(node?.children) ? node.children.map((c) => walk(c, level + 1)) : []
     return { label, level, children }
   }
