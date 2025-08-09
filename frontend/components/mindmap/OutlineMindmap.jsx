@@ -76,15 +76,9 @@ export default function OutlineMindmap({ markdown, mindmapId }) {
       if (saved.length > 0) {
         setExpandedSet(new Set(saved))
       } else {
-        // 默认仅展示一级（level = 1），根（level=0）作为标题
-        const s = new Set()
-        function preset(n) {
-          if (!n) return
-          if (n.level === 1) s.add(n.id)
-          if (n.children) n.children.forEach(preset)
-        }
-        preset(treeData)
-        setExpandedSet(s)
+        // 默认仅显示“一级目录本身”，不展示其子级
+        // 因为 children 展示条件为 (isRoot || expanded)，此处保持为空即可
+        setExpandedSet(new Set())
       }
     } catch (e) {
       setTree({ label: '解析失败', level: 0, children: [] })
@@ -108,10 +102,8 @@ export default function OutlineMindmap({ markdown, mindmapId }) {
   }
 
   const collapseToLevel1 = () => {
-    const next = new Set()
-    function visit(n) { if (n.level === 1) next.add(n.id); n.children?.forEach(visit) }
-    if (tree) visit(tree)
-    setExpandedSet(next)
+    // 仅显示“一级目录标题”，不展开任何子级
+    setExpandedSet(new Set())
   }
 
   const expandAll = () => {
@@ -121,11 +113,14 @@ export default function OutlineMindmap({ markdown, mindmapId }) {
     setExpandedSet(next)
   }
 
-  // 语义层级：把根视为“一级”，因此需要把语义层级减一映射到实际 level
+  // 语义层级：根为 0（不计入目录级别），因此“展开到二级”应展开到实际 level<=1
   const expandToSemanticLevel = (semanticMax = 2) => {
     const maxLevel = Math.max(0, (semanticMax | 0) - 1)
     const next = new Set()
-    function visit(n) { if (n.level <= maxLevel) next.add(n.id); n.children?.forEach(visit) }
+    function visit(n) {
+      if (n.level <= maxLevel) next.add(n.id)
+      n.children?.forEach(visit)
+    }
     if (tree) visit(tree)
     setExpandedSet(next)
   }
