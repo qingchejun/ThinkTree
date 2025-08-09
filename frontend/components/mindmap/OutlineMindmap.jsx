@@ -168,6 +168,11 @@ export default function OutlineMindmap({ markdown, mindmapId }) {
     const isFirst = node.level === 1
     const expanded = expandedSet.has(node.id)
     const hasChildren = node.children && node.children.length > 0
+    const titleBoxClass = isRoot
+      ? ''
+      : isFirst
+      ? 'rounded border border-[#e0e0e0] bg-[#e8f4fd] px-4 py-2 text-[#2c3e50] font-semibold hover:bg-[#d6eafd] transition-colors'
+      : 'rounded border border-slate-200 bg-white px-3 py-2 text-[#2c3e50] font-medium hover:bg-slate-50 transition-colors'
     return (
       <section ref={(el) => el && idToRef.current.set(node.id, el)} id={`sec-${node.id}`} className={`relative ${isRoot ? 'mb-6' : 'mb-3'} pl-4`}> 
         {/* 主干线/分支线 */}
@@ -175,17 +180,17 @@ export default function OutlineMindmap({ markdown, mindmapId }) {
           <span className="absolute left-0 top-0 bottom-0 w-[3px] bg-indigo-600 rounded" aria-hidden />
         )}
         {node.level > 1 && (
-          <span className="absolute left-0 top-3 bottom-1 border-l border-slate-300" aria-hidden />
+          <span className="absolute left-0 top-3 bottom-1 border-l border-slate-200" aria-hidden />
         )}
 
         {/* 标题行 */}
         <div className={`flex items-start ${isRoot ? 'text-2xl font-bold text-slate-900' : isFirst ? 'text-lg font-semibold text-slate-800' : 'text-sm text-slate-800'}`}>
           {hasChildren && !isRoot && (
-            <button onClick={() => toggle(node)} className="mr-2 mt-[2px] text-slate-500 hover:text-slate-700" aria-label={expanded ? '折叠' : '展开'}>
+            <button onClick={() => toggle(node)} className="mr-2 mt-[2px] text-slate-600 hover:text-slate-800" aria-label={expanded ? '折叠' : '展开'}>
               {expanded ? '▾' : '▸'}
             </button>
           )}
-          <div className={`bg-white ${isRoot ? '' : isFirst ? 'rounded border border-slate-200 px-3 py-1' : 'rounded border border-slate-200 px-2 py-1'} max-w-[720px] break-words leading-6`}>{highlight(node.label || '（空）', search)}</div>
+          <div className={`${titleBoxClass} ${isFirst ? '' : node.level > 1 ? 'border-l-4 border-l-[#3498db]' : ''} max-w-[780px] break-words leading-6`}>{highlight(node.label || '（空）', search)}</div>
         </div>
 
         {/* 子级 */}
@@ -194,7 +199,7 @@ export default function OutlineMindmap({ markdown, mindmapId }) {
             {node.children.map((child, idx) => (
               <div key={idx} className="relative">
                 {/* 横向分支线 */}
-                <span className="absolute -left-6 top-3 w-6 border-t border-slate-300" aria-hidden />
+                <span className="absolute -left-6 top-4 w-6 border-t border-slate-200" aria-hidden />
                 <NodeView node={child} />
               </div>
             ))}
@@ -230,7 +235,7 @@ export default function OutlineMindmap({ markdown, mindmapId }) {
 
       {/* 内容与 TOC */}
       <div className="grid grid-cols-12 gap-6">
-        <div className="col-span-9">
+        <div className="col-span-9 max-w-3xl">
           {tree ? (
             <NodeView node={tree} />
           ) : (
