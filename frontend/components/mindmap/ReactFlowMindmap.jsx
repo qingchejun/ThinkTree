@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import ReactFlow, { Background, Controls, MiniMap } from 'reactflow'
+import ReactFlow, { Background, Controls, MiniMap, useReactFlow } from 'reactflow'
 import 'reactflow/dist/style.css'
 import dagre from 'dagre'
 
@@ -85,6 +85,28 @@ export default function ReactFlowMindmap({ markdown }) {
           <div>Worker: {metrics.workerTotalMs}ms 布局: {metrics.layoutMs}ms</div>
         </div>
       )}
+      {/* 导出按钮（将 Graph 转回 Markdown，供保存/回退验证） */}
+      <div className="absolute bottom-2 right-2 space-x-2">
+        <button
+          onClick={() => {
+            if (!workerRef.current) return
+            workerRef.current.onmessage = (evt) => {
+              const { type, payload } = evt.data || {}
+              if (type === 'markdown') {
+                const blob = new Blob([payload.markdown || ''], { type: 'text/markdown' })
+                const url = URL.createObjectURL(blob)
+                const a = document.createElement('a')
+                a.href = url
+                a.download = 'mindmap.md'
+                a.click()
+                URL.revokeObjectURL(url)
+              }
+            }
+            workerRef.current.postMessage({ type: 'graphToMarkdown', payload: rfData })
+          }}
+          className="px-2 py-1 text-xs border rounded bg-white/90"
+        >导出Markdown(beta)</button>
+      </div>
     </div>
   )
 }

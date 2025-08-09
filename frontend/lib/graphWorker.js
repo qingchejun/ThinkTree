@@ -58,6 +58,42 @@ self.onmessage = (evt) => {
     } catch (e) {
       self.postMessage({ type: 'error', payload: { message: e?.message || String(e) } })
     }
+  } else if (type === 'graphToMarkdown') {
+    try {
+      const { nodes = [], edges = [] } = payload || {}
+      // 建立父子关系
+      const idToNode = new Map(nodes.map(n => [n.id, n]))
+      const childrenMap = new Map()
+      const inDeg = new Map(nodes.map(n => [n.id, 0]))
+      for (const e of edges) {
+        childrenMap.set(e.source, (childrenMap.get(e.source) || []).concat(e.target))
+        inDeg.set(e.target, (inDeg.get(e.target) || 0) + 1)
+      }
+      const roots = nodes.filter(n => (inDeg.get(n.id) || 0) === 0)
+      // 深度优先输出 Markdown：level 0 -> #，level1 -> ##，level2 -> ###，>=3 使用列表缩进
+      const lines = []
+      function visit(id, level) {
+        const node = idToNode.get(id)
+        const label = (node?.label ?? node?.data?.markdown ?? '').toString()
+        if (!label) return
+        if (level === 0) lines.push(`# ${label}`)
+        else if (level === 1) lines.push(`## ${label}`)
+        else if (level === 2) lines.push(`### ${label}`)
+        else lines.push(`${'  '.repeat(level - 3)}- ${label}`)
+        const kids = (childrenMap.get(id) || [])
+        for (const kid of kids) visit(kid, level + 1)
+      }
+      if (roots.length === 0 && nodes.length > 0) {
+        // 无 root，任取第一个
+        visit(nodes[0].id, 0)
+      } else {
+        for (const r of roots) visit(r.id, 0)
+      }
+      const md = lines.join('\n')
+      self.postMessage({ type: 'markdown', payload: { markdown: md } })
+    } catch (e) {
+      self.postMessage({ type: 'error', payload: { message: e?.message || String(e) } })
+    }
   }
 }
 
