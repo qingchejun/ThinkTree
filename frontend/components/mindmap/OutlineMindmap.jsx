@@ -199,9 +199,12 @@ export default function OutlineMindmap({ markdown, mindmapId, editable = false, 
     const expanded = expandedSet.has(node.id)
     return (
       <div className="article border-b border-[#f0f0f0] bg-white rounded-md overflow-hidden shadow-sm">
-        <div className="article-header px-4 py-2 text-[16px] font-semibold text-[#2c3e50] border-l-4 border-[#3498db] cursor-pointer hover:bg-[#f8f9fa]"
-             onClick={() => toggle(node)}>
-          <span className="mr-2 text-black">{expanded ? '▾' : '▸'}</span>
+        <div className="article-header px-4 py-2 text-[16px] font-semibold text-[#2c3e50] border-l-4 border-[#3498db] hover:bg-[#f8f9fa] flex items-center">
+          <button
+            className="mr-2 text-black"
+            onClick={(e) => { e.stopPropagation(); toggle(node) }}
+            title={expanded ? '折叠' : '展开'}
+          >{expanded ? '▾' : '▸'}</button>
           {editable && editing.id === node.id ? (
             <input
               className="border px-2 py-1 rounded text-[16px]"
@@ -233,9 +236,12 @@ export default function OutlineMindmap({ markdown, mindmapId, editable = false, 
     const expanded = expandedSet.has(node.id)
     return (
       <div ref={(el) => el && idToRef.current.set(node.id, el)} id={`sec-${node.id}`} className="chapter mb-4 border border-[#e0e0e0] rounded-lg overflow-hidden shadow-sm">
-        <div className="chapter-header bg-[#e8f4fd] px-5 py-3 text-[20px] font-bold text-[#2c3e50] cursor-pointer hover:bg-[#d6eafd] flex items-center"
-             onClick={() => toggle(node)}>
-          <span className="mr-2 text-black">{expanded ? '▾' : '▸'}</span>
+        <div className="chapter-header bg-[#e8f4fd] px-5 py-3 text-[20px] font-bold text-[#2c3e50] hover:bg-[#d6eafd] flex items-center">
+          <button
+            className="mr-2 text-black"
+            onClick={(e) => { e.stopPropagation(); toggle(node) }}
+            title={expanded ? '折叠' : '展开'}
+          >{expanded ? '▾' : '▸'}</button>
           {editable && editing.id === node.id ? (
             <input
               className="border px-2 py-1 rounded text-[18px]"
@@ -336,10 +342,10 @@ export default function OutlineMindmap({ markdown, mindmapId, editable = false, 
   }
 
   return (
-    <div ref={containerRef} className="w-full h-full overflow-auto p-6 bg-white relative">
+    <div ref={containerRef} className={`w-full h-full overflow-auto p-6 bg-white relative ${editable ? 'editing' : ''}`}>
       {/* 顶部：左侧标题 + 右侧按钮（顶端对齐） */}
       <div className="flex items-start justify-between mb-3">
-        <h1 className="text-[28px] font-bold text-[#2c3e50] leading-tight m-0">{tree ? stripHtmlTags(tree.label || '（空）') : '...'}</h1>
+        <h1 className={`text-[28px] font-bold leading-tight m-0 ${editable ? 'text-purple-700' : 'text-[#2c3e50]'}`}>{tree ? stripHtmlTags(tree.label || '（空）') : '...'}</h1>
       </div>
 
       {/* 内容与 TOC */}

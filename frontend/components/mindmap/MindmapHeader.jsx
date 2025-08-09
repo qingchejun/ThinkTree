@@ -139,7 +139,7 @@ export default function MindmapHeader({
         {onToggleEditMode && (
           <button
             onClick={onToggleEditMode}
-            className={`action-button ${isEditMode ? 'text-purple-600 hover:bg-purple-100' : 'text-gray-500 hover:bg-gray-100 hover:text-purple-600'}`}
+            className={`action-button ${isEditMode ? 'text-purple-600 bg-purple-50' : 'text-gray-500 hover:bg-gray-100 hover:text-purple-600'}`}
             title={isEditMode ? '退出编辑模式' : '进入编辑模式'}
           >
             <Edit3 className="w-4 h-4" />
