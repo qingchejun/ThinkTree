@@ -50,69 +50,129 @@ function astToTree(root) {
   return walk(root, 0)
 }
 
-export default function OutlineMindmap({ markdown }) {
+export default function OutlineMindmap({ markdown, mindmapId }) {
   const [tree, setTree] = React.useState(null)
-  const [expandedMap, setExpandedMap] = React.useState(new Map())
+  const [expandedSet, setExpandedSet] = React.useState(new Set())
+  const [search, setSearch] = React.useState('')
+  const containerRef = React.useRef(null)
+  const idToRef = React.useRef(new Map())
 
   React.useEffect(() => {
     try {
       const t = new Transformer()
       const { root } = t.transform(markdown || '')
-      const treeData = astToTree(root)
-      setTree(treeData)
-      // 默认仅展示一级（level = 1），根（level=0）作为标题
-      const m = new Map()
-      function preset(n) {
-        if (!n) return
-        if (n.level === 1) m.set(n, true)
-        if (n.children) n.children.forEach(preset)
+      // 为节点生成稳定 id（基于路径）
+      function withIds(node, path = []) {
+        const id = path.join('.') || 'root'
+        const cur = { id, label: node.label, level: node.level, children: [] }
+        cur.children = (node.children || []).map((c, i) => withIds(c, path.concat(i)))
+        return cur
       }
-      preset(treeData)
-      setExpandedMap(m)
+      const treeData = withIds(astToTree(root))
+      setTree(treeData)
+      // 尝试恢复展开状态
+      const key = `outline_expanded_${mindmapId || 'default'}`
+      const saved = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem(key) || '[]') : []
+      if (saved.length > 0) {
+        setExpandedSet(new Set(saved))
+      } else {
+        // 默认仅展示一级（level = 1），根（level=0）作为标题
+        const s = new Set()
+        function preset(n) {
+          if (!n) return
+          if (n.level === 1) s.add(n.id)
+          if (n.children) n.children.forEach(preset)
+        }
+        preset(treeData)
+        setExpandedSet(s)
+      }
     } catch (e) {
       setTree({ label: '解析失败', level: 0, children: [] })
     }
   }, [markdown])
 
+  // 持久化展开状态
+  React.useEffect(() => {
+    if (!tree) return
+    const key = `outline_expanded_${mindmapId || 'default'}`
+    try { localStorage.setItem(key, JSON.stringify(Array.from(expandedSet))) } catch {}
+  }, [expandedSet, tree, mindmapId])
+
   const toggle = (node) => {
-    setExpandedMap((prev) => {
-      const next = new Map(prev)
-      next.set(node, !prev.get(node))
+    setExpandedSet((prev) => {
+      const next = new Set(prev)
+      if (next.has(node.id)) next.delete(node.id)
+      else next.add(node.id)
       return next
     })
   }
 
   const collapseToLevel1 = () => {
-    setExpandedMap((_) => {
-      const next = new Map()
-      function visit(n) {
-        if (n.level === 1) next.set(n, true)
-        if (n.children) n.children.forEach(visit)
-      }
-      if (tree) visit(tree)
-      return next
-    })
+    const next = new Set()
+    function visit(n) { if (n.level === 1) next.add(n.id); n.children?.forEach(visit) }
+    if (tree) visit(tree)
+    setExpandedSet(next)
   }
 
   const expandAll = () => {
-    setExpandedMap((_) => {
-      const next = new Map()
-      function visit(n) {
-        next.set(n, true)
-        if (n.children) n.children.forEach(visit)
+    const next = new Set()
+    function visit(n) { next.add(n.id); n.children?.forEach(visit) }
+    if (tree) visit(tree)
+    setExpandedSet(next)
+  }
+
+  const expandToLevel = (maxLevel = 2) => {
+    const next = new Set()
+    function visit(n) { if (n.level <= maxLevel) next.add(n.id); n.children?.forEach(visit) }
+    if (tree) visit(tree)
+    setExpandedSet(next)
+  }
+
+  // 搜索与自动展开
+  const matchesId = React.useMemo(() => {
+    const term = (search || '').trim().toLowerCase()
+    if (!term || !tree) return new Set()
+    const set = new Set()
+    function walk(n, parentChain = []) {
+      const ok = (n.label || '').toLowerCase().includes(term)
+      if (ok) {
+        set.add(n.id)
+        // 展开祖先链
+        parentChain.forEach((pid) => set.add(pid))
       }
-      if (tree) visit(tree)
-      return next
-    })
+      n.children?.forEach((c) => walk(c, parentChain.concat(n.id)))
+    }
+    walk(tree, [])
+    return set
+  }, [search, tree])
+
+  React.useEffect(() => {
+    if (matchesId.size === 0) return
+    // 合并到展开集合并滚动到第一个匹配
+    setExpandedSet((prev) => new Set([...prev, ...Array.from(matchesId)]))
+    const first = Array.from(matchesId)[0]
+    const el = idToRef.current.get(first)
+    if (el && typeof el.scrollIntoView === 'function') el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, [matchesId])
+
+  const highlight = (label, term) => {
+    if (!term) return label
+    const idx = label.toLowerCase().indexOf(term.toLowerCase())
+    if (idx === -1) return label
+    return (
+      <>
+        {label.slice(0, idx)}<mark className="bg-yellow-200 px-0.5 rounded-sm">{label.slice(idx, idx + term.length)}</mark>{label.slice(idx + term.length)}
+      </>
+    )
   }
 
   const NodeView = ({ node }) => {
     const isRoot = node.level === 0
     const isFirst = node.level === 1
-    const expanded = expandedMap.get(node) || false
+    const expanded = expandedSet.has(node.id)
     const hasChildren = node.children && node.children.length > 0
     return (
-      <section className={`relative ${isRoot ? 'mb-6' : 'mb-3'} pl-4`}> 
+      <section ref={(el) => el && idToRef.current.set(node.id, el)} id={`sec-${node.id}`} className={`relative ${isRoot ? 'mb-6' : 'mb-3'} pl-4`}> 
         {/* 主干线/分支线 */}
         {node.level === 1 && (
           <span className="absolute left-0 top-0 bottom-0 w-[3px] bg-indigo-600 rounded" aria-hidden />
@@ -128,7 +188,7 @@ export default function OutlineMindmap({ markdown }) {
               {expanded ? '▾' : '▸'}
             </button>
           )}
-          <div className={`bg-white ${isRoot ? '' : isFirst ? 'rounded border border-slate-200 px-3 py-1' : 'rounded border border-slate-200 px-2 py-1'} max-w-[720px] break-words leading-6`}>{node.label || '（空）'}</div>
+          <div className={`bg-white ${isRoot ? '' : isFirst ? 'rounded border border-slate-200 px-3 py-1' : 'rounded border border-slate-200 px-2 py-1'} max-w-[720px] break-words leading-6`}>{highlight(node.label || '（空）', search)}</div>
         </div>
 
         {/* 子级 */}
@@ -149,14 +209,51 @@ export default function OutlineMindmap({ markdown }) {
 
   if (!tree) return <div className="w-full h-full flex items-center justify-center text-slate-500">正在生成大纲...</div>
 
+  // TOC（仅展示 level=1 标题）
+  const toc = React.useMemo(() => {
+    if (!tree) return []
+    return (tree.children || []).filter(n => n.level === 1).map((n, i) => ({ id: n.id, label: n.label, index: i }))
+  }, [tree])
+
+  const jumpTo = (id) => {
+    const el = idToRef.current.get(id)
+    if (el && typeof el.scrollIntoView === 'function') el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    // 自动展开至该节
+    setExpandedSet((prev) => new Set([...prev, id]))
+  }
+
   return (
-    <div className="w-full h-full overflow-auto p-6 bg-white">
-      {/* 操作区 */}
-      <div className="flex items-center justify-end gap-2 mb-4">
-        <button onClick={collapseToLevel1} className="px-3 py-1 text-xs border rounded bg-white hover:bg-slate-50">折叠到一级</button>
-        <button onClick={expandAll} className="px-3 py-1 text-xs border rounded bg-white hover:bg-slate-50">展开全部</button>
+    <div ref={containerRef} className="w-full h-full overflow-auto p-6 bg-white relative">
+      {/* 顶部工具 */}
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="搜索..." className="px-2 py-1 text-xs border rounded w-56" />
+        <div className="flex items-center gap-2">
+          <button onClick={collapseToLevel1} className="px-3 py-1 text-xs border rounded bg-white hover:bg-slate-50">折叠到一级</button>
+          <button onClick={() => expandToLevel(2)} className="px-3 py-1 text-xs border rounded bg-white hover:bg-slate-50">展开到二级</button>
+          <button onClick={expandAll} className="px-3 py-1 text-xs border rounded bg-white hover:bg-slate-50">展开全部</button>
+        </div>
       </div>
-      <NodeView node={tree} />
+
+      {/* 内容与 TOC */}
+      <div className="grid grid-cols-12 gap-6">
+        <div className="col-span-9">
+          <NodeView node={tree} />
+        </div>
+        <aside className="col-span-3">
+          <div className="sticky top-4">
+            <div className="text-xs text-slate-500 mb-2">目录</div>
+            <ul className="space-y-1 text-sm">
+              {toc.map(item => (
+                <li key={item.id}>
+                  <button onClick={() => jumpTo(item.id)} className="text-slate-700 hover:text-indigo-600 hover:underline">
+                    {item.index + 1}. {item.label}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </aside>
+      </div>
     </div>
   )
 }

@@ -450,7 +450,7 @@ export default function ViewMindmapPage() {
             {/* 思维导图可视化区域 */}
             <div className="h-[calc(100%-81px)]">
               {useRF ? (
-                <OutlineMindmap markdown={stableMindmapData?.markdown || ''} />
+                <OutlineMindmap markdown={stableMindmapData?.markdown || ''} mindmapId={mindmapId} />
               ) : (
                 <SimpleMarkmapBasic ref={markmapRef} mindmapData={stableMindmapData} />
               )}
