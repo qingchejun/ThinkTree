@@ -86,7 +86,16 @@ export default function ReactFlowMindmap({ markdown, mindmapId }) {
       const { type, payload } = evt.data || {}
       if (type === 'graph') {
         const t1 = performance.now()
-        const { nodes, edges, meta } = payload
+        const { nodes, edges, meta, debug } = payload
+        try {
+          if (typeof window !== 'undefined' && window?.localStorage?.getItem('rfDebug') === '1') {
+            // 打印前 10 个节点与样本
+            // eslint-disable-next-line no-console
+            console.log('[RF][debug] first nodes', nodes.slice(0, 10).map(n => n.label))
+            // eslint-disable-next-line no-console
+            console.log('[RF][debug] samples', debug?.samples || [])
+          }
+        } catch {}
         // 默认折叠：level 大于 3
         const defaultCollapsed = new Set(nodes.filter(n => (n.level ?? 0) > 3).map(n => n.id))
         setCollapsedSet(defaultCollapsed)

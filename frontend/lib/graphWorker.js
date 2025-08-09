@@ -22,6 +22,7 @@ function treeToGraph(root) {
   const nodes = []
   const edges = []
   let idCounter = 0
+  const debugSamples = []
 
   function makeId() {
     idCounter += 1
@@ -45,15 +46,21 @@ function treeToGraph(root) {
 
   function walk(node, level, parentId) {
     const id = makeId()
-    const label = decodeLabel(extractText(node?.content))
+    const extracted = extractText(node?.content)
+    const label = decodeLabel(extracted)
     nodes.push({ id, data: { markdown: label }, label, level, parentId })
+    if (debugSamples.length < 20) {
+      let rawStr = ''
+      try { rawStr = JSON.stringify(node?.content)?.slice(0, 200) || '' } catch { rawStr = String(node?.content).slice(0, 200) }
+      debugSamples.push({ raw: rawStr, extracted: (extracted || '').slice(0, 120), decoded: (label || '').slice(0, 120) })
+    }
     if (parentId) edges.push({ id: `${parentId}__${id}`, source: parentId, target: id, type: 'smoothstep' })
     const children = Array.isArray(node?.children) ? node.children : []
     for (const child of children) walk(child, level + 1, id)
   }
 
   walk(root, 0, null)
-  return { nodes, edges }
+  return { nodes, edges, debugSamples }
 }
 
 self.onmessage = (evt) => {
@@ -97,6 +104,7 @@ self.onmessage = (evt) => {
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           },
+          debug: { samples: g0.debugSamples }
         },
       })
     } catch (e) {
