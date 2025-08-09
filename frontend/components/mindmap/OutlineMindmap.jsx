@@ -176,8 +176,11 @@ export default function OutlineMindmap({ markdown, mindmapId }) {
     const items = []
     const pad = Math.min(depth, 3) * 16
     items.push(
-      <div key={`${node.id}-ci`} className="content-item" style={{ paddingLeft: pad }}>
-        {highlight(node.label || '（空）', search)}
+      <div key={`${node.id}-ci`} style={{ marginLeft: pad }}>
+        <div className="relative pl-5 mb-2 text-[14px] leading-[22px] text-[#2c3e50]">
+          <span className="absolute left-0 top-2 w-1.5 h-1.5 rounded-full bg-[#3498db]" aria-hidden />
+          {highlight(node.label || '（空）', search)}
+        </div>
       </div>
     )
     node.children?.forEach((c) => items.push(<ContentItems key={c.id} node={c} depth={depth + 1} />))
