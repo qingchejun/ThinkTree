@@ -72,6 +72,12 @@ export default function ReactFlowMindmap({ markdown, mindmapId }) {
   const [collapsedSet, setCollapsedSet] = useState(() => new Set())
   const [searchTerm, setSearchTerm] = useState('')
   const [matchedIds, setMatchedIds] = useState(new Set())
+  // MiniMap 控制：默认关闭；大图进入“简化模式”仅显示视口框
+  const [showMiniMap, setShowMiniMap] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return window.localStorage.getItem('rfMiniMap') === '1'
+  })
+  const [miniMapReady, setMiniMapReady] = useState(false)
 
   useEffect(() => {
     if (!markdown) return
@@ -110,6 +116,11 @@ export default function ReactFlowMindmap({ markdown, mindmapId }) {
           nodeCount: nodes.length,
           edgeCount: edges.length,
         })
+        // 延迟挂载 MiniMap，避免抢占首屏时间
+        try {
+          const schedule = (cb) => (window.requestIdleCallback ? window.requestIdleCallback(cb, { timeout: 800 }) : setTimeout(cb, 200))
+          schedule(() => setMiniMapReady(true))
+        } catch { setMiniMapReady(true) }
       } else if (type === 'error') {
         setError(payload?.message || '解析失败')
       }
@@ -117,6 +128,12 @@ export default function ReactFlowMindmap({ markdown, mindmapId }) {
     worker.postMessage({ type: 'parseMarkdown', payload: { markdown } })
     return () => worker && worker.terminate()
   }, [markdown])
+
+  // 记忆 MiniMap 开关
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try { window.localStorage.setItem('rfMiniMap', showMiniMap ? '1' : '0') } catch {}
+  }, [showMiniMap])
 
   // 操作工具
   const commit = (apply, inverse) => {
@@ -277,8 +294,19 @@ export default function ReactFlowMindmap({ markdown, mindmapId }) {
       >
         <Background />
         <Controls showInteractive={false} />
-        <MiniMap pannable zoomable />
+        {showMiniMap && miniMapReady && (
+          <div className={rfData.nodes.length > 600 ? 'minimap-simplified' : ''}>
+            <MiniMap pannable zoomable />
+          </div>
+        )}
       </ReactFlow>
+      {/* 简化 MiniMap 样式：仅显示视口，隐藏节点矩形，减少 DOM */}
+      {showMiniMap && rfData.nodes.length > 600 && (
+        <style>{`
+          .minimap-simplified .react-flow__minimap-node { display: none; }
+          .minimap-simplified .react-flow__minimap-mask { stroke: #9ca3af; stroke-width: 1; }
+        `}</style>
+      )}
       {metrics && (
         <div className="absolute top-2 right-2 bg-white/90 border rounded px-3 py-2 text-xs text-gray-700 shadow">
           <div>节点: {metrics.nodeCount} 边: {metrics.edgeCount}</div>
@@ -303,6 +331,10 @@ export default function ReactFlowMindmap({ markdown, mindmapId }) {
       </div>
       {/* 导出按钮（将 Graph 转回 Markdown，供保存/回退验证） */}
       <div className="absolute bottom-2 right-2 space-x-2">
+        <button
+          onClick={() => setShowMiniMap(v => !v)}
+          className="px-2 py-1 text-xs border rounded bg-white/90"
+        >{showMiniMap ? '隐藏MiniMap' : '显示MiniMap'}</button>
         <button
           onClick={() => {
             const inv = historyRef.current.stack.pop()
