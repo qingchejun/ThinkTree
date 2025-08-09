@@ -2,6 +2,7 @@
 // 依赖 markmap-lib 仅做解析，避免主线程阻塞
 
 import { Transformer } from 'markmap-lib'
+import dagre from 'dagre'
 
 // v1 Schema 转换：TreeNode → { nodes, edges, meta }
 function treeToGraph(root) {
@@ -37,18 +38,33 @@ self.onmessage = (evt) => {
       const { root } = transformer.transform(payload.markdown || '')
       const parseEnd = performance.now()
       const graphStart = performance.now()
-      const g = treeToGraph(root)
+      const g0 = treeToGraph(root)
       const graphEnd = performance.now()
+      // 布局（Worker 内完成）
+      const layoutStart = performance.now()
+      const dg = new dagre.graphlib.Graph()
+      dg.setGraph({ rankdir: 'LR', nodesep: 40, ranksep: 60 })
+      dg.setDefaultEdgeLabel(() => ({}))
+      g0.nodes.forEach((n) => dg.setNode(n.id, { width: 180, height: 36 }))
+      g0.edges.forEach((e) => dg.setEdge(e.source, e.target))
+      dagre.layout(dg)
+      const laidNodes = g0.nodes.map((n) => {
+        const p = dg.node(n.id)
+        return { ...n, position: { x: p.x, y: p.y } }
+      })
+      const layoutEnd = performance.now()
       const t1 = performance.now()
       self.postMessage({
         type: 'graph',
         payload: {
-          ...g,
+          nodes: laidNodes,
+          edges: g0.edges,
           meta: {
             version: 'v1',
             from: 'markdown',
             parseMs: parseEnd - parseStart,
             treeToGraphMs: graphEnd - graphStart,
+            layoutMs: layoutEnd - layoutStart,
             workerTotalMs: t1 - t0,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),

@@ -80,27 +80,15 @@ export default function ReactFlowMindmap({ markdown, mindmapId }) {
       const { type, payload } = evt.data || {}
       if (type === 'graph') {
         const t1 = performance.now()
-        // 使用 dagre 做简单层次布局
-        const layoutStart = performance.now()
         const { nodes, edges, meta } = payload
-        const g = new dagre.graphlib.Graph()
-        g.setGraph({ rankdir: 'LR', nodesep: 40, ranksep: 60 })
-        g.setDefaultEdgeLabel(() => ({}))
-        nodes.forEach((n) => g.setNode(n.id, { width: 180, height: 36 }))
-        edges.forEach((e) => g.setEdge(e.source, e.target))
-        dagre.layout(g)
-        const laidNodes = nodes.map((n) => {
-          const p = g.node(n.id)
-          return { ...n, type: 'editable', position: { x: p.x, y: p.y }, data: { ...n.data, label: n.label } }
-        })
-        const layoutEnd = performance.now()
+        const laidNodes = nodes.map((n) => ({ ...n, type: 'editable', data: { ...n.data, label: n.label } }))
         setRfData({ nodes: laidNodes, edges })
         setMetrics({
           parseMs: Math.round(meta.parseMs),
           treeToGraphMs: Math.round(meta.treeToGraphMs),
           workerTotalMs: Math.round(meta.workerTotalMs),
           mainThreadReceiveMs: Math.round(t1 - t0),
-          layoutMs: Math.round(layoutEnd - layoutStart),
+          layoutMs: Math.round(meta.layoutMs || 0),
           nodeCount: nodes.length,
           edgeCount: edges.length,
         })
