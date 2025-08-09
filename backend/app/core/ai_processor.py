@@ -77,9 +77,9 @@ class GeminiProcessor:
         for pattern in injection_patterns:
             text = re.sub(pattern, '[敏感内容已移除]', text, flags=re.IGNORECASE | re.MULTILINE)
         
-        # 4. 长度限制和截断处理
-        if len(text) > 4000:
-            text = text[:4000] + "...(内容已截断)"
+        # 4. 长度限制和截断处理（放宽到 100k 字符，避免轻易截断长文/字幕）
+        if len(text) > 100_000:
+            text = text[:100_000]
         
         # 5. 最终清理：移除多余的空白字符
         text = re.sub(r'\n\s*\n\s*\n', '\n\n', text)  # 合并多个空行
@@ -160,7 +160,7 @@ class GeminiProcessor:
             response = await self._call_model_with_timeout_and_retry(
                 prompt=prompt,
                 max_retries=3,
-                timeout_seconds=30,
+                timeout_seconds=60,
             )
             response_text = response.text.strip()
             print(f"Gemini API 响应成功，响应长度: {len(response_text)} 字符")
