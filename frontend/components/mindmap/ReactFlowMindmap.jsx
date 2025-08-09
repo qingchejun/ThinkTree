@@ -1,8 +1,8 @@
 'use client'
 
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import ReactFlow, { Background, Controls, MiniMap, useReactFlow } from 'reactflow'
-import { Plus, Trash2, Save, RotateCw, RotateCcw } from 'lucide-react'
+import ReactFlow, { Background, Controls, MiniMap } from 'reactflow'
+import { Plus, Trash2, Save, RotateCw, RotateCcw, ChevronDown, ChevronRight, Search, X as XIcon } from 'lucide-react'
 import 'reactflow/dist/style.css'
 import dagre from 'dagre'
 
@@ -44,7 +44,10 @@ function EditableNode({ id, data }) {
         />
       ) : (
         <div className="flex items-center">
-          <div className="flex-1 break-words" onDoubleClick={() => setEditing(true)}>{data.label}</div>
+          <button title={data.collapsed ? '展开' : '折叠'} onClick={() => data.onToggleCollapse(id)} className="mr-1 text-gray-500 hover:text-gray-700">
+            {data.collapsed ? <ChevronRight size={14}/> : <ChevronDown size={14}/>}
+          </button>
+          <div className={`flex-1 break-words ${data.highlight ? 'bg-yellow-100' : ''}`} onDoubleClick={() => setEditing(true)}>{data.label}</div>
           <button title="添加子节点" onClick={() => data.onAddChild(id)} className="ml-2 text-green-600 hover:text-green-700">
             <Plus size={14} />
           </button>
@@ -66,6 +69,9 @@ export default function ReactFlowMindmap({ markdown, mindmapId }) {
   const [error, setError] = useState(null)
   const historyRef = useRef({ stack: [], redo: [] })
   const [dirty, setDirty] = useState(false)
+  const [collapsedSet, setCollapsedSet] = useState(() => new Set())
+  const [searchTerm, setSearchTerm] = useState('')
+  const [matchedIds, setMatchedIds] = useState(new Set())
 
   useEffect(() => {
     if (!markdown) return
@@ -81,6 +87,9 @@ export default function ReactFlowMindmap({ markdown, mindmapId }) {
       if (type === 'graph') {
         const t1 = performance.now()
         const { nodes, edges, meta } = payload
+        // 默认折叠：level 大于 3
+        const defaultCollapsed = new Set(nodes.filter(n => (n.level ?? 0) > 3).map(n => n.id))
+        setCollapsedSet(defaultCollapsed)
         const laidNodes = nodes.map((n) => ({ ...n, type: 'editable', data: { ...n.data, label: n.label } }))
         setRfData({ nodes: laidNodes, edges })
         setMetrics({
@@ -165,6 +174,63 @@ export default function ReactFlowMindmap({ markdown, mindmapId }) {
     },
   }
 
+  // 折叠控制
+  const onToggleCollapse = (id) => {
+    setCollapsedSet(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  // 可见节点/边（过滤掉折叠祖先的子树）
+  const visible = React.useMemo(() => {
+    const idToParent = new Map(rfData.nodes.map(n => [n.id, n.parentId]))
+    const isHidden = (id) => {
+      let cur = idToParent.get(id)
+      while (cur) {
+        if (collapsedSet.has(cur)) return true
+        cur = idToParent.get(cur)
+      }
+      return false
+    }
+    const vNodes = rfData.nodes.filter(n => !isHidden(n.id)).map(n => ({
+      ...n,
+      data: {
+        ...n.data,
+        ...api,
+        onToggleCollapse,
+        collapsed: collapsedSet.has(n.id),
+        highlight: matchedIds.has(n.id),
+      },
+    }))
+    const keep = new Set(vNodes.map(n => n.id))
+    const vEdges = rfData.edges.filter(e => keep.has(e.source) && keep.has(e.target))
+    return { nodes: vNodes, edges: vEdges }
+  }, [rfData, collapsedSet, matchedIds])
+
+  // 搜索与高亮
+  const applySearch = (term) => {
+    const t = (term || '').trim().toLowerCase()
+    setSearchTerm(term)
+    if (!t) { setMatchedIds(new Set()); return }
+    const matches = rfData.nodes.filter(n => (n.data?.label || '').toLowerCase().includes(t)).map(n => n.id)
+    setMatchedIds(new Set(matches))
+    if (matches.length > 0) {
+      // 展开首个匹配的祖先链
+      const idToParent = new Map(rfData.nodes.map(n => [n.id, n.parentId]))
+      const chain = []
+      let cur = idToParent.get(matches[0])
+      while (cur) { chain.push(cur); cur = idToParent.get(cur) }
+      setCollapsedSet(prev => {
+        const next = new Set(prev)
+        chain.forEach(a => next.delete(a))
+        return next
+      })
+    }
+  }
+
   if (error) {
     return (
       <div className="h-full flex items-center justify-center text-red-600">{error}</div>
@@ -174,8 +240,8 @@ export default function ReactFlowMindmap({ markdown, mindmapId }) {
   return (
     <div className="relative w-full h-full">
       <ReactFlow
-        nodes={rfData.nodes.map(n => ({ ...n, data: { ...n.data, ...api } }))}
-        edges={rfData.edges}
+        nodes={visible.nodes}
+        edges={visible.edges}
         fitView
         nodeTypes={nodeTypes}
         onConnect={(params) => {
@@ -211,6 +277,21 @@ export default function ReactFlowMindmap({ markdown, mindmapId }) {
           <div>Worker: {metrics.workerTotalMs}ms 布局: {metrics.layoutMs}ms</div>
         </div>
       )}
+      {/* 搜索框 */}
+      <div className="absolute top-2 left-2 bg-white/90 border rounded px-2 py-1 text-xs flex items-center space-x-1 shadow">
+        <Search size={14} className="text-gray-500"/>
+        <input
+          className="outline-none text-xs bg-transparent"
+          placeholder="搜索..."
+          value={searchTerm}
+          onChange={(e) => applySearch(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Escape') applySearch('') }}
+          style={{ width: 160 }}
+        />
+        {searchTerm && (
+          <button onClick={() => applySearch('')} className="text-gray-500 hover:text-gray-700"><XIcon size={14}/></button>
+        )}
+      </div>
       {/* 导出按钮（将 Graph 转回 Markdown，供保存/回退验证） */}
       <div className="absolute bottom-2 right-2 space-x-2">
         <button
