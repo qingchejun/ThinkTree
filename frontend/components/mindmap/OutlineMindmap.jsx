@@ -261,11 +261,6 @@ export default function OutlineMindmap({ markdown, mindmapId }) {
       {/* 顶部：左侧标题 + 右侧按钮（顶端对齐） */}
       <div className="flex items-start justify-between mb-3">
         <h1 className="text-[28px] font-bold text-[#2c3e50] leading-tight m-0">{tree ? stripHtmlTags(tree.label || '（空）') : '...'}</h1>
-        <div className="flex items-center gap-2">
-          <button onClick={collapseToLevel1} className="px-3 py-1 text-xs border rounded bg-white hover:bg-slate-50">折叠到一级</button>
-          <button onClick={() => expandToSemanticLevel(2)} className="px-3 py-1 text-xs border rounded bg-white hover:bg-slate-50">展开到二级</button>
-          <button onClick={expandAll} className="px-3 py-1 text-xs border rounded bg-white hover:bg-slate-50">展开全部</button>
-        </div>
       </div>
 
       {/* 内容与 TOC */}
@@ -280,6 +275,12 @@ export default function OutlineMindmap({ markdown, mindmapId }) {
         </div>
         <aside className="col-span-3">
           <div className="sticky top-4">
+            {/* 固定的控制按钮 */}
+            <div className="flex items-center gap-2 mb-3">
+              <button onClick={collapseToLevel1} className="px-3 py-1 text-xs border rounded bg-white hover:bg-slate-50">折叠到一级</button>
+              <button onClick={() => expandToSemanticLevel(2)} className="px-3 py-1 text-xs border rounded bg-white hover:bg-slate-50">展开到二级</button>
+              <button onClick={expandAll} className="px-3 py-1 text-xs border rounded bg-white hover:bg-slate-50">展开全部</button>
+            </div>
             {/* 搜索框：位于按钮下方、目录上方，左侧与目录左侧对齐 */}
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="搜索..." className="w-full px-2 py-1 text-xs border rounded mb-3" />
             <div className="text-xs text-slate-500 mb-2">目录</div>
