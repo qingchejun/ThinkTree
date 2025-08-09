@@ -66,6 +66,8 @@ export default function OutlineMindmap({ markdown, mindmapId }) {
         const id = path.join('.') || 'root'
         const cur = { id, label: node.label, level: node.level, children: [] }
         cur.children = (node.children || []).map((c, i) => withIds(c, path.concat(i)))
+          // 清理空白节点：label 去空格后为空，且无子节点
+          .filter((c) => (c.label || '').trim().length > 0 || (c.children && c.children.length > 0))
         return cur
       }
       const treeData = withIds(astToTree(root))
@@ -257,7 +259,7 @@ export default function OutlineMindmap({ markdown, mindmapId }) {
       </div>
 
       {/* 内容与 TOC */}
-      <div className="grid grid-cols-12 gap-6">
+      <div className="grid grid-cols-12 gap-6 mt-2">
         <div className="col-span-9 max-w-3xl">
           {tree ? (
             <NodeView node={tree} />
