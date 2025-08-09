@@ -39,8 +39,18 @@ function treeToGraph(root) {
     s = s.replace(/\\u([0-9a-fA-F]{4})/g, (_, g1) => {
       try { return String.fromCharCode(parseInt(g1, 16)) } catch { return _ }
     })
-    // 简单 HTML 实体
+    // HTML 实体与数字实体
     s = s.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    s = s.replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => {
+      try { return String.fromCodePoint(parseInt(hex, 16)) } catch { return _ }
+    })
+    s = s.replace(/&#(\d+);/g, (_, dec) => {
+      try { return String.fromCodePoint(parseInt(dec, 10)) } catch { return _ }
+    })
+    // 处理 \xHH
+    s = s.replace(/\\x([0-9a-fA-F]{2})/g, (_, h) => {
+      try { return String.fromCharCode(parseInt(h, 16)) } catch { return _ }
+    })
     return s
   }
 
