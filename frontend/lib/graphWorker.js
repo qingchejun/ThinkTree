@@ -64,7 +64,7 @@ function treeToGraph(root) {
       try { rawStr = JSON.stringify(node?.content)?.slice(0, 200) || '' } catch { rawStr = String(node?.content).slice(0, 200) }
       debugSamples.push({ raw: rawStr, extracted: (extracted || '').slice(0, 120), decoded: (label || '').slice(0, 120) })
     }
-    if (parentId) edges.push({ id: `${parentId}__${id}`, source: parentId, target: id, type: 'smoothstep' })
+    if (parentId) edges.push({ id: `${parentId}__${id}`, source: parentId, target: id, type: 'smoothstep', data: { level } })
     const children = Array.isArray(node?.children) ? node.children : []
     for (const child of children) walk(child, level + 1, id)
   }
@@ -88,8 +88,8 @@ self.onmessage = (evt) => {
       // 布局（Worker 内完成）
       const layoutStart = performance.now()
       const dg = new dagre.graphlib.Graph()
-      // 紧凑且更“树形”的层叠布局
-      dg.setGraph({ rankdir: 'LR', nodesep: 20, ranksep: 60, edgesep: 12, ranker: 'tight-tree' })
+      // 树形布局参数：更大层距、适中节点距
+      dg.setGraph({ rankdir: 'LR', nodesep: 18, ranksep: 72, edgesep: 12, ranker: 'tight-tree' })
       dg.setDefaultEdgeLabel(() => ({}))
       g0.nodes.forEach((n) => dg.setNode(n.id, { width: 180, height: 32 }))
       g0.edges.forEach((e) => dg.setEdge(e.source, e.target))
@@ -103,7 +103,7 @@ self.onmessage = (evt) => {
       })
       const baseWidth = 200
       const charPx = 8
-      const gutter = 80
+      const gutter = 120
       const maxLevel = Math.max(0, ...g0.nodes.map(n => n.level || 0))
       const colX = []
       let accX = 0

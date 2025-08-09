@@ -109,8 +109,8 @@ export default function ReactFlowMindmap({ markdown, mindmapId }) {
             console.log('[RF][debug] samples', debug?.samples || [])
           }
         } catch {}
-        // 默认折叠：level 大于 3
-        const defaultCollapsed = new Set(nodes.filter(n => (n.level ?? 0) > 3).map(n => n.id))
+        // 默认折叠：仅显示一级目录（level >= 2 折叠）
+        const defaultCollapsed = new Set(nodes.filter(n => (n.level ?? 0) >= 2).map(n => n.id))
         setCollapsedSet(defaultCollapsed)
         const laidNodes = nodes.map((n) => ({ ...n, type: 'editable', data: { ...n.data, label: n.label } }))
         setRfData({ nodes: laidNodes, edges })
@@ -241,11 +241,20 @@ export default function ReactFlowMindmap({ markdown, mindmapId }) {
     const keep = new Set(vNodes.map(n => n.id))
     const vEdges = rfData.edges
       .filter(e => keep.has(e.source) && keep.has(e.target))
-      .map(e => ({
-        ...e,
-        type: e.type || 'straight',
-        style: { stroke: '#64748b', strokeWidth: 2.2, opacity: 0.98, ...(e.style || {}) },
-      }))
+      .map(e => {
+        const lvl = e?.data?.level ?? 0
+        const isTrunk = lvl <= 1
+        return {
+          ...e,
+          type: 'smoothstep',
+          style: {
+            stroke: isTrunk ? '#4f46e5' : '#94a3b8',
+            strokeWidth: isTrunk ? 2.6 : 1.8,
+            opacity: 1,
+            ...(e.style || {}),
+          },
+        }
+      })
     return { nodes: vNodes, edges: vEdges }
   }, [rfData, collapsedSet, matchedIds])
 
@@ -307,7 +316,7 @@ export default function ReactFlowMindmap({ markdown, mindmapId }) {
         }}
       >
         {/* 背景：更像文档大纲的浅色栅格 */}
-        <Background gap={32} size={1} color="#f3f4f6" />
+        <Background gap={32} size={1} color="#f7f7fb" />
         {/* 连接线样式：使用默认 smoothstep，增强层级从属可见度 */}
         <Controls showInteractive={false} />
         {showMiniMap && miniMapReady && (
