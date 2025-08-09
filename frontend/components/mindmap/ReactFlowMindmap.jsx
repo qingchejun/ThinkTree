@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import ReactFlow, { Background, Controls, MiniMap } from 'reactflow'
+import ReactFlow, { Background, Controls, MiniMap, Handle, Position } from 'reactflow'
 import { Plus, Trash2, Save, RotateCw, RotateCcw, ChevronDown, ChevronRight, Search, X as XIcon } from 'lucide-react'
 import 'reactflow/dist/style.css'
 import dagre from 'dagre'
@@ -21,7 +21,10 @@ function EditableNode({ id, data }) {
   const [text, setText] = React.useState(data.label || '')
   React.useEffect(() => setText(data.label || ''), [data.label])
   return (
-    <div className="rounded border bg-white shadow px-2 py-1 text-sm min-w-[120px] max-w-[220px]">
+    <div className="relative rounded border bg-white shadow px-2 py-1 text-sm min-w-[120px] max-w-[220px]">
+      {/* 左右连接点：缺失会导致边不渲染 */}
+      <Handle type="target" position={Position.Left} style={{ background: '#64748b' }} />
+      <Handle type="source" position={Position.Right} style={{ background: '#64748b' }} />
       {editing ? (
         <input
           className="w-full outline-none border rounded px-1 text-sm"
