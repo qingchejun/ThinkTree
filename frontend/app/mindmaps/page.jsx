@@ -515,7 +515,7 @@ export default function MindmapsPage() {
                       {/* 动态预览图 */}
                       <div className="card-preview h-32 overflow-hidden relative transition-transform duration-300">
                         <MindmapThumbnail 
-                          content={mindmap.content} 
+                          content={mindmap.content_preview || mindmap.content} 
                           title={mindmap.title}
                           className="w-full h-full"
                         />

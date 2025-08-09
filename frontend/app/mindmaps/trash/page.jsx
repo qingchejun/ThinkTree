@@ -492,7 +492,7 @@ export default function TrashPage() {
                       {/* 动态预览图 */}
                       <div className="h-32 overflow-hidden relative bg-gray-100">
                         <MindmapThumbnail 
-                          content={mindmap.content} 
+                          content={mindmap.content_preview || mindmap.content} 
                           title={mindmap.title}
                           className="w-full h-full grayscale"
                         />
