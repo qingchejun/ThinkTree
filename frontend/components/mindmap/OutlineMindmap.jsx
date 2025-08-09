@@ -89,7 +89,7 @@ export default function OutlineMindmap({ markdown, mindmapId }) {
     } catch (e) {
       setTree({ label: '解析失败', level: 0, children: [] })
     }
-  }, [markdown])
+  }, [markdown, mindmapId])
 
   // 持久化展开状态
   React.useEffect(() => {
@@ -207,8 +207,6 @@ export default function OutlineMindmap({ markdown, mindmapId }) {
     )
   }
 
-  if (!tree) return <div className="w-full h-full flex items-center justify-center text-slate-500">正在生成大纲...</div>
-
   // TOC（仅展示 level=1 标题）
   const toc = React.useMemo(() => {
     if (!tree) return []
@@ -237,7 +235,11 @@ export default function OutlineMindmap({ markdown, mindmapId }) {
       {/* 内容与 TOC */}
       <div className="grid grid-cols-12 gap-6">
         <div className="col-span-9">
-          <NodeView node={tree} />
+          {tree ? (
+            <NodeView node={tree} />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-slate-500">正在生成大纲...</div>
+          )}
         </div>
         <aside className="col-span-3">
           <div className="sticky top-4">
