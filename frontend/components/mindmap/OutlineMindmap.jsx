@@ -163,50 +163,73 @@ export default function OutlineMindmap({ markdown, mindmapId }) {
     )
   }
 
-  const NodeView = ({ node }) => {
-    const isRoot = node.level === 0
-    const isFirst = node.level === 1
+  // 渲染三级及以下为“内容项”列表
+  const ContentItems = ({ node, depth = 0 }) => {
+    const items = []
+    const pad = Math.min(depth, 3) * 16
+    items.push(
+      <div key={`${node.id}-ci`} className="content-item" style={{ paddingLeft: pad }}>
+        {highlight(node.label || '（空）', search)}
+      </div>
+    )
+    node.children?.forEach((c) => items.push(<ContentItems key={c.id} node={c} depth={depth + 1} />))
+    return items
+  }
+
+  const ArticleBlock = ({ node }) => {
     const expanded = expandedSet.has(node.id)
-    const hasChildren = node.children && node.children.length > 0
-    const titleBoxClass = isRoot
-      ? ''
-      : isFirst
-      ? 'rounded border border-[#e0e0e0] bg-[#e8f4fd] px-4 py-2 text-[#2c3e50] font-semibold hover:bg-[#d6eafd] transition-colors'
-      : 'rounded border border-slate-200 bg-white px-3 py-2 text-[#2c3e50] font-medium hover:bg-slate-50 transition-colors'
     return (
-      <section ref={(el) => el && idToRef.current.set(node.id, el)} id={`sec-${node.id}`} className={`relative ${isRoot ? 'mb-6' : 'mb-3'} pl-4`}> 
-        {/* 主干线/分支线 */}
-        {node.level === 1 && (
-          <span className="absolute left-0 top-0 bottom-0 w-[3px] bg-indigo-600 rounded" aria-hidden />
-        )}
-        {node.level > 1 && (
-          <span className="absolute left-0 top-3 bottom-1 border-l border-slate-200" aria-hidden />
-        )}
-
-        {/* 标题行 */}
-        <div className={`flex items-start ${isRoot ? 'text-2xl font-bold text-slate-900' : isFirst ? 'text-lg font-semibold text-slate-800' : 'text-sm text-slate-800'}`}>
-          {hasChildren && !isRoot && (
-            <button onClick={() => toggle(node)} className="mr-2 mt-[2px] text-slate-600 hover:text-slate-800" aria-label={expanded ? '折叠' : '展开'}>
-              {expanded ? '▾' : '▸'}
-            </button>
-          )}
-          <div className={`${titleBoxClass} ${isFirst ? '' : node.level > 1 ? 'border-l-4 border-l-[#3498db]' : ''} max-w-[780px] break-words leading-6`}>{highlight(node.label || '（空）', search)}</div>
+      <div className="article border-b border-[#f0f0f0] bg-white">
+        <div className="article-header px-4 py-2 text-[16px] font-semibold text-[#2c3e50] border-l-4 border-[#3498db] cursor-pointer hover:bg-[#f8f9fa]"
+             onClick={() => toggle(node)}>
+          <span className="mr-2 text-black">{expanded ? '▾' : '▸'}</span>
+          {highlight(node.label || '（空）', search)}
         </div>
-
-        {/* 子级 */}
-        {hasChildren && (isRoot || expanded) && (
-          <div className={`ml-6 mt-2 space-y-2`}>
-            {node.children.map((child, idx) => (
-              <div key={idx} className="relative">
-                {/* 横向分支线 */}
-                <span className="absolute -left-6 top-4 w-6 border-t border-slate-200" aria-hidden />
-                <NodeView node={child} />
-              </div>
+        {expanded && (
+          <div className="article-content bg-[#fafafa] px-6 py-4">
+            {node.children?.map((c) => (
+              <ContentItems key={c.id} node={c} />
             ))}
           </div>
         )}
-      </section>
+      </div>
     )
+  }
+
+  const ChapterBlock = ({ node }) => {
+    const expanded = expandedSet.has(node.id)
+    return (
+      <div ref={(el) => el && idToRef.current.set(node.id, el)} id={`sec-${node.id}`} className="chapter mb-4 border border-[#e0e0e0] rounded-lg overflow-hidden">
+        <div className="chapter-header bg-[#e8f4fd] px-5 py-3 text-[20px] font-bold text-[#2c3e50] cursor-pointer hover:bg-[#d6eafd] flex items-center"
+             onClick={() => toggle(node)}>
+          <span className="mr-2 text-black">{expanded ? '▾' : '▸'}</span>
+          {highlight(node.label || '（空）', search)}
+        </div>
+        {expanded && (
+          <div className="chapter-content">
+            {node.children?.map((c) => (
+              <ArticleBlock key={c.id} node={c} />
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  const NodeView = ({ node }) => {
+    if (node.level === 0) {
+      return (
+        <section className="mb-4">
+          <h1 className="text-[28px] font-bold text-[#2c3e50] mb-3">{highlight(node.label || '（空）', search)}</h1>
+          {node.children?.map((c) => (
+            <ChapterBlock key={c.id} node={c} />
+          ))}
+        </section>
+      )
+    }
+    if (node.level === 1) return <ChapterBlock node={node} />
+    if (node.level === 2) return <ArticleBlock node={node} />
+    return <ContentItems node={node} />
   }
 
   // TOC（仅展示 level=1 标题）
