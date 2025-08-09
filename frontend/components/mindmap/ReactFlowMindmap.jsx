@@ -47,7 +47,7 @@ function EditableNode({ id, data }) {
           <button title={data.collapsed ? '展开' : '折叠'} onClick={() => data.onToggleCollapse(id)} className="mr-1 text-gray-500 hover:text-gray-700">
             {data.collapsed ? <ChevronRight size={14}/> : <ChevronDown size={14}/>}
           </button>
-          <div className={`flex-1 break-words ${data.highlight ? 'bg-yellow-100' : ''}`} onDoubleClick={() => setEditing(true)}>{data.label}</div>
+          <div className={`flex-1 break-words ${data.highlight ? 'bg-yellow-100' : ''}`} onDoubleClick={() => setEditing(true)} title={data.label}>{data.label}</div>
           <button title="添加子节点" onClick={() => data.onAddChild(id)} className="ml-2 text-green-600 hover:text-green-700">
             <Plus size={14} />
           </button>

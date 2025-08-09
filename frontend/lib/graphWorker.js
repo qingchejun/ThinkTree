@@ -5,6 +5,18 @@ import { Transformer } from 'markmap-lib'
 import dagre from 'dagre'
 
 // v1 Schema 转换：TreeNode → { nodes, edges, meta }
+function extractText(value) {
+  if (value == null) return ''
+  if (typeof value === 'string') return value
+  if (Array.isArray(value)) return value.map(extractText).join('')
+  if (typeof value === 'object') {
+    if ('content' in value) return extractText(value.content)
+    if ('t' in value) return extractText(value.t)
+    if ('v' in value) return extractText(value.v)
+  }
+  return String(value)
+}
+
 function treeToGraph(root) {
   const nodes = []
   const edges = []
@@ -17,7 +29,7 @@ function treeToGraph(root) {
 
   function walk(node, level, parentId) {
     const id = makeId()
-    const label = String(node?.content?.toString?.() || node?.content || '')
+    const label = extractText(node?.content)
     nodes.push({ id, data: { markdown: label }, label, level, parentId })
     if (parentId) edges.push({ id: `${parentId}__${id}`, source: parentId, target: id, type: 'smoothstep' })
     const children = Array.isArray(node?.children) ? node.children : []
