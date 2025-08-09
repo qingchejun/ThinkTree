@@ -187,7 +187,7 @@ export default function OutlineMindmap({ markdown, mindmapId }) {
           <span className="mr-2 text-black">{expanded ? '▾' : '▸'}</span>
           {highlight(node.label || '（空）', search)}
         </div>
-        {expanded && (
+        {expanded && node.children && node.children.length > 0 && (
           <div className="article-content bg-[#fafafa] px-6 py-4">
             {node.children?.map((c) => (
               <ContentItems key={c.id} node={c} />
@@ -259,7 +259,7 @@ export default function OutlineMindmap({ markdown, mindmapId }) {
       </div>
 
       {/* 内容与 TOC */}
-      <div className="grid grid-cols-12 gap-6 mt-2">
+      <div className="grid grid-cols-12 gap-6 mt-0">
         <div className="col-span-9 max-w-3xl">
           {tree ? (
             <NodeView node={tree} />
