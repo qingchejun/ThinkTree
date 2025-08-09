@@ -219,9 +219,8 @@ export default function OutlineMindmap({ markdown, mindmapId }) {
 
   return (
     <div ref={containerRef} className="w-full h-full overflow-auto p-6 bg-white relative">
-      {/* 顶部工具 */}
-      <div className="flex items-center justify-between gap-3 mb-4">
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="搜索..." className="px-2 py-1 text-xs border rounded w-56" />
+      {/* 顶部工具（仅按钮在上方右侧）*/}
+      <div className="flex items-center justify-end gap-2 mb-4">
         <div className="flex items-center gap-2">
           <button onClick={collapseToLevel1} className="px-3 py-1 text-xs border rounded bg-white hover:bg-slate-50">折叠到一级</button>
           <button onClick={() => expandToSemanticLevel(2)} className="px-3 py-1 text-xs border rounded bg-white hover:bg-slate-50">展开到二级</button>
@@ -240,6 +239,8 @@ export default function OutlineMindmap({ markdown, mindmapId }) {
         </div>
         <aside className="col-span-3">
           <div className="sticky top-4">
+            {/* 搜索框：位于按钮下方、目录上方，左侧与目录左侧对齐 */}
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="搜索..." className="w-full px-2 py-1 text-xs border rounded mb-3" />
             <div className="text-xs text-slate-500 mb-2">目录</div>
             <ul className="space-y-1 text-sm">
               {toc.map(item => (
