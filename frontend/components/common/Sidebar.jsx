@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Star, LayoutDashboard, Clock, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Star, LayoutDashboard, Clock, Trash2, ChevronLeft, ChevronRight, Home } from 'lucide-react';
 
 const Sidebar = () => {
   const pathname = usePathname();
@@ -14,6 +14,13 @@ const Sidebar = () => {
   };
 
   const navItems = [
+    {
+      href: '/dashboard',
+      icon: <Home className="w-5 h-5 text-gray-600" />,
+      label: '返回首页',
+      available: true,
+      isHomeLink: true,
+    },
     {
       href: '/mindmaps',
       icon: <LayoutDashboard className="w-5 h-5 text-blue-500" />,
@@ -52,33 +59,43 @@ const Sidebar = () => {
         我的导图
       </h2>
       <nav className="space-y-2">
-        {navItems.map((item) => {
+        {navItems.map((item, index) => {
           if (item.available) {
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center space-x-3 px-4 py-2 rounded-lg transition-colors ${
-                  pathname === item.href
-                    ? 'bg-gray-200 text-gray-900 font-semibold'
-                    : 'text-gray-600 hover:bg-gray-200'
-                } ${isCollapsed ? 'justify-center' : ''}`}>
-                {item.icon}
-                {!isCollapsed && <span>{item.label}</span>}
-              </Link>
+              <div key={item.href}>
+                <Link
+                  href={item.href}
+                  className={`flex items-center space-x-3 px-4 py-2 rounded-lg transition-colors ${
+                    pathname === item.href
+                      ? 'bg-gray-200 text-gray-900 font-semibold'
+                      : 'text-gray-600 hover:bg-gray-200'
+                  } ${isCollapsed ? 'justify-center' : ''}`}>
+                  {item.icon}
+                  {!isCollapsed && <span>{item.label}</span>}
+                </Link>
+                {/* 在返回首页后添加分隔线 */}
+                {item.isHomeLink && !isCollapsed && (
+                  <div className="my-4 border-b border-gray-300"></div>
+                )}
+              </div>
             )
           } else {
             return (
-              <div
-                key={item.href}
-                className={`flex items-center space-x-3 px-4 py-2 rounded-lg cursor-not-allowed opacity-50 ${isCollapsed ? 'justify-center' : ''}`}
-                title="功能开发中">
-                {item.icon}
-                {!isCollapsed && (
-                  <span className="text-gray-400">
-                    {item.label}
-                    <span className="text-xs ml-1">(开发中)</span>
-                  </span>
+              <div key={item.href}>
+                <div
+                  className={`flex items-center space-x-3 px-4 py-2 rounded-lg cursor-not-allowed opacity-50 ${isCollapsed ? 'justify-center' : ''}`}
+                  title="功能开发中">
+                  {item.icon}
+                  {!isCollapsed && (
+                    <span className="text-gray-400">
+                      {item.label}
+                      <span className="text-xs ml-1">(开发中)</span>
+                    </span>
+                  )}
+                </div>
+                {/* 在返回首页后添加分隔线 */}
+                {item.isHomeLink && !isCollapsed && (
+                  <div className="my-4 border-b border-gray-300"></div>
                 )}
               </div>
             )
