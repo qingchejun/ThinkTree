@@ -13,6 +13,7 @@ function extractText(value) {
     if ('content' in value) return extractText(value.content)
     if ('t' in value) return extractText(value.t)
     if ('v' in value) return extractText(value.v)
+    if ('value' in value) return extractText(value.value)
   }
   return String(value)
 }
@@ -27,9 +28,24 @@ function treeToGraph(root) {
     return `n_${idCounter}`
   }
 
+  function decodeLabel(raw) {
+    let s = String(raw || '')
+    // 尝试解码 %E4%B8%AD%E6%96%87
+    if (/%[0-9A-Fa-f]{2}/.test(s)) {
+      try { s = decodeURIComponent(s) } catch {}
+    }
+    // 尝试解码 \u4e2d\u6587
+    s = s.replace(/\\u([0-9a-fA-F]{4})/g, (_, g1) => {
+      try { return String.fromCharCode(parseInt(g1, 16)) } catch { return _ }
+    })
+    // 简单 HTML 实体
+    s = s.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    return s
+  }
+
   function walk(node, level, parentId) {
     const id = makeId()
-    const label = extractText(node?.content)
+    const label = decodeLabel(extractText(node?.content))
     nodes.push({ id, data: { markdown: label }, label, level, parentId })
     if (parentId) edges.push({ id: `${parentId}__${id}`, source: parentId, target: id, type: 'smoothstep' })
     const children = Array.isArray(node?.children) ? node.children : []
