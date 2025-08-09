@@ -94,11 +94,27 @@ self.onmessage = (evt) => {
       g0.nodes.forEach((n) => dg.setNode(n.id, { width: 180, height: 32 }))
       g0.edges.forEach((e) => dg.setEdge(e.source, e.target))
       dagre.layout(dg)
-      // 列对齐：同一 level 的所有节点共享统一的 X，形成整齐的列
-      const columnWidth = 220
+      // 列宽自适应：按同层级最长标题估算列宽 + gutter，避免换行过密
+      const perLevelMaxLen = {}
+      g0.nodes.forEach((n) => {
+        const lvl = n.level || 0
+        const len = (n.label || '').length
+        perLevelMaxLen[lvl] = Math.max(perLevelMaxLen[lvl] || 0, len)
+      })
+      const baseWidth = 200
+      const charPx = 8
+      const gutter = 80
+      const maxLevel = Math.max(0, ...g0.nodes.map(n => n.level || 0))
+      const colX = []
+      let accX = 0
+      for (let lvl = 0; lvl <= maxLevel; lvl += 1) {
+        colX[lvl] = accX
+        const width = Math.min(baseWidth + (perLevelMaxLen[lvl] || 0) * charPx, 420)
+        accX += width + gutter
+      }
       const laidNodes = g0.nodes.map((n) => {
         const p = dg.node(n.id)
-        const x = (n.level || 0) * columnWidth
+        const x = colX[n.level || 0]
         return { ...n, position: { x, y: p.y } }
       })
       const layoutEnd = performance.now()

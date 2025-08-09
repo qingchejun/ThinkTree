@@ -335,10 +335,18 @@ export default function ReactFlowMindmap({ markdown, mindmapId }) {
         `}</style>
       ) : null}
       {metrics && (
-        <div className="absolute top-2 right-2 bg-white/90 border rounded px-3 py-2 text-xs text-gray-700 shadow">
+        <div className="absolute top-2 right-2 bg-white/90 border rounded px-3 py-2 text-xs text-gray-700 shadow flex items-center space-x-2">
           <div>节点: {metrics.nodeCount} 边: {metrics.edgeCount}</div>
           <div>解析: {metrics.parseMs}ms 转换: {metrics.treeToGraphMs}ms</div>
           <div>Worker: {metrics.workerTotalMs}ms 布局: {metrics.layoutMs}ms</div>
+          <button
+            className="px-2 py-0.5 border rounded bg-white hover:bg-gray-50"
+            onClick={() => setCollapsedSet(new Set(rfData.nodes.filter(n => (n.level ?? 0) > 1).map(n => n.id)))}
+          >折叠全部</button>
+          <button
+            className="px-2 py-0.5 border rounded bg-white hover:bg-gray-50"
+            onClick={() => setCollapsedSet(new Set())}
+          >展开全部</button>
         </div>
       )}
       {/* 搜索框 */}
