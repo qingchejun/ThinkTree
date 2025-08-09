@@ -58,6 +58,7 @@ export default function ViewMindmapPage() {
   
   // 全屏状态
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [isEditMode, setIsEditMode] = useState(false)
   
   // 删除确认弹窗状态
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -445,12 +446,14 @@ export default function ViewMindmapPage() {
                   </button>
                 )
               ]}
+                onToggleEditMode={() => setIsEditMode(prev => !prev)}
+                isEditMode={isEditMode}
             />
 
             {/* 思维导图可视化区域 */}
             <div className="h-[calc(100%-81px)]">
               {useRF ? (
-                <OutlineMindmap markdown={stableMindmapData?.markdown || ''} mindmapId={mindmapId} />
+                <OutlineMindmap editable={isEditMode} markdown={stableMindmapData?.markdown || ''} mindmapId={mindmapId} />
               ) : (
                 <SimpleMarkmapBasic ref={markmapRef} mindmapData={stableMindmapData} />
               )}

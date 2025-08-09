@@ -3,7 +3,7 @@
  */
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Check, X, Maximize, Minimize, Share2, Star, Trash2 } from 'lucide-react';
+import { ArrowLeft, Check, X, Maximize, Minimize, Share2, Star, Trash2, Edit3 } from 'lucide-react';
 import ExportMenu from './ExportMenu.jsx'; // 注意路径和文件扩展名
 
 export default function MindmapHeader({
@@ -21,6 +21,8 @@ export default function MindmapHeader({
   showExportMenu, // 从父组件接收
   setShowExportMenu, // 从父组件接收
   extraActions = [],
+  onToggleEditMode,
+  isEditMode = false,
 }) {
   const router = useRouter();
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -134,6 +136,15 @@ export default function MindmapHeader({
         {extraActions.map((el, idx) => (
           <span key={idx}>{el}</span>
         ))}
+        {onToggleEditMode && (
+          <button
+            onClick={onToggleEditMode}
+            className={`action-button ${isEditMode ? 'text-purple-600 hover:bg-purple-100' : 'text-gray-500 hover:bg-gray-100 hover:text-purple-600'}`}
+            title={isEditMode ? '退出编辑模式' : '进入编辑模式'}
+          >
+            <Edit3 className="w-4 h-4" />
+          </button>
+        )}
         <button
           onClick={onToggleFullscreen}
           className="action-button text-green-500 hover:bg-green-100 hover:text-green-600"

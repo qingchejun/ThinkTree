@@ -55,7 +55,7 @@ function astToTree(root) {
   return walk(root, 0)
 }
 
-export default function OutlineMindmap({ markdown, mindmapId }) {
+export default function OutlineMindmap({ markdown, mindmapId, editable = false, onSaved }) {
   const [tree, setTree] = React.useState(null)
   const [expandedSet, setExpandedSet] = React.useState(new Set())
   const [search, setSearch] = React.useState('')
@@ -174,7 +174,7 @@ export default function OutlineMindmap({ markdown, mindmapId }) {
       <div key={`${node.id}-ci`} style={{ marginLeft: pad }}>
         <div className="relative pl-5 mb-2 text-[14px] leading-[22px] text-[#2c3e50]">
           <span className="absolute left-0 top-2 w-1.5 h-1.5 rounded-full bg-[#3498db]" aria-hidden />
-          {editing.id === node.id ? (
+          {editable && editing.id === node.id ? (
             <input
               className="border px-2 py-1 rounded w-full text-[14px]"
               value={editing.text}
@@ -186,15 +186,8 @@ export default function OutlineMindmap({ markdown, mindmapId }) {
               autoFocus
             />
           ) : (
-            <span onDoubleClick={() => beginEdit(node)}>{highlight(node.label || '（空）', search)}</span>
+            <span onDoubleClick={() => { if (editable) beginEdit(node) }}>{highlight(node.label || '（空）', search)}</span>
           )}
-          <button
-            className="ml-2 text-xs text-slate-500 hover:text-slate-700"
-            title={editing.id === node.id ? '保存' : '编辑'}
-            onClick={() => (editing.id === node.id ? commitEdit(node.id) : beginEdit(node))}
-          >
-            {editing.id === node.id ? '保存' : '编辑'}
-          </button>
         </div>
       </div>
     )
@@ -209,7 +202,7 @@ export default function OutlineMindmap({ markdown, mindmapId }) {
         <div className="article-header px-4 py-2 text-[16px] font-semibold text-[#2c3e50] border-l-4 border-[#3498db] cursor-pointer hover:bg-[#f8f9fa]"
              onClick={() => toggle(node)}>
           <span className="mr-2 text-black">{expanded ? '▾' : '▸'}</span>
-          {editing.id === node.id ? (
+          {editable && editing.id === node.id ? (
             <input
               className="border px-2 py-1 rounded text-[16px]"
               value={editing.text}
@@ -222,13 +215,8 @@ export default function OutlineMindmap({ markdown, mindmapId }) {
               autoFocus
             />
           ) : (
-            <span onDoubleClick={(e) => { e.stopPropagation(); beginEdit(node) }}>{highlight(node.label || '（空）', search)}</span>
+            <span onDoubleClick={(e) => { if (editable) { e.stopPropagation(); beginEdit(node) } }}>{highlight(node.label || '（空）', search)}</span>
           )}
-          <button
-            className="ml-2 text-xs text-slate-500 hover:text-slate-700"
-            onClick={(e) => { e.stopPropagation(); editing.id === node.id ? commitEdit(node.id) : beginEdit(node) }}
-            title={editing.id === node.id ? '保存' : '编辑'}
-          >{editing.id === node.id ? '保存' : '编辑'}</button>
         </div>
         {expanded && node.children && node.children.length > 0 && (
           <div className="article-content bg-[#fafafa] px-6 py-4">
@@ -248,7 +236,7 @@ export default function OutlineMindmap({ markdown, mindmapId }) {
         <div className="chapter-header bg-[#e8f4fd] px-5 py-3 text-[20px] font-bold text-[#2c3e50] cursor-pointer hover:bg-[#d6eafd] flex items-center"
              onClick={() => toggle(node)}>
           <span className="mr-2 text-black">{expanded ? '▾' : '▸'}</span>
-          {editing.id === node.id ? (
+          {editable && editing.id === node.id ? (
             <input
               className="border px-2 py-1 rounded text-[18px]"
               value={editing.text}
@@ -261,13 +249,8 @@ export default function OutlineMindmap({ markdown, mindmapId }) {
               autoFocus
             />
           ) : (
-            <span onDoubleClick={(e) => { e.stopPropagation(); beginEdit(node) }}>{highlight(node.label || '（空）', search)}</span>
+            <span onDoubleClick={(e) => { if (editable) { e.stopPropagation(); beginEdit(node) } }}>{highlight(node.label || '（空）', search)}</span>
           )}
-          <button
-            className="ml-2 text-xs text-slate-600 hover:text-slate-800"
-            onClick={(e) => { e.stopPropagation(); editing.id === node.id ? commitEdit(node.id) : beginEdit(node) }}
-            title={editing.id === node.id ? '保存' : '编辑'}
-          >{editing.id === node.id ? '保存' : '编辑'}</button>
         </div>
         {expanded && (
           <div className="chapter-content">
