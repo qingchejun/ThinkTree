@@ -79,8 +79,8 @@ export default function ReactFlowMindmap({ markdown, mindmapId }) {
   })
   const [miniMapReady, setMiniMapReady] = useState(false)
   const edgeOptions = useMemo(() => ({
-    type: 'smoothstep',
-    style: { stroke: '#94a3b8', strokeWidth: 2.4, opacity: 0.95 },
+    type: 'straight',
+    style: { stroke: '#64748b', strokeWidth: 2.2, opacity: 0.98 },
   }), [])
 
   useEffect(() => {
@@ -307,6 +307,12 @@ export default function ReactFlowMindmap({ markdown, mindmapId }) {
           </div>
         )}
       </ReactFlow>
+      {/* 调试：当 rfDebug=1 时打印当前 edges 数量与示例，便于线上定位 */}
+      {typeof window !== 'undefined' && window.localStorage.getItem('rfDebug') === '1' && (
+        <div className="absolute left-2 bottom-2 text-[10px] text-gray-500 bg-white/70 border rounded px-2 py-1">
+          edges: {rfData.edges.length}
+        </div>
+      )}
       {/* 简化 MiniMap 样式：仅显示视口，隐藏节点矩形，减少 DOM */}
       {(showMiniMap && rfData.nodes.length > 600) || true ? (
         <style>{`
