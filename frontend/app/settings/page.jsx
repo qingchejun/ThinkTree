@@ -452,10 +452,9 @@ const SettingsContent = () => {
                         </div>
                       </div>
 
+                      {user?.is_superuser && (
                       <div>
-                        <h3 className="text-lg font-medium text-gray-900 mb-4">管理员一次性邀请码（仅限管理员生成）</h3>
-                        <p className="text-sm text-gray-500 mb-2">用于特殊场景，一次性使用，有效期一周。</p>
-                        {user?.is_superuser ? (
+                        <h3 className="text-lg font-medium text-gray-900 mb-4">管理员一次性邀请码</h3>
                           <button 
                             onClick={handleGenerateInvitation}
                             disabled={isLoading}
@@ -463,10 +462,8 @@ const SettingsContent = () => {
                           >
                             {isLoading ? '生成中...' : '生成一次性邀请码（管理员）'}
                           </button>
-                        ) : (
-                          <p className="text-sm text-gray-500">仅管理员可生成一次性邀请码</p>
-                        )}
                       </div>
+                      )}
                       
                       <div>
                         <h3 className="text-lg font-medium text-gray-900 mb-4">我的邀请记录</h3>
