@@ -8,3 +8,4 @@ from .redemption_code import RedemptionCode
 from .user_credits import UserCredits
 from .credit_transaction import CreditTransaction, TransactionType
 from .login_token import LoginToken  # Import the new model
+from .referral_event import ReferralEvent

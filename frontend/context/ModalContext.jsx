@@ -9,8 +9,12 @@ export const useModal = () => useContext(ModalContext);
 
 export const ModalProvider = ({ children }) => {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [initialInvitationCode, setInitialInvitationCode] = useState('');
 
-  const openLoginModal = () => {
+  const openLoginModal = (opts = {}) => {
+    if (opts && typeof opts.initialInvitationCode === 'string') {
+      setInitialInvitationCode(opts.initialInvitationCode);
+    }
     setIsLoginModalOpen(true);
   };
 
@@ -21,7 +25,7 @@ export const ModalProvider = ({ children }) => {
   return (
     <ModalContext.Provider value={{ openLoginModal, closeLoginModal }}>
       {children}
-      <LoginModal isOpen={isLoginModalOpen} onClose={closeLoginModal} />
+      <LoginModal isOpen={isLoginModalOpen} onClose={closeLoginModal} initialInvitationCode={initialInvitationCode} />
     </ModalContext.Provider>
   );
 };

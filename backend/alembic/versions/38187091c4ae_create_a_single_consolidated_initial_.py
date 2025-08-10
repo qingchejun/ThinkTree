@@ -57,11 +57,17 @@ def upgrade() -> None:
         sa.Column('display_name', sa.VARCHAR(length=100), nullable=True),
         sa.Column('avatar_url', sa.VARCHAR(length=500), nullable=True),
         sa.Column('invitation_quota', sa.INTEGER(), nullable=False),
+        # 推荐系统新增字段
+        sa.Column('referral_code', sa.VARCHAR(length=16), nullable=True),
+        sa.Column('referral_limit', sa.INTEGER(), server_default='10', nullable=False),
+        sa.Column('referral_used', sa.INTEGER(), server_default='0', nullable=False),
+        sa.Column('referred_by_user_id', sa.INTEGER(), nullable=True),
         sa.PrimaryKeyConstraint('id', name=op.f('pk_users'))
     )
     op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
     op.create_index(op.f('ix_users_google_id'), 'users', ['google_id'], unique=True)
     op.create_index(op.f('ix_users_id'), 'users', ['id'], unique=False)
+    op.create_index(op.f('ix_users_referral_code'), 'users', ['referral_code'], unique=True)
 
     # 2. 创建没有外键依赖的表 (login_tokens)
     op.create_table('login_tokens',
@@ -70,6 +76,8 @@ def upgrade() -> None:
         sa.Column('code_hash', sa.VARCHAR(length=255), nullable=False),
         sa.Column('magic_token', sa.VARCHAR(length=255), nullable=True),
         sa.Column('invitation_code', sa.VARCHAR(length=16), nullable=True),
+        # 新推荐系统：在发起登录阶段解析并绑定邀请者，避免第二步再信任客户端
+        sa.Column('inviter_user_id', sa.INTEGER(), nullable=True),
         sa.Column('expires_at', postgresql.TIMESTAMP(timezone=True), nullable=False),
         sa.Column('created_at', postgresql.TIMESTAMP(timezone=True), server_default=sa.text('now()'), nullable=False),
         sa.Column('used_at', postgresql.TIMESTAMP(timezone=True), nullable=True),
@@ -143,6 +151,21 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_invitation_codes_code'), 'invitation_codes', ['code'], unique=True)
     op.create_index(op.f('ix_invitation_codes_id'), 'invitation_codes', ['id'], unique=False)
+
+    # 推荐事件表（用于个人中心明细与统计）
+    op.create_table('referral_events',
+        sa.Column('id', sa.INTEGER(), autoincrement=True, nullable=False),
+        sa.Column('inviter_user_id', sa.INTEGER(), nullable=False),
+        sa.Column('invitee_user_id', sa.INTEGER(), nullable=False),
+        sa.Column('granted_credits_to_inviter', sa.INTEGER(), nullable=False),
+        sa.Column('granted_credits_to_invitee', sa.INTEGER(), nullable=False),
+        sa.Column('status', sa.VARCHAR(length=16), nullable=False, server_default='COMPLETED'),
+        sa.Column('created_at', postgresql.TIMESTAMP(timezone=True), server_default=sa.text('now()'), nullable=False),
+        sa.PrimaryKeyConstraint('id', name=op.f('pk_referral_events'))
+    )
+    op.create_index(op.f('ix_referral_events_inviter_user_id'), 'referral_events', ['inviter_user_id'], unique=False)
+    op.create_index(op.f('ix_referral_events_invitee_user_id'), 'referral_events', ['invitee_user_id'], unique=False)
+    op.create_index(op.f('ix_referral_events_created_at'), 'referral_events', ['created_at'], unique=False)
     
     op.create_table('credit_transactions',
         sa.Column('id', sa.INTEGER(), autoincrement=True, nullable=False),

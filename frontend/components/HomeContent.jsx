@@ -32,7 +32,7 @@ export default function HomeContent() {
   // 自动打开登录弹窗（当检测到 auth=login 参数时）
   useEffect(() => {
     if (!isLoading && !user && autoLogin) {
-      openLoginModal();
+      openLoginModal({ initialInvitationCode: invitationCode });
     }
   }, [autoLogin, isLoading, user, openLoginModal]);
 
@@ -78,7 +78,7 @@ export default function HomeContent() {
     // 如果有特殊参数（邀请码、错误信息等），显示首页以处理这些参数
     if (invitationCode || autoRegister || autoLogin || errorMessage) {
       return (
-        <LandingPage 
+      <LandingPage 
           invitationCode={invitationCode}
           autoRegister={autoRegister}
           errorMessage={errorMessage}
@@ -104,7 +104,7 @@ export default function HomeContent() {
       invitationCode={invitationCode}
       autoRegister={autoRegister}
       errorMessage={errorMessage}
-      onLoginClick={openLoginModal}
+      onLoginClick={(opts) => openLoginModal({ initialInvitationCode: invitationCode })}
     />
   );
 }

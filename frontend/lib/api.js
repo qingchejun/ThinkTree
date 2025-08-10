@@ -297,6 +297,19 @@ export async function getUserInvitations() {
   return await apiCall('/api/invitations/list')
 }
 
+// 推荐系统 API
+export async function getReferralLink() {
+  return await apiCall('/api/referrals/me/link')
+}
+
+export async function getReferralStats() {
+  return await apiCall('/api/referrals/me/stats')
+}
+
+export async function getReferralHistory() {
+  return await apiCall('/api/referrals/me/history')
+}
+
 // 积分相关 API - 不再需要token参数
 export async function getCreditHistory(page = 1, limit = 20) {
   const params = new URLSearchParams({

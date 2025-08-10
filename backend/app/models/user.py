@@ -52,6 +52,11 @@ class User(Base):
     
     # 邀请配额字段（临时保留）
     invitation_quota = Column(Integer, default=10, nullable=False)
+    # 推荐系统字段
+    referral_code = Column(String(16), unique=True, index=True, nullable=True)
+    referral_limit = Column(Integer, default=10, nullable=False)
+    referral_used = Column(Integer, default=0, nullable=False)
+    referred_by_user_id = Column(Integer, nullable=True)
     
     # 关系定义 - 与思维导图表的关联
     mindmaps = relationship(

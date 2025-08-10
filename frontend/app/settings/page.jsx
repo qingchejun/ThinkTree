@@ -3,7 +3,7 @@ import { useState, useContext, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AuthContext from '@/context/AuthContext';
 
-import { getProfile, updateProfile, generateInvitationCode, getUserInvitations, getCreditHistory } from '@/lib/api';
+import { getProfile, updateProfile, generateInvitationCode, getUserInvitations, getCreditHistory, getReferralLink, getReferralStats, getReferralHistory } from '@/lib/api';
 import Toast from '@/components/common/Toast';
 import RedemptionCodeForm from '@/components/common/RedemptionCodeForm';
 import RedemptionHistory from '@/components/common/RedemptionHistory';
@@ -37,6 +37,9 @@ const SettingsContent = () => {
     const activeTab = searchParams.get('tab') || 'profile';
   const [profileData, setProfileData] = useState(null);
   const [invitations, setInvitations] = useState([]);
+  const [referralLink, setReferralLink] = useState(null);
+  const [referralStats, setReferralStats] = useState(null);
+  const [referralHistory, setReferralHistory] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [toast, setToast] = useState(null);
   const [displayName, setDisplayName] = useState('');
@@ -158,12 +161,21 @@ const SettingsContent = () => {
     }
   };
 
-  // 加载邀请码数据
+  // 加载推荐数据
   const loadInvitations = async () => {
     if (!user) return;
     
     try {
-      const invitationsList = await getUserInvitations();
+      const [link, stats, history] = await Promise.all([
+        getReferralLink().catch(() => null),
+        getReferralStats().catch(() => null),
+        getReferralHistory().catch(() => ({ items: [] })),
+      ]);
+      setReferralLink(link);
+      setReferralStats(stats);
+      setReferralHistory(history?.items || []);
+      // 兼容旧邀请码（管理员一次性邀请码）
+      const invitationsList = await getUserInvitations().catch(() => []);
       setInvitations(invitationsList || []);
     } catch (error) {
       console.error('加载邀请码失败:', error);
@@ -409,14 +421,18 @@ const SettingsContent = () => {
                   </div>
                   <div className="p-6">
                     <div className="space-y-6">
+                      {/* 新推荐卡片 */}
                       <div className="bg-white p-6 rounded-lg border border-gray-200">
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">邀请配额</h3>
-                        <p className="text-3xl font-bold text-gray-900">
-                          {profileData ? profileData.invitation_remaining : '加载中...'}
-                        </p>
-                        <p className="text-sm text-gray-600 mt-1">
-                          剩余邀请码 (总配额: {profileData ? profileData.invitation_quota : '...'})
-                        </p>
+                        <h3 className="text-lg font-medium text-gray-900 mb-3">我的邀请链接</h3>
+                        <p className="text-sm text-gray-600 mb-2">{referralLink?.rule_text || '你和好友均可获得奖励'}</p>
+                        <div className="flex items-center gap-2">
+                          <input readOnly value={referralLink?.referral_link || ''} className="flex-1 px-3 py-2 border rounded" />
+                          <button
+                            onClick={() => navigator.clipboard.writeText(referralLink?.referral_link || '')}
+                            className="px-3 py-2 text-sm bg-black text-white rounded"
+                          >复制</button>
+                        </div>
+                        <div className="text-xs text-gray-500 mt-2">已邀请 {referralStats?.invited_count ?? referralLink?.invited_count ?? 0}/{referralStats?.limit ?? referralLink?.limit ?? 10}</div>
                       </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -437,21 +453,49 @@ const SettingsContent = () => {
                       </div>
 
                       <div>
-                        <h3 className="text-lg font-medium text-gray-900 mb-4">生成邀请码</h3>
+                        <h3 className="text-lg font-medium text-gray-900 mb-4">管理员一次性邀请码（仅限管理员生成）</h3>
+                        <p className="text-sm text-gray-500 mb-2">用于特殊场景，一次性使用，有效期一周。</p>
                         <button 
                           onClick={handleGenerateInvitation}
-                          disabled={isLoading || (profileData && profileData.invitation_remaining <= 0)}
+                          disabled={isLoading}
                           className="px-6 py-3 bg-black text-white text-sm font-semibold rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
-                          {isLoading ? '生成中...' : '生成新的邀请码'}
+                          {isLoading ? '生成中...' : '生成一次性邀请码（管理员）'}
                         </button>
-                        {profileData && profileData.invitation_remaining <= 0 && (
-                          <p className="text-sm text-red-600 mt-2">已达到邀请码生成上限</p>
-                        )}
                       </div>
                       
                       <div>
-                        <h3 className="text-lg font-medium text-gray-900 mb-4">我的邀请码</h3>
+                        <h3 className="text-lg font-medium text-gray-900 mb-4">我的邀请记录</h3>
+                        {referralHistory.length > 0 ? (
+                          <div className="overflow-x-auto">
+                            <table className="min-w-full text-sm">
+                              <thead>
+                                <tr className="text-left text-gray-500">
+                                  <th className="py-2 pr-4">受邀用户ID</th>
+                                  <th className="py-2 pr-4">我获得</th>
+                                  <th className="py-2 pr-4">对方获得</th>
+                                  <th className="py-2 pr-4">时间</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {referralHistory.map((e, idx) => (
+                                  <tr key={idx} className="border-t">
+                                    <td className="py-2 pr-4">{e.invitee_user_id}</td>
+                                    <td className="py-2 pr-4 text-green-600">+{e.granted_credits_to_inviter}</td>
+                                    <td className="py-2 pr-4 text-green-600">+{e.granted_credits_to_invitee}</td>
+                                    <td className="py-2 pr-4 text-gray-600">{new Date(e.created_at).toLocaleString('zh-CN')}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        ) : (
+                          <p className="text-gray-500 text-sm">暂无邀请记录</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <h3 className="text-lg font-medium text-gray-900 mb-4">我的管理员邀请码（一次性）</h3>
                         {invitations.length > 0 ? (
                           <div className="space-y-2">
                             {invitations.map((invitation, index) => (

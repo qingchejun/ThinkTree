@@ -20,6 +20,7 @@ from app.models.invitation import InvitationCode
 from app.models.redemption_code import RedemptionCode, RedemptionCodeStatus
 from app.utils.admin_auth import get_current_admin, log_admin_action
 from app.utils.invitation_utils import create_invitation_code
+from app.utils.admin_auth import get_current_admin
 from app.utils.security import get_password_hash, validate_password
 
 # 配置日志
@@ -71,6 +72,10 @@ class InvitationCreateRequest(BaseModel):
     """管理员邀请码创建请求模型"""
     count: int = 1
     description: Optional[str] = None
+
+
+class ReferralLimitRequest(BaseModel):
+    limit: int
 
 class UserPasswordResetRequest(BaseModel):
     """管理员重置用户密码请求模型"""
@@ -464,7 +469,8 @@ async def create_admin_invitations(
             invitation_code = create_invitation_code(
                 db=db,
                 generated_by_user_id=admin_user.id,
-                description=request.description or f"管理员批量生成 {i+1}/{request.count}"
+                description=request.description or f"管理员批量生成 {i+1}/{request.count}",
+                expires_hours=24 * 7  # 管理员一次性邀请码有效期固定为一周
             )
             created_codes.append({
                 "code": invitation_code.code,
@@ -495,6 +501,23 @@ async def create_admin_invitations(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="生成邀请码失败"
         )
+
+
+@router.put("/referrals/{user_id}/limit")
+async def set_user_referral_limit(
+    user_id: int,
+    body: ReferralLimitRequest,
+    admin_user: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    if body.limit < 0:
+        raise HTTPException(status_code=400, detail="邀请上限必须大于等于0")
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="用户不存在")
+    user.referral_limit = body.limit
+    db.commit()
+    return {"success": True, "user_id": user_id, "referral_limit": user.referral_limit}
 
 @router.get("/invitations")
 async def get_admin_invitations(

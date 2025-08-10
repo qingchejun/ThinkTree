@@ -36,7 +36,7 @@ const LandingPage = ({ invitationCode, autoRegister, errorMessage, onLoginClick 
   // 自动触发登录弹窗的逻辑
   useEffect(() => {
     if ((autoRegister || invitationCode) && onLoginClick) {
-      onLoginClick();
+      onLoginClick({ initialInvitationCode: invitationCode });
     }
   }, [autoRegister, invitationCode, onLoginClick]);
   return (

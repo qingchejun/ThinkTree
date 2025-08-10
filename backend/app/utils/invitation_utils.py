@@ -27,6 +27,19 @@ def generate_invitation_code(length: int = 8) -> str:
     return ''.join(secrets.choice(alphabet) for _ in range(length))
 
 
+def generate_referral_code(db: Session, length: int = 8) -> str:
+    """
+    生成用于用户固定推荐码的唯一短码（与一次性邀请码区分）。
+    """
+    alphabet = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
+    for _ in range(20):
+        code = ''.join(secrets.choice(alphabet) for _ in range(length))
+        exists = db.query(User).filter(User.referral_code == code).first()
+        if not exists:
+            return code
+    raise RuntimeError("无法生成唯一推荐码，请稍后重试")
+
+
 def generate_unique_invitation_code(db: Session, length: int = 8, max_attempts: int = 10) -> str:
     """
     生成唯一的邀请码

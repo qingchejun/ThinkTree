@@ -8,6 +8,7 @@ import { useModal } from '@/context/ModalContext';
 import { Gift, Zap, LayoutDashboard, CreditCard, Settings, LogOut, ListChecks } from 'lucide-react';
 import { getCurrentAvatar } from './AvatarSelector';
 import AvatarDisplay from './AvatarDisplay';
+import ReferralModal from './ReferralModal';
 
 const Navbar = () => {
   const { user, logout, isAdmin, credits } = useAuth();
@@ -15,6 +16,7 @@ const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [currentAvatar, setCurrentAvatar] = useState('default');
   const [isClient, setIsClient] = useState(false);
+  const [showReferral, setShowReferral] = useState(false);
   const menuRef = useRef(null);
   const pathname = usePathname();
   const router = useRouter();
@@ -96,10 +98,13 @@ const Navbar = () => {
         
         {/* 右侧：邀请好友 + 用户菜单 */}
         <div className="flex items-center space-x-6">
-          <Link href="/settings" className="bg-gray-100 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-200 transition-colors flex items-center space-x-2 text-sm">
+          <button
+            onClick={() => setShowReferral(true)}
+            className="bg-gray-100 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-200 transition-colors flex items-center space-x-2 text-sm"
+          >
             <Gift className="w-4 h-4 text-orange-500" />
             <span>邀请好友</span>
-          </Link>
+          </button>
           
           <div className="relative" ref={menuRef}>
             <button 
@@ -147,6 +152,7 @@ const Navbar = () => {
           </div>
         </div>
       </div>
+      <ReferralModal isOpen={showReferral} onClose={() => setShowReferral(false)} />
     </header>
   );
 };

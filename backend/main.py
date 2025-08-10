@@ -32,6 +32,7 @@ async def health_check():
 
 # 注册业务路由
 from app.api import upload, mindmaps, auth, share, invitations, admin, redemption
+from app.api import referrals
 
 app.include_router(upload.router, prefix="/api", tags=["upload"])
 app.include_router(mindmaps.router, prefix="/api/mindmaps", tags=["mindmaps"])
@@ -40,3 +41,4 @@ app.include_router(share.router, prefix="/api", tags=["share"])
 app.include_router(invitations.router, prefix="/api/invitations", tags=["invitations"])
 app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 app.include_router(redemption.router, prefix="/api/codes", tags=["redemption"])
+app.include_router(referrals.router, prefix="/api/referrals", tags=["referrals"])

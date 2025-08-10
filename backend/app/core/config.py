@@ -75,6 +75,10 @@ class Settings(BaseSettings):
     google_client_id: str = os.getenv("GOOGLE_CLIENT_ID", "")
     google_client_secret: str = os.getenv("GOOGLE_CLIENT_SECRET", "")
 
+    # 推荐系统参数
+    referral_bonus_per_signup: int = int(os.getenv("REFERRAL_BONUS_PER_SIGNUP", "100"))
+    referral_max_total_bonus: int = int(os.getenv("REFERRAL_MAX_TOTAL_BONUS", "3000"))
+
     class Config:
         """Pydantic 配置"""
         env_file = ".env"

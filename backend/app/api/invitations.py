@@ -15,7 +15,8 @@ from ..utils.invitation_utils import (
     create_invitation_code,
     get_user_invitation_stats,
     can_generate_invitation,
-    generate_invitation_link
+    generate_invitation_link,
+    generate_referral_code
 )
 from ..core.config import settings
 from .auth import get_current_user
@@ -51,6 +52,9 @@ class InvitationStatsResponse(BaseModel):
     active_count: int
     remaining_quota: int
     user_quota: int
+    # 新增：推荐统计
+    referral_limit: int | None = None
+    referral_used: int | None = None
 
 
 class CreateInvitationResponse(BaseModel):
@@ -70,14 +74,22 @@ async def get_invitation_stats(
     获取当前用户的邀请码统计信息
     """
     stats = get_user_invitation_stats(db, current_user.id)
-    
+    # 带上新推荐字段，保持兼容
+    try:
+        user_ref_limit = getattr(current_user, 'referral_limit', 10)
+        user_ref_used = getattr(current_user, 'referral_used', 0)
+    except Exception:
+        user_ref_limit, user_ref_used = 10, 0
+
     return InvitationStatsResponse(
         total_generated=stats["total_generated"],
         used_count=stats["used_count"],
         expired_count=stats["expired_count"],
         active_count=stats["active_count"],
         remaining_quota=stats["remaining_quota"],
-        user_quota=stats["remaining_quota"] + stats["total_generated"]
+        user_quota=stats["remaining_quota"] + stats["total_generated"],
+        referral_limit=user_ref_limit,
+        referral_used=user_ref_used
     )
 
 
