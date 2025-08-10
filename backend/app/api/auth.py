@@ -1049,6 +1049,78 @@ async def refresh_token(request: Request, db: Session = Depends(get_db)):
     return response
 
 
+@router.post("/fix-referrals")
+async def fix_referral_schema(db: Session = Depends(get_db)):
+    """
+    紧急修复端点：为已存在的生产数据库补齐推荐系统相关表结构/字段。
+    - users: 增加 referral_code, referral_limit, referral_used, referred_by_user_id
+    - users: 创建唯一索引 ix_users_referral_code
+    - login_tokens: 增加 inviter_user_id
+    - referral_events: 如不存在则创建
+    本端点是幂等的，多次调用不会报错。
+    """
+    from sqlalchemy import text
+    results = []
+    try:
+        # 1) users 表新增字段（IF NOT EXISTS 兼容）
+        alter_users_sql = [
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_code VARCHAR(16)",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_limit INTEGER DEFAULT 10 NOT NULL",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_used INTEGER DEFAULT 0 NOT NULL",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS referred_by_user_id INTEGER"
+        ]
+        for sql in alter_users_sql:
+            try:
+                db.execute(text(sql))
+                results.append(f"OK: {sql}")
+            except Exception as e:
+                results.append(f"WARN users: {e}")
+
+        # 1.1) 唯一索引
+        try:
+            db.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_users_referral_code ON users (referral_code)"))
+            results.append("OK: index ix_users_referral_code")
+        except Exception as e:
+            results.append(f"WARN index: {e}")
+
+        # 2) login_tokens 表新增 inviter_user_id
+        try:
+            db.execute(text("ALTER TABLE login_tokens ADD COLUMN IF NOT EXISTS inviter_user_id INTEGER"))
+            results.append("OK: add login_tokens.inviter_user_id")
+        except Exception as e:
+            results.append(f"WARN login_tokens: {e}")
+
+        # 3) referral_events 表创建（如不存在）
+        try:
+            db.execute(text(
+                """
+                CREATE TABLE IF NOT EXISTS referral_events (
+                  id SERIAL PRIMARY KEY,
+                  inviter_user_id INTEGER NOT NULL,
+                  invitee_user_id INTEGER NOT NULL,
+                  granted_credits_to_inviter INTEGER NOT NULL DEFAULT 0,
+                  granted_credits_to_invitee INTEGER NOT NULL DEFAULT 0,
+                  status VARCHAR(16) NOT NULL DEFAULT 'COMPLETED',
+                  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                )
+                """
+            ))
+            results.append("OK: create referral_events")
+            # 索引
+            db.execute(text("CREATE INDEX IF NOT EXISTS ix_referral_events_inviter_user_id ON referral_events (inviter_user_id)"))
+            db.execute(text("CREATE INDEX IF NOT EXISTS ix_referral_events_invitee_user_id ON referral_events (invitee_user_id)"))
+            db.execute(text("CREATE INDEX IF NOT EXISTS ix_referral_events_created_at ON referral_events (created_at)"))
+            results.append("OK: referral_events indexes")
+        except Exception as e:
+            results.append(f"WARN referral_events: {e}")
+
+        db.commit()
+        return {"success": True, "message": "Referral schema fixed", "operations": results}
+    except Exception as e:
+        db.rollback()
+        return {"success": False, "message": str(e), "operations": results}
+
+
 @router.post("/logout")
 async def logout():
     """
