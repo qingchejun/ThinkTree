@@ -9,6 +9,7 @@ from ..core.database import get_db
 from ..core.config import settings
 from ..models.user import User
 from ..models.referral_event import ReferralEvent
+from ..utils.invitation_utils import generate_referral_code
 from .auth import get_current_user
 
 router = APIRouter()
@@ -25,6 +26,14 @@ class ReferralLinkResponse(BaseModel):
 @router.get("/me/link", response_model=ReferralLinkResponse)
 async def get_my_referral_link(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     code = getattr(current_user, 'referral_code', None)
+    if not code:
+        # 为旧用户即时分配一个推荐码
+        try:
+            code = generate_referral_code(db)
+            current_user.referral_code = code
+            db.commit()
+        except Exception:
+            db.rollback()
     invited = int(getattr(current_user, 'referral_used', 0) or 0)
     limit = int(getattr(current_user, 'referral_limit', 10) or 10)
     link = f"{settings.frontend_url}/register?invitation_code={code}" if code else None

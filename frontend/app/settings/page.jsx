@@ -455,13 +455,17 @@ const SettingsContent = () => {
                       <div>
                         <h3 className="text-lg font-medium text-gray-900 mb-4">管理员一次性邀请码（仅限管理员生成）</h3>
                         <p className="text-sm text-gray-500 mb-2">用于特殊场景，一次性使用，有效期一周。</p>
-                        <button 
-                          onClick={handleGenerateInvitation}
-                          disabled={isLoading}
-                          className="px-6 py-3 bg-black text-white text-sm font-semibold rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                          {isLoading ? '生成中...' : '生成一次性邀请码（管理员）'}
-                        </button>
+                        {user?.is_superuser ? (
+                          <button 
+                            onClick={handleGenerateInvitation}
+                            disabled={isLoading}
+                            className="px-6 py-3 bg-black text-white text-sm font-semibold rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          >
+                            {isLoading ? '生成中...' : '生成一次性邀请码（管理员）'}
+                          </button>
+                        ) : (
+                          <p className="text-sm text-gray-500">仅管理员可生成一次性邀请码</p>
+                        )}
                       </div>
                       
                       <div>
