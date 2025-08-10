@@ -36,7 +36,8 @@ async def get_my_referral_link(current_user: User = Depends(get_current_user), d
             db.rollback()
     invited = int(getattr(current_user, 'referral_used', 0) or 0)
     limit = int(getattr(current_user, 'referral_limit', 10) or 10)
-    link = f"{settings.frontend_url}/register?invitation_code={code}" if code else None
+    # 邀请链接前缀改为 /referralCode=
+    link = f"{settings.frontend_url}/referralCode={code}" if code else None
     rule_text = f"你和好友各得 {settings.referral_bonus_per_signup} 积分（最高累计 {settings.referral_max_total_bonus} 积分）"
     return ReferralLinkResponse(
         referral_code=code,

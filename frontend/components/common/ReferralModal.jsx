@@ -50,8 +50,8 @@ export default function ReferralModal({ isOpen, onClose }) {
               <div className="text-sm text-gray-600 mb-1">我的邀请链接</div>
               <div className="flex items-center gap-2">
                 <span className="flex-1 font-mono text-sm break-all text-gray-900 select-all">{linkInfo.referral_link || '生成中...'}</span>
-                <button onClick={copy} disabled={!linkInfo?.referral_link} className="inline-flex items-center gap-1 px-3 py-2 text-sm bg-black text-white rounded disabled:opacity-50">
-                  <Copy className="w-4 h-4" /> {copied ? '已复制' : '复制'}
+                <button onClick={copy} disabled={!linkInfo?.referral_link} className="inline-flex items-center justify-center w-10 h-10 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50" title="复制">
+                  <Copy className="w-4 h-4 text-gray-700" />
                 </button>
               </div>
               <div className="text-xs text-gray-500 mt-2">已邀请 {linkInfo.invited_count}/{linkInfo.limit}</div>
