@@ -10,7 +10,8 @@ export function middleware(request) {
     url.pathname = '/'
     url.searchParams.set('invitation_code', code)
     url.searchParams.set('auto_register', 'true')
-    return NextResponse.rewrite(url)
+    // 使用重定向以便地址栏携带查询参数，前端可感知
+    return NextResponse.redirect(url)
   }
 
   // 兼容旧路径 /register?invitation_code= 仍然保留其现有页面逻辑

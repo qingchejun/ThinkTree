@@ -306,8 +306,9 @@ export async function getReferralStats() {
   return await apiCall('/api/referrals/me/stats')
 }
 
-export async function getReferralHistory() {
-  return await apiCall('/api/referrals/me/history')
+export async function getReferralHistory(page = 1, limit = 10) {
+  const qs = new URLSearchParams({ page: String(page), limit: String(limit) })
+  return await apiCall(`/api/referrals/me/history?${qs.toString()}`)
 }
 
 // 积分相关 API - 不再需要token参数

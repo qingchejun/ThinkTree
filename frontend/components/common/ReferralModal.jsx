@@ -56,13 +56,16 @@ export default function ReferralModal({ isOpen, onClose }) {
               </div>
               <div className="flex items-center gap-2">
                 <span className="flex-1 font-mono text-sm break-all text-gray-900 select-all">{linkInfo.referral_link || '生成中...'}</span>
-                <button onClick={copy} disabled={!linkInfo?.referral_link} className="inline-flex items-center justify-center w-10 h-10 rounded-lg border border-gray-300 hover:bg-gray-100 hover:border-gray-400 active:bg-gray-200 disabled:opacity-50" title="复制">
+                <button onClick={copy} disabled={!linkInfo?.referral_link || linkInfo.reached_limit} className="inline-flex items-center justify-center w-10 h-10 rounded-lg border border-gray-300 hover:bg-gray-100 hover:border-gray-400 active:bg-gray-200 disabled:opacity-50" title={linkInfo.reached_limit ? '已达上限' : '复制'}>
                   <Copy className="w-4 h-4 text-gray-700 hover:text-gray-900" />
                 </button>
               </div>
               <div className="mt-3 flex items-center gap-2 text-xs text-gray-500">
                 <Users className="w-3.5 h-3.5" />
-                <span>已邀请 {linkInfo.invited_count}/{linkInfo.limit}</span>
+                <span>
+                  已邀请 {linkInfo.invited_count}/{linkInfo.limit}
+                  {linkInfo.reached_limit ? ' · 邀请名额已满，如需提升请联系管理员' : ''}
+                </span>
               </div>
             </div>
             <div className="mt-4 text-xs text-gray-500 text-center">明细可在 个人中心 → 邀请记录 查看</div>

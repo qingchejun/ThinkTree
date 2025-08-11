@@ -21,6 +21,7 @@ class ReferralLinkResponse(BaseModel):
     invited_count: int
     limit: int
     rule_text: str
+    reached_limit: bool | None = None
 
 
 @router.get("/me/link", response_model=ReferralLinkResponse)
@@ -36,6 +37,7 @@ async def get_my_referral_link(current_user: User = Depends(get_current_user), d
             db.rollback()
     invited = int(getattr(current_user, 'referral_used', 0) or 0)
     limit = int(getattr(current_user, 'referral_limit', 10) or 10)
+    reached_limit = invited >= limit
     # 邀请链接前缀改为 /referralCode=
     link = f"{settings.frontend_url}/referralCode={code}" if code else None
     rule_text = f"你和好友各得 {settings.referral_bonus_per_signup} 积分（最高累计 {settings.referral_max_total_bonus} 积分）"
@@ -45,6 +47,7 @@ async def get_my_referral_link(current_user: User = Depends(get_current_user), d
         invited_count=invited,
         limit=limit,
         rule_text=rule_text,
+        reached_limit=reached_limit,
     )
 
 
@@ -73,11 +76,17 @@ class ReferralHistoryItem(BaseModel):
 
 class ReferralHistoryResponse(BaseModel):
     items: list[ReferralHistoryItem]
+    page: int | None = None
+    limit: int | None = None
+    has_next: bool | None = None
 
 
 @router.get("/me/history", response_model=ReferralHistoryResponse)
-async def get_my_referral_history(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    events = db.query(ReferralEvent).filter(ReferralEvent.inviter_user_id == current_user.id).order_by(ReferralEvent.created_at.desc()).limit(50).all()
+async def get_my_referral_history(current_user: User = Depends(get_current_user), db: Session = Depends(get_db), page: int = 1, limit: int = 10):
+    page = max(1, page)
+    limit = min(50, max(1, limit))
+    q = db.query(ReferralEvent).filter(ReferralEvent.inviter_user_id == current_user.id).order_by(ReferralEvent.created_at.desc())
+    events = q.offset((page - 1) * limit).limit(limit + 1).all()
     items = [
         ReferralHistoryItem(
             invitee_user_id=e.invitee_user_id,
@@ -87,6 +96,9 @@ async def get_my_referral_history(current_user: User = Depends(get_current_user)
             created_at=e.created_at.isoformat() if e.created_at else "",
         ) for e in events
     ]
-    return ReferralHistoryResponse(items=items)
+    has_next = len(items) > limit
+    if has_next:
+        items = items[:limit]
+    return ReferralHistoryResponse(items=items, page=page, limit=limit, has_next=has_next)
 
 
