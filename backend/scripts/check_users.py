@@ -10,6 +10,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
 from app.models.user import User
+from app.models.login_token import LoginToken
 from app.models.user_credits import UserCredits
 
 def check_database():
@@ -28,6 +29,15 @@ def check_database():
             print(f"\n👥 用户列表:")
             for user in users:
                 print(f"  ID: {user.id}, Email: {user.email}, 管理员: {'是' if user.is_superuser else '否'}")
+
+        # 额外：按邮箱查找
+        target = os.environ.get('EMAIL')
+        if target:
+            print(f"\n🔎 查询邮箱: {target}")
+            u = db.query(User).filter(User.email.ilike(target)).first()
+            print(f"  users 表命中: {'是' if u else '否'}")
+            t = db.query(LoginToken).filter(LoginToken.email.ilike(target)).order_by(LoginToken.created_at.desc()).first()
+            print(f"  login_tokens 表命中: {'是' if t else '否'}; 最近记录时间: {getattr(t, 'created_at', None)}")
         
         # 查看积分记录总数
         total_credits = db.query(UserCredits).count()
