@@ -38,7 +38,7 @@ from ..utils.security import (
 from ..utils.email_service import email_service
 from ..utils.invitation_utils import validate_invitation_code, use_invitation_code, generate_referral_code
 from ..models.referral_event import ReferralEvent
-from ..utils.recaptcha import verify_recaptcha_with_action, is_recaptcha_enabled
+from ..utils.recaptcha import verify_recaptcha_with_action, is_recaptcha_enabled, verify_recaptcha_token
 
 router = APIRouter()
 security = HTTPBearer()
@@ -684,13 +684,27 @@ async def initiate_login(request: Request, data: InitiateLoginRequest, db: Sessi
                         inviter_user_id_to_store = None
                         code_in = ""  # 标记为空
                     else:
-                        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="新用户注册需要邀请码")
+                        # 放宽策略：忽略 action，仅依据分数放行（>=0.30）
+                        ok2, err2, score2 = await verify_recaptcha_token(data.recaptcha_token)
+                        if (score2 is not None and score2 >= 0.30) or ok2:
+                            inviter_user_id_to_store = None
+                            code_in = ""
+                        else:
+                            raise HTTPException(
+                                status_code=status.HTTP_400_BAD_REQUEST,
+                                detail={
+                                    "code": "INVITE_REQUIRED",
+                                    "message": "新用户注册需要邀请码",
+                                    "recaptcha_error": err2 or err,
+                                    "score": score2 if score2 is not None else score,
+                                }
+                            )
                 else:
-                    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="新用户注册需要邀请码")
+                    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail={"code":"INVITE_REQUIRED","message":"新用户注册需要邀请码","recaptcha_error":"token_missing_or_disabled"})
             except HTTPException:
                 raise
-            except Exception:
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="新用户注册需要邀请码")
+            except Exception as e:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail={"code":"INVITE_REQUIRED","message":"新用户注册需要邀请码","recaptcha_error":str(e)})
         # 基础格式校验（仅允许大写字母与数字，长度8）
         import re
         if not re.fullmatch(r"[A-Z0-9]{6,16}", code_in):
