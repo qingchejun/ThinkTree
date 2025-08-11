@@ -565,7 +565,7 @@ const SettingsContent = () => {
                               {creditHistory.map((item) => (
                                 <div key={item.id} className="flex justify-between items-center p-4 bg-gray-50 rounded-lg border border-gray-200">
                                   <div>
-                                    <p className="font-semibold text-gray-900">{formatTransactionSummary(item)}</p>
+                                    <p className="font-semibold text-gray-900">{item.summary || formatTransactionSummary(item)}</p>
                                     <p className="text-sm text-gray-600">{formatDate(item.created_at)}</p>
                                   </div>
                                   <p className={getAmountStyle(item.transaction_type || item.type)}>{getAmountText(item.transaction_type || item.type, item.amount)}</p>

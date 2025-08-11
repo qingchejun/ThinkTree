@@ -262,16 +262,42 @@ class CreditTransactionResponse(BaseModel):
     amount: int
     description: str
     created_at: str
+    summary: str
     
     @classmethod
     def from_transaction(cls, transaction):
-        """从CreditTransaction对象创建响应模型"""
+        """从CreditTransaction对象创建响应模型，自动生成摘要"""
+        tx_type = (getattr(transaction, 'type', None).value
+                   if getattr(transaction, 'type', None) is not None else 'UNKNOWN')
+        description = getattr(transaction, 'description', '') or ''
+
+        # 规则：先看类型，再结合描述关键词细分
+        summary = ''
+        type_map = {
+            'INITIAL_GRANT': '新用户注册',
+            'MANUAL_GRANT': '手动发放',
+            'DEDUCTION': '消费扣除',
+            'REFUND': '退款/返还',
+            'DAILY_REWARD': '每日登录',
+        }
+        summary = type_map.get(tx_type, tx_type)
+
+        # 细化REFUND等为更具体的来源
+        desc_lower = description.lower()
+        if '兑换码' in description or 'redeem' in desc_lower:
+            summary = '兑换码奖励'
+        elif '受邀注册' in description:
+            summary = '受邀注册奖励'
+        elif '邀请奖励' in description:
+            summary = '邀请奖励'
+
         return cls(
             id=transaction.id,
-            type=transaction.type.value,
+            type=tx_type,
             amount=transaction.amount,
-            description=transaction.description,
-            created_at=transaction.created_at.isoformat()
+            description=description,
+            created_at=transaction.created_at.isoformat(),
+            summary=summary,
         )
 
 
