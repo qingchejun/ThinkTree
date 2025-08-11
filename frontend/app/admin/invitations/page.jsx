@@ -7,7 +7,7 @@ import AdminRoute from '../../../components/common/AdminRoute';
 // 移除ToastManager，使用内联提示样式
 
 const AdminInvitations = () => {
-  const { token } = useContext(AuthContext);
+  const { user } = useContext(AuthContext);
   const router = useRouter();
   
   // 状态管理
@@ -36,7 +36,6 @@ const AdminInvitations = () => {
 
   // 获取邀请码列表
   const fetchInvitations = async (page = 1, status = '') => {
-    if (!token) return;
 
     try {
       setLoading(true);
@@ -49,16 +48,12 @@ const AdminInvitations = () => {
       
       if (status) params.append('status_filter', status);
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/invitations?${params.toString()}`, 
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/invitations?${params.toString()}`,
         {
           method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' }
+        });
 
       if (response.ok) {
         const data = await response.json();
@@ -84,20 +79,13 @@ const AdminInvitations = () => {
     try {
       setCreating(true);
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/invitations`, 
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/invitations`,
         {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            count: createCount,
-            description: createDescription || undefined
-          })
-        }
-      );
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ count: createCount, description: createDescription || undefined })
+        });
 
       if (response.ok) {
         const data = await response.json();
@@ -168,7 +156,7 @@ const AdminInvitations = () => {
   useEffect(() => {
     fetchInvitations();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  }, [user]);
 
   // 格式化日期
   const formatDate = (dateString) => {

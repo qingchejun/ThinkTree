@@ -7,7 +7,7 @@ import AdminRoute from '../../../components/common/AdminRoute';
 // 移除ToastManager，使用内联提示样式
 
 const AdminUsers = () => {
-  const { token } = useContext(AuthContext);
+  const { user } = useContext(AuthContext);
   const router = useRouter();
   
   // 状态管理
@@ -36,7 +36,6 @@ const AdminUsers = () => {
 
   // 获取用户列表
   const fetchUsers = async (page = 1, search = '', status = '') => {
-    if (!token) return;
 
     try {
       setLoading(true);
@@ -50,16 +49,12 @@ const AdminUsers = () => {
       if (search) params.append('search', search);
       if (status) params.append('status_filter', status);
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/users?${params.toString()}`, 
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/users?${params.toString()}`,
         {
           method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' }
+        });
 
       if (response.ok) {
         const data = await response.json();
@@ -85,17 +80,13 @@ const AdminUsers = () => {
     try {
       setUpdatingUser(userId);
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/users/${userId}`, 
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/users/${userId}`,
         {
           method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(updates)
-        }
-      );
+        });
 
       if (response.ok) {
         const data = await response.json();
@@ -124,16 +115,12 @@ const AdminUsers = () => {
     try {
       setUpdatingUser(userId);
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/users/${userId}`, 
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/users/${userId}`,
         {
           method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' }
+        });
 
       if (response.ok) {
         const data = await response.json();
@@ -197,10 +184,8 @@ const AdminUsers = () => {
       
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/users/${resetPasswordModal.user.id}/reset-password`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ new_password: newPassword })
       });
 
@@ -238,10 +223,8 @@ const AdminUsers = () => {
       
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/users/${user.id}/generate-temp-password`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ valid_hours: parseInt(validHours) })
       });
 
@@ -288,7 +271,7 @@ const AdminUsers = () => {
   useEffect(() => {
     fetchUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  }, [user]);
 
   // 格式化日期
   const formatDate = (dateString) => {
