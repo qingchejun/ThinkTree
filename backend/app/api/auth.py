@@ -171,6 +171,7 @@ class InitiateLoginRequest(BaseModel):
     email: EmailStr
     invitation_code: Optional[str] = None  # 兼容旧字段（弃用）
     referral_code: Optional[str] = None    # 新字段：推荐码
+    recaptcha_token: Optional[str] = None  # 可选：用于无邀请码时放行
 
 class InitiateLoginResponse(BaseModel):
     """发起登录响应模型"""
@@ -675,10 +676,21 @@ async def initiate_login(request: Request, data: InitiateLoginRequest, db: Sessi
         # 使用 referral_code 优先，兼容 invitation_code
         code_in = (data.referral_code or data.invitation_code or '').strip().upper()
         if not code_in:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="新用户注册需要邀请码"
-            )
+            # reCAPTCHA 兜底：若启用并验证通过，则允许无邀请码发码（用于老数据误判场景）
+            try:
+                if is_recaptcha_enabled() and data.recaptcha_token:
+                    ok, err, score = await verify_recaptcha_with_action(data.recaptcha_token, "register")
+                    if ok:
+                        inviter_user_id_to_store = None
+                        code_in = ""  # 标记为空
+                    else:
+                        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="新用户注册需要邀请码")
+                else:
+                    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="新用户注册需要邀请码")
+            except HTTPException:
+                raise
+            except Exception:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="新用户注册需要邀请码")
         # 基础格式校验（仅允许大写字母与数字，长度8）
         import re
         if not re.fullmatch(r"[A-Z0-9]{6,16}", code_in):
