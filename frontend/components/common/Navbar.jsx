@@ -17,6 +17,9 @@ const Navbar = () => {
   const [currentAvatar, setCurrentAvatar] = useState('default');
   const [isClient, setIsClient] = useState(false);
   const [showReferral, setShowReferral] = useState(false);
+  // 功能开关：邀请入口（顶部按钮、普通用户菜单）
+  const referralHeaderEnabled = (process.env.NEXT_PUBLIC_FEATURE_REFERRAL_HEADER === '1');
+  const referralMenuForNonAdminEnabled = (process.env.NEXT_PUBLIC_FEATURE_REFERRAL_MENU_NON_ADMIN === '1');
   const menuRef = useRef(null);
   const pathname = usePathname();
   const router = useRouter();
@@ -98,13 +101,24 @@ const Navbar = () => {
         
         {/* 右侧：邀请好友 + 用户菜单 */}
         <div className="flex items-center space-x-6">
-          <button
-            onClick={() => setShowReferral(true)}
-            className="bg-gray-100 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-200 transition-colors flex items-center space-x-2 text-sm"
-          >
-            <Gift className="w-4 h-4 text-orange-500" />
-            <span>邀请好友</span>
-          </button>
+          {/* 顶部“邀请好友”按钮 - 默认显示但禁用（可通过 env 开关启用） */}
+          {referralHeaderEnabled ? (
+            <button
+              onClick={() => setShowReferral(true)}
+              className="bg-gray-100 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-200 transition-colors flex items-center space-x-2 text-sm"
+            >
+              <Gift className="w-4 h-4 text-orange-500" />
+              <span>邀请好友</span>
+            </button>
+          ) : (
+            <div
+              className="bg-gray-50 text-gray-400 px-4 py-2 rounded-lg font-semibold flex items-center space-x-2 text-sm cursor-not-allowed select-none"
+              title="暂未开放"
+            >
+              <Gift className="w-4 h-4 text-gray-300" />
+              <span>邀请好友（开发中）</span>
+            </div>
+          )}
           
           <div className="relative" ref={menuRef}>
             <button 
@@ -130,7 +144,15 @@ const Navbar = () => {
                 <Link href="/mindmaps" onClick={() => setIsMenuOpen(false)} className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><LayoutDashboard className="w-4 h-4 text-blue-500"/><span>我的导图</span></Link>
                 <Link href="/settings?tab=billing" onClick={() => setIsMenuOpen(false)} className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><CreditCard className="w-4 h-4 text-green-500"/><span>用量计费</span></Link>
                 <Link href="/settings" onClick={() => setIsMenuOpen(false)} className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><Settings className="w-4 h-4 text-gray-500"/><span>账户设置</span></Link>
-                <Link href="/settings?tab=invitations" onClick={() => setIsMenuOpen(false)} className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><ListChecks className="w-4 h-4 text-orange-500"/><span>邀请记录</span></Link>
+                {/* 个人菜单中的“邀请记录/邀请好友”入口：普通用户禁用但显示；管理员可用 */}
+                {isAdmin || referralMenuForNonAdminEnabled ? (
+                  <Link href="/settings?tab=invitations" onClick={() => setIsMenuOpen(false)} className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><ListChecks className="w-4 h-4 text-orange-500"/><span>邀请记录</span></Link>
+                ) : (
+                  <div className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-400 cursor-not-allowed select-none" title="暂未开放">
+                    <ListChecks className="w-4 h-4 text-gray-300"/>
+                    <span>邀请记录（开发中）</span>
+                  </div>
+                )}
                 
                 {/* 管理员菜单 - 仅管理员可见 */}
                 {isAdmin && (
@@ -152,7 +174,10 @@ const Navbar = () => {
           </div>
         </div>
       </div>
-      <ReferralModal isOpen={showReferral} onClose={() => setShowReferral(false)} />
+      {/* 仅在功能开启时渲染弹窗，保持代码与资源保留 */}
+      {referralHeaderEnabled && (
+        <ReferralModal isOpen={showReferral} onClose={() => setShowReferral(false)} />
+      )}
     </header>
   );
 };
