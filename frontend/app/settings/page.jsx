@@ -105,13 +105,23 @@ const SettingsContent = () => {
   // 格式化交易类型显示文本
   const formatTransactionType = (type) => {
     const typeMap = {
-      'INITIAL_GRANT': '初始赠送',
-      'MANUAL_GRANT': '手动发放',
-      'DEDUCTION': '消费扣除',
-      'REFUND': '失败退款',
-      'DAILY_REWARD': '每日登录奖励'
+      INITIAL_GRANT: '新用户注册',
+      MANUAL_GRANT: '手动发放',
+      DEDUCTION: '消费扣除',
+      REFUND: '退款/返还',
+      DAILY_REWARD: '每日登录',
     };
     return typeMap[type] || type;
+  };
+
+  const formatTransactionSummary = (item) => {
+    const desc = (item.description || '').toLowerCase();
+    if (desc.includes('每日登录')) return '每日登录';
+    if (desc.includes('邀请奖励')) return '邀请奖励';
+    if (desc.includes('受邀注册奖励')) return '受邀注册奖励';
+    if (desc.includes('兑换码')) return '兑换码奖励';
+    // fallback to type name
+    return formatTransactionType(item.type);
   };
   
   // 格式化日期显示
@@ -424,12 +434,12 @@ const SettingsContent = () => {
                       {/* 新推荐卡片 */}
                       <div className="bg-white p-6 rounded-lg border border-gray-200">
                         <h3 className="text-lg font-medium text-gray-900 mb-3">我的邀请链接</h3>
-                        <p className="text-sm text-gray-600 mb-2">{referralLink?.rule_text || '你和好友均可获得奖励'}</p>
+                        <p className="text-sm text-gray-600 mb-2">{referralLink?.rule_text || '你和好友各得 100 积分'}</p>
                         <div className="flex items-center gap-2">
                           <span className="flex-1 font-mono text-sm break-all text-gray-900 select-all">{referralLink?.referral_link || ''}</span>
                           <button
                             onClick={() => referralLink?.referral_link && navigator.clipboard.writeText(referralLink.referral_link)}
-                            className="inline-flex items-center justify-center w-10 h-10 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50"
+                            className="inline-flex items-center justify-center w-10 h-10 rounded-lg border border-gray-300 hover:bg-gray-100 hover:border-gray-400 active:bg-gray-200 disabled:opacity-50"
                             disabled={!referralLink?.referral_link}
                             title="复制"
                           >
@@ -438,23 +448,7 @@ const SettingsContent = () => {
                         </div>
                         <div className="text-xs text-gray-500 mt-2">已邀请 {referralStats?.invited_count ?? referralLink?.invited_count ?? 0}/{referralStats?.limit ?? referralLink?.limit ?? 10}</div>
                       </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="bg-gray-50 rounded-lg border border-gray-200 p-6">
-                          <p className="text-sm text-gray-600">已生成</p>
-                          <p className="text-2xl font-bold text-gray-900">
-                            {profileData ? profileData.invitation_used : '...'}
-                          </p>
-                          <p className="text-sm text-gray-500">邀请码</p>
-                        </div>
-                        <div className="bg-gray-50 rounded-lg border border-gray-200 p-6">
-                          <p className="text-sm text-gray-600">总配额</p>
-                          <p className="text-2xl font-bold text-gray-900">
-                            {profileData ? profileData.invitation_quota : '...'}
-                          </p>
-                          <p className="text-sm text-gray-500">邀请码</p>
-                        </div>
-                      </div>
+
 
                       {user?.is_superuser && (
                       <div>
@@ -477,8 +471,7 @@ const SettingsContent = () => {
                               <thead>
                                 <tr className="text-left text-gray-500">
                                   <th className="py-2 pr-4">受邀用户ID</th>
-                                  <th className="py-2 pr-4">我获得</th>
-                                  <th className="py-2 pr-4">对方获得</th>
+                                  <th className="py-2 pr-4">受邀邮箱</th>
                                   <th className="py-2 pr-4">时间</th>
                                 </tr>
                               </thead>
@@ -486,8 +479,7 @@ const SettingsContent = () => {
                                 {referralHistory.map((e, idx) => (
                                   <tr key={idx} className="border-t">
                                     <td className="py-2 pr-4">{e.invitee_user_id}</td>
-                                    <td className="py-2 pr-4 text-green-600">+{e.granted_credits_to_inviter}</td>
-                                    <td className="py-2 pr-4 text-green-600">+{e.granted_credits_to_invitee}</td>
+                                    <td className="py-2 pr-4">{e.invitee_email_masked || '***'}</td>
                                     <td className="py-2 pr-4 text-gray-600">{new Date(e.created_at).toLocaleString('zh-CN')}</td>
                                   </tr>
                                 ))}
@@ -498,46 +490,47 @@ const SettingsContent = () => {
                           <p className="text-gray-500 text-sm">暂无邀请记录</p>
                         )}
                       </div>
-
-                      <div>
-                        <h3 className="text-lg font-medium text-gray-900 mb-4">我的管理员邀请码（一次性）</h3>
-                        {invitations.length > 0 ? (
-                          <div className="space-y-2">
-                            {invitations.map((invitation, index) => (
-                              <div key={index} className="bg-gray-50 rounded-lg border border-gray-200 p-4">
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center space-x-3">
-                                    <span className="font-mono text-sm text-gray-900">{invitation.code}</span>
-                                    <button
-                                      onClick={() => {
-                                        const inviteLink = `https://thinkso.io/register?invitation_code=${invitation.code}`;
-                                        navigator.clipboard.writeText(inviteLink).then(() => {
-                                          showToast('邀请链接已复制到剪贴板！', 'success');
-                                        }).catch(() => {
-                                          showToast('复制失败，请手动复制', 'error');
-                                        });
-                                      }}
-                                      className="px-3 py-1 text-xs font-medium text-gray-600 bg-gray-100 border border-gray-200 rounded-md hover:bg-gray-200 hover:text-gray-800 transition-colors"
-                                      title="复制邀请链接"
-                                    >
-                                      复制链接
-                                    </button>
+                      {user?.is_superuser && (
+                        <div>
+                          <h3 className="text-lg font-medium text-gray-900 mb-4">我的管理员邀请码（一次性）</h3>
+                          {invitations.length > 0 ? (
+                            <div className="space-y-2">
+                              {invitations.map((invitation, index) => (
+                                <div key={index} className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center space-x-3">
+                                      <span className="font-mono text-sm text-gray-900">{invitation.code}</span>
+                                      <button
+                                        onClick={() => {
+                                          const inviteLink = `https://thinkso.io/register?invitation_code=${invitation.code}`;
+                                          navigator.clipboard.writeText(inviteLink).then(() => {
+                                            showToast('邀请链接已复制到剪贴板！', 'success');
+                                          }).catch(() => {
+                                            showToast('复制失败，请手动复制', 'error');
+                                          });
+                                        }}
+                                        className="px-3 py-1 text-xs font-medium text-gray-600 bg-gray-100 border border-gray-200 rounded-md hover:bg-gray-200 hover:text-gray-800 transition-colors"
+                                        title="复制邀请链接"
+                                      >
+                                        复制链接
+                                      </button>
+                                    </div>
+                                    <span className={`text-sm px-2 py-1 rounded-full ${
+                                      invitation.is_used 
+                                        ? 'bg-green-100 text-green-700' 
+                                        : 'bg-gray-100 text-gray-600'
+                                    }`}>
+                                      {invitation.is_used ? '已使用' : '未使用'}
+                                    </span>
                                   </div>
-                                  <span className={`text-sm px-2 py-1 rounded-full ${
-                                    invitation.is_used 
-                                      ? 'bg-green-100 text-green-700' 
-                                      : 'bg-gray-100 text-gray-600'
-                                  }`}>
-                                    {invitation.is_used ? '已使用' : '未使用'}
-                                  </span>
                                 </div>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-gray-500 text-sm">暂无邀请码</p>
-                        )}
-                      </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-gray-500 text-sm">暂无邀请码</p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -572,10 +565,10 @@ const SettingsContent = () => {
                               {creditHistory.map((item) => (
                                 <div key={item.id} className="flex justify-between items-center p-4 bg-gray-50 rounded-lg border border-gray-200">
                                   <div>
-                                    <p className="font-semibold text-gray-900">{formatTransactionType(item.transaction_type)}</p>
+                                    <p className="font-semibold text-gray-900">{formatTransactionSummary(item)}</p>
                                     <p className="text-sm text-gray-600">{formatDate(item.created_at)}</p>
                                   </div>
-                                  <p className={getAmountStyle(item.transaction_type)}>{getAmountText(item.transaction_type, item.amount)}</p>
+                                  <p className={getAmountStyle(item.transaction_type || item.type)}>{getAmountText(item.transaction_type || item.type, item.amount)}</p>
                                 </div>
                               ))}
                               {creditPagination.has_next && (

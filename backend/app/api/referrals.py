@@ -40,7 +40,8 @@ async def get_my_referral_link(current_user: User = Depends(get_current_user), d
     reached_limit = invited >= limit
     # 邀请链接前缀改为 /referralCode=
     link = f"{settings.frontend_url}/referralCode={code}" if code else None
-    rule_text = f"你和好友各得 {settings.referral_bonus_per_signup} 积分（最高累计 {settings.referral_max_total_bonus} 积分）"
+    # 精简文案：去掉“最高累计”提示
+    rule_text = f"你和好友各得 {settings.referral_bonus_per_signup} 积分"
     return ReferralLinkResponse(
         referral_code=code,
         referral_link=link,
@@ -68,6 +69,7 @@ async def get_my_referral_stats(current_user: User = Depends(get_current_user), 
 
 class ReferralHistoryItem(BaseModel):
     invitee_user_id: int
+    invitee_email_masked: str
     granted_credits_to_inviter: int
     granted_credits_to_invitee: int
     status: str
@@ -81,21 +83,49 @@ class ReferralHistoryResponse(BaseModel):
     has_next: bool | None = None
 
 
+def _mask_email(email: str) -> str:
+    """对邮箱做简单脱敏，例如 a***@ex.com"""
+    try:
+        if not email or "@" not in email:
+            return "***"
+        name, domain = email.split("@", 1)
+        if len(name) <= 1:
+            masked_name = "*"
+        elif len(name) == 2:
+            masked_name = name[0] + "*"
+        else:
+            masked_name = name[0] + "***" + name[-1]
+        return masked_name + "@" + domain
+    except Exception:
+        return "***"
+
+
 @router.get("/me/history", response_model=ReferralHistoryResponse)
 async def get_my_referral_history(current_user: User = Depends(get_current_user), db: Session = Depends(get_db), page: int = 1, limit: int = 10):
     page = max(1, page)
     limit = min(50, max(1, limit))
     q = db.query(ReferralEvent).filter(ReferralEvent.inviter_user_id == current_user.id).order_by(ReferralEvent.created_at.desc())
     events = q.offset((page - 1) * limit).limit(limit + 1).all()
-    items = [
-        ReferralHistoryItem(
-            invitee_user_id=e.invitee_user_id,
-            granted_credits_to_inviter=e.granted_credits_to_inviter,
-            granted_credits_to_invitee=e.granted_credits_to_invitee,
-            status=e.status,
-            created_at=e.created_at.isoformat() if e.created_at else "",
-        ) for e in events
-    ]
+    # 预取受邀用户邮箱并进行脱敏
+    invitee_ids = [e.invitee_user_id for e in events]
+    emails_by_id = {}
+    if invitee_ids:
+        users = db.query(User).filter(User.id.in_(invitee_ids)).all()
+        emails_by_id = {u.id: _mask_email(u.email) for u in users if getattr(u, "email", None)}
+
+    items = []
+    for e in events:
+        masked_email = emails_by_id.get(e.invitee_user_id, "***")
+        items.append(
+            ReferralHistoryItem(
+                invitee_user_id=e.invitee_user_id,
+                invitee_email_masked=masked_email,
+                granted_credits_to_inviter=e.granted_credits_to_inviter,
+                granted_credits_to_invitee=e.granted_credits_to_invitee,
+                status=e.status,
+                created_at=e.created_at.isoformat() if e.created_at else "",
+            )
+        )
     has_next = len(items) > limit
     if has_next:
         items = items[:limit]

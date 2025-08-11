@@ -82,9 +82,9 @@ class RedemptionService:
             # 创建积分交易记录
             transaction = CreditTransaction(
                 user_id=user_id,
-                type=TransactionType.INITIAL_GRANT,  # 临时使用初始发放类型
+                type=TransactionType.REFUND,
                 amount=credits_amount,
-                description=f"兑换码兑换: {code}"
+                description=f"兑换码奖励: {code}"
             )
             db.add(transaction)
             

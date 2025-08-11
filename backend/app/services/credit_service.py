@@ -191,9 +191,14 @@ class CreditService:
             user_credits.balance += amount
             
             # 创建交易记录
+            # 根据描述判断常见来源，设置更贴近的类型
+            tx_type = TransactionType.REFUND
+            lower_desc = (description or '').lower()
+            if '邀请' in description:
+                tx_type = TransactionType.REFUND
             transaction = CreditTransaction(
                 user_id=user_id,
-                type=TransactionType.REFUND,
+                type=tx_type,
                 amount=amount,
                 description=description
             )
