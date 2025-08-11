@@ -154,14 +154,11 @@ async def create_invitation(
     print(f"DEBUG: 用户验证状态: {current_user.is_verified}")
     print(f"DEBUG: 请求数据: {request}")
     
-    # 检查用户是否可以生成邀请码
-    can_generate, error_msg = can_generate_invitation(db, current_user.id)
-    print(f"DEBUG: 权限检查结果: {can_generate}, 错误: {error_msg}")
-    
-    if not can_generate:
+    # 权限收拢：仅管理员可以生成一次性邀请码
+    if not current_user.is_superuser:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=error_msg
+            detail="仅管理员可生成一次性邀请码"
         )
     
     try:

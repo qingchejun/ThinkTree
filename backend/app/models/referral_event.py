@@ -1,7 +1,7 @@
 """
 推荐事件模型
 """
-from sqlalchemy import Column, Integer, String, DateTime, func
+from sqlalchemy import Column, Integer, String, DateTime, func, UniqueConstraint, Index
 from ..core.database import Base
 
 
@@ -15,6 +15,11 @@ class ReferralEvent(Base):
     granted_credits_to_invitee = Column(Integer, nullable=False, default=0)
     status = Column(String(16), nullable=False, default="COMPLETED")
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint('inviter_user_id', 'invitee_user_id', name='uq_referral_events_inviter_invitee'),
+        Index('ix_referral_events_created_at', 'created_at'),
+    )
 
     def to_dict(self):
         return {

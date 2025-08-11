@@ -648,15 +648,19 @@ async def initiate_login(request: Request, data: InitiateLoginRequest, db: Sessi
         print(f"检测到已注册用户: {data.email}")
         inviter_user_id_to_store = None  # 老用户不需要存储邀请者
     else:
-        # 新用户：验证邀请码
+        # 新用户：验证邀请码/推荐码
         print(f"检测到新用户: {data.email}")
         # 使用 referral_code 优先，兼容 invitation_code
-        code_in = (data.referral_code or data.invitation_code or '').strip()
+        code_in = (data.referral_code or data.invitation_code or '').strip().upper()
         if not code_in:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="新用户注册需要邀请码"
             )
+        # 基础格式校验（仅允许大写字母与数字，长度8）
+        import re
+        if not re.fullmatch(r"[A-Z0-9]{6,16}", code_in):
+            raise HTTPException(status_code=400, detail="邀请码格式不正确")
         # 先尝试在用户固定推荐码上匹配
         inviter = db.query(User).filter(User.referral_code == code_in).first()
         if inviter:
@@ -798,7 +802,7 @@ async def verify_code(request: Request, data: VerifyCodeRequest, db: Session = D
             db.add(new_user)
             db.commit()
             db.refresh(new_user)
-            # 生成固定推荐码
+            # 生成固定推荐码（兜底）
             try:
                 new_user.referral_code = generate_referral_code(db)
                 db.commit()
@@ -806,17 +810,6 @@ async def verify_code(request: Request, data: VerifyCodeRequest, db: Session = D
                 db.rollback()
                 print(f"生成推荐码失败: {e}")
             user = new_user
-            
-            # 建立推荐关系
-            try:
-                user.referred_by_user_id = inviter_user_id
-                inviter = db.query(User).filter(User.id == inviter_user_id).with_for_update().first()
-                if inviter:
-                    inviter.referral_used = (inviter.referral_used or 0) + 1
-                db.commit()
-            except Exception as e:
-                db.rollback()
-                print(f"建立推荐关系失败: {e}")
         else:
             # 没有邀请码字段（数据库未迁移），暂时允许新用户注册
             print(f"Warning: 数据库未包含invitation_code字段，允许用户 {data.email} 直接注册")
@@ -868,33 +861,45 @@ async def verify_code(request: Request, data: VerifyCodeRequest, db: Session = D
         inviter_user_id = getattr(login_token, 'inviter_user_id', None)
         if inviter_user_id and user and user.created_at and (datetime.now(timezone.utc) - user.created_at.replace(tzinfo=timezone.utc)).total_seconds() < 120:
             inviter = db.query(User).filter(User.id == inviter_user_id).with_for_update().first()
-            bonus_each = settings.referral_bonus_per_signup
-            max_total = settings.referral_max_total_bonus
-            if inviter:
-                # 计算邀请人是否达到封顶
-                from ..models.user_credits import UserCredits
-                inviter_credits = CreditService.get_user_credits(db, inviter.id)
-                # 这里不做严格累计封顶记录，简单用交易记录与配置控制；若需严格封顶，可额外累计字段
-                # 发放邀请人的奖励
-                if bonus_each > 0:
-                    CreditService.refund_credits(db, inviter.id, bonus_each, f"邀请奖励：{user.email}")
-            # 给受邀人奖励
-            if bonus_each > 0:
-                CreditService.refund_credits(db, user.id, bonus_each, "受邀注册奖励")
-            # 记录推荐事件
-            try:
-                event = ReferralEvent(
-                    inviter_user_id=inviter_user_id,
-                    invitee_user_id=user.id,
-                    granted_credits_to_inviter=bonus_each,
-                    granted_credits_to_invitee=bonus_each,
-                    status="COMPLETED",
-                )
-                db.add(event)
-                db.commit()
-            except Exception as e:
-                db.rollback()
-                print(f"记录推荐事件失败: {e}")
+        bonus_each = settings.referral_bonus_per_signup
+        if inviter:
+            # 并发一致性：再次检查上限
+            current_used = int(getattr(inviter, 'referral_used', 0) or 0)
+            current_limit = int(getattr(inviter, 'referral_limit', 10) or 10)
+            if current_used >= current_limit:
+                # 建立关系但不发奖不记事件
+                try:
+                    user.referred_by_user_id = inviter_user_id
+                    db.commit()
+                except Exception:
+                    db.rollback()
+                else:
+                    pass
+            else:
+                # 防重复：若已存在事件，跳过
+                exists = db.query(ReferralEvent).filter(
+                    ReferralEvent.inviter_user_id == inviter_user_id,
+                    ReferralEvent.invitee_user_id == user.id
+                ).first()
+                if not exists:
+                    try:
+                        # 统一事务：增计数、发放积分、写事件、建立关系
+                        inviter.referral_used = current_used + 1
+                        user.referred_by_user_id = inviter_user_id
+                        if bonus_each > 0:
+                            CreditService.refund_credits(db, inviter.id, bonus_each, f"邀请奖励：{user.email}")
+                            CreditService.refund_credits(db, user.id, bonus_each, "受邀注册奖励")
+                        db.add(ReferralEvent(
+                            inviter_user_id=inviter_user_id,
+                            invitee_user_id=user.id,
+                            granted_credits_to_inviter=bonus_each,
+                            granted_credits_to_invitee=bonus_each,
+                            status="COMPLETED",
+                        ))
+                        db.commit()
+                    except Exception as e:
+                        db.rollback()
+                        print(f"原子发奖失败（已回滚）: {e}")
     except Exception as e:
         db.rollback()
         print(f"发放推荐奖励失败: {e}")

@@ -166,6 +166,8 @@ def upgrade() -> None:
     op.create_index(op.f('ix_referral_events_inviter_user_id'), 'referral_events', ['inviter_user_id'], unique=False)
     op.create_index(op.f('ix_referral_events_invitee_user_id'), 'referral_events', ['invitee_user_id'], unique=False)
     op.create_index(op.f('ix_referral_events_created_at'), 'referral_events', ['created_at'], unique=False)
+    # 防重复奖励的唯一约束
+    op.create_unique_constraint('uq_referral_events_inviter_invitee', 'referral_events', ['inviter_user_id', 'invitee_user_id'])
     
     op.create_table('credit_transactions',
         sa.Column('id', sa.INTEGER(), autoincrement=True, nullable=False),
