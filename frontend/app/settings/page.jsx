@@ -32,6 +32,7 @@ const settingsNavItems = [
 
 const SettingsContent = () => {
   const { user, loading, refreshUser, isAuthenticated } = useContext(AuthContext);
+  const isAdmin = !!user?.is_superuser;
   const router = useRouter();
   const searchParams = useSearchParams();
     const activeTab = searchParams.get('tab') || 'profile';
@@ -337,22 +338,28 @@ const SettingsContent = () => {
             {/* 左侧导航 */}
             <aside className="md:col-span-1">
               <div className="flex flex-col space-y-1 bg-white rounded-xl border border-gray-200 p-2 h-fit">
-                {settingsNavItems.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => router.push(`/settings?tab=${item.id}`)}
-                    className={`w-full flex items-center justify-start px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${
-                      activeTab === item.id 
-                        ? 'bg-black text-white shadow-sm' 
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
-                  >
-                    <item.icon className={`mr-3 w-4 h-4 ${
-                      activeTab === item.id ? 'text-white' : item.iconColor
-                    }`} />
-                    {item.name}
-                  </button>
-                ))}
+                {settingsNavItems.map((item) => {
+                  const isInvitations = item.id === 'invitations'
+                  const isDisabled = isInvitations && !isAdmin
+                  const isActive = activeTab === item.id
+                  const baseClass = isDisabled
+                    ? 'text-gray-400 cursor-not-allowed bg-gray-50'
+                    : isActive
+                      ? 'bg-black text-white shadow-sm'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  const iconClass = isDisabled ? 'text-gray-300' : (isActive ? 'text-white' : item.iconColor)
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => { if (!isDisabled) router.push(`/settings?tab=${item.id}`) }}
+                      aria-disabled={isDisabled}
+                      className={`w-full flex items-center justify-start px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${baseClass}`}
+                    >
+                      <item.icon className={`mr-3 w-4 h-4 ${iconClass}`} />
+                      {item.name}{isDisabled && '（开发中）'}
+                    </button>
+                  )
+                })}
               </div>
             </aside>
 
