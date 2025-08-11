@@ -11,7 +11,7 @@ from fastapi import APIRouter, HTTPException, Depends, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import RedirectResponse, JSONResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import text, desc
+from sqlalchemy import text, desc, func
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 from slowapi import Limiter
@@ -46,6 +46,22 @@ limiter = Limiter(key_func=get_remote_address)
 
 
 # ... (existing admin endpoints remain unchanged)
+
+@router.get("/debug/check-email")
+async def debug_check_email(email: str, db: Session = Depends(get_db)):
+    """
+    只读调试端点：检查邮箱在 users 与 login_tokens 表中的命中情况
+    返回 { in_users, in_login_tokens, last_token_at }
+    """
+    email_norm = email.strip().lower()
+    in_users = db.query(User).filter(func.lower(User.email) == email_norm).first() is not None
+    latest = db.query(LoginToken).filter(func.lower(LoginToken.email) == email_norm).order_by(desc(LoginToken.created_at)).first()
+    return {
+        "email": email_norm,
+        "in_users": in_users,
+        "in_login_tokens": latest is not None,
+        "last_token_at": latest.created_at.isoformat() if latest and getattr(latest, 'created_at', None) else None,
+    }
 @router.post("/admin-verify")
 async def admin_verify_direct(request: dict, db: Session = Depends(get_db)):
     """
@@ -640,8 +656,14 @@ async def initiate_login(request: Request, data: InitiateLoginRequest, db: Sessi
     """
     发起邮箱验证码登录流程，支持新用户邀请码验证。
     """
-    # 1. 检查用户是否存在
-    existing_user = db.query(User).filter(User.email == data.email).first()
+    # 1. 规范化邮箱并检查用户是否存在
+    email_normalized = data.email.strip().lower()
+    existing_user = db.query(User).filter(func.lower(User.email) == email_normalized).first()
+    if not existing_user:
+        # 兼容早期数据：若 login_tokens 曾出现该邮箱，按老用户放行
+        token_hist = db.query(LoginToken).filter(func.lower(LoginToken.email) == email_normalized).order_by(desc(LoginToken.created_at)).first()
+        if token_hist:
+            existing_user = True
     
     if existing_user:
         # 老用户：忽略邀请码，直接发送验证码
@@ -696,7 +718,7 @@ async def initiate_login(request: Request, data: InitiateLoginRequest, db: Sessi
     try:
         # 尝试创建包含invitation_code的记录
         login_token = LoginToken(
-            email=data.email,
+            email=email_normalized,
             code_hash=code_hash,
             magic_token=magic_token,
             invitation_code=(data.invitation_code or data.referral_code),  # 兼容存储
@@ -714,7 +736,7 @@ async def initiate_login(request: Request, data: InitiateLoginRequest, db: Sessi
             # 临时存储邀请码到其他地方（比如缓存或session）
             # 这里我们暂时不支持邀请码功能，直接创建不包含邀请码的记录
             login_token = LoginToken(
-                email=data.email,
+                email=email_normalized,
                 code_hash=code_hash,
                 magic_token=magic_token,
                 inviter_user_id=inviter_user_id_to_store,
