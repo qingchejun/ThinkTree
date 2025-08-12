@@ -727,10 +727,11 @@ async def initiate_login(request: Request, data: InitiateLoginRequest, db: Sessi
             except Exception:
                 inviter_user_id_to_store = None
                 code_in = ""
-        # 基础格式校验（仅允许大写字母与数字，长度8）
+        # 基础格式校验：仅在提供了邀请码时校验
         import re
-        if not re.fullmatch(r"[A-Z0-9]{6,16}", code_in):
-            raise HTTPException(status_code=400, detail="邀请码格式不正确")
+        if code_in:
+            if not re.fullmatch(r"[A-Z0-9]{6,16}", code_in):
+                raise HTTPException(status_code=400, detail="邀请码格式不正确")
         # 先尝试在用户固定推荐码上匹配
         inviter = db.query(User).filter(User.referral_code == code_in).first()
         if inviter:
