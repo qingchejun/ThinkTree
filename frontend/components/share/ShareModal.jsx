@@ -98,7 +98,7 @@ export default function ShareModal({ isOpen, onClose, mindmapId, mindmapTitle })
     } catch (err) {
       console.error('创建分享链接失败:', err)
       setError(err.message)
-      ToastManager.error(err.message || '创建分享链接失败', 4000)
+      ToastManager.apiError(err)
     } finally {
       setLoading(false)
     }
@@ -137,7 +137,7 @@ export default function ShareModal({ isOpen, onClose, mindmapId, mindmapTitle })
     } catch (err) {
       console.error('禁用分享失败:', err)
       setError(err.message)
-      ToastManager.error(err.message || '禁用分享失败', 4000)
+      ToastManager.apiError(err)
     } finally {
       setLoading(false)
     }
@@ -171,7 +171,7 @@ export default function ShareModal({ isOpen, onClose, mindmapId, mindmapTitle })
     } catch (err) {
       console.error('复制失败:', err)
       setError('复制失败，请手动复制')
-      ToastManager.error('复制失败，请手动复制', 3000)
+      ToastManager.error('复制失败，请手动复制', 2000)
     }
   }
 

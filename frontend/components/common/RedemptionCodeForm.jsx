@@ -1,12 +1,14 @@
 'use client';
 import { useState, useContext } from 'react';
 import AuthContext from '@/context/AuthContext';
+import { useToast } from '@/hooks/useToast';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
 
 const RedemptionCodeForm = ({ onRedemptionSuccess, onRedemptionError }) => {
   const { user } = useContext(AuthContext);
+  const toast = useToast();
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -21,10 +23,7 @@ const RedemptionCodeForm = ({ onRedemptionSuccess, onRedemptionError }) => {
     setIsLoading(true);
     
     try {
-      if (!user) {
-        onRedemptionError('请先登录');
-        return;
-      }
+      if (!user) { onRedemptionError('请先登录'); return; }
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/codes/redeem`, {
         method: 'POST',
@@ -40,12 +39,16 @@ const RedemptionCodeForm = ({ onRedemptionSuccess, onRedemptionError }) => {
       if (response.ok && data.success) {
         setCode(''); // 清空输入框
         onRedemptionSuccess(data.message, data.credits_gained, data.current_balance);
+        toast?.success('兑换成功');
       } else {
-        onRedemptionError(data.detail || data.message || '兑换失败');
+        const msg = data.detail || data.message || '兑换失败';
+        onRedemptionError(msg);
+        toast?.error(msg);
       }
     } catch (error) {
       console.error('兑换码请求失败:', error);
       onRedemptionError('网络错误，请稍后重试');
+      toast?.networkError();
     } finally {
       setIsLoading(false);
     }
