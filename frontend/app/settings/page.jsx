@@ -618,6 +618,7 @@ const SettingsContent = () => {
         onClose={() => setIsAvatarSelectorOpen(false)}
         onSelect={handleAvatarSelect}
         currentAvatar={tempAvatar}
+        user={user}
       />
     </div>
   );

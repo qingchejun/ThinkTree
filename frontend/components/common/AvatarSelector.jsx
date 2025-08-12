@@ -10,11 +10,19 @@ import { CircleUser, CircleUserRound, User, UserRound } from 'lucide-react';
 
 const AVATAR_OPTIONS = [
   { 
-    id: 'default', 
+    id: 'geo:default', 
     icon: CircleUser, 
-    name: '默认头像', 
+    name: '几何头像（默认）', 
     color: '#6b7280',
     bgColor: '#f3f4f6'
+  },
+  // 渐变字母（B 方案）
+  {
+    id: 'mono:TT',
+    icon: UserRound,
+    name: '字母头像（TT 示例）',
+    color: '#111827',
+    bgColor: '#e5e7eb'
   },
   { 
     id: 'female1', 
@@ -46,7 +54,7 @@ const AVATAR_OPTIONS = [
   }
 ];
 
-export default function AvatarSelector({ isOpen, onClose, onSelect, currentAvatar }) {
+export default function AvatarSelector({ isOpen, onClose, onSelect, currentAvatar, user }) {
   const [selectedAvatar, setSelectedAvatar] = useState(currentAvatar || 'default');
 
   useEffect(() => {
@@ -58,11 +66,20 @@ export default function AvatarSelector({ isOpen, onClose, onSelect, currentAvata
   };
 
   const handleConfirm = () => {
-    const selectedOption = AVATAR_OPTIONS.find(option => option.id === selectedAvatar);
-    if (selectedOption) {
-      // 不再直接保存到本地存储，让父组件处理
-      onSelect(selectedOption);
+    let finalId = selectedAvatar;
+    // 对于默认几何头像，用用户的唯一信息作为种子
+    if (selectedAvatar.startsWith('geo:')) {
+      const seed = (user?.id || user?.email || 'thinkso').toString();
+      finalId = `geo:${seed}`;
     }
+    // 对于字母头像，优先显示名缩写/邮箱前缀
+    if (selectedAvatar.startsWith('mono:')) {
+      const base = (user?.display_name || user?.displayName || user?.name || (user?.email ? user.email.split('@')[0] : 'TT')).toString();
+      const letters = base.trim().slice(0, 2).toUpperCase() || 'TT';
+      finalId = `mono:${letters}`;
+    }
+    const selectedOption = AVATAR_OPTIONS.find(option => option.id === selectedAvatar) || { id: finalId };
+    onSelect({ ...selectedOption, id: finalId });
     onClose();
   };
 
@@ -82,7 +99,7 @@ export default function AvatarSelector({ isOpen, onClose, onSelect, currentAvata
           <p className="text-gray-600 text-sm">选择一个你喜欢的头像</p>
         </div>
 
-        {/* 头像网格 */}
+        {/* 头像网格（第一行：方案A/B） */}
         <div className="grid grid-cols-3 gap-4 mb-6">
           {AVATAR_OPTIONS.map((avatar) => {
             const IconComponent = avatar.icon;
@@ -97,11 +114,7 @@ export default function AvatarSelector({ isOpen, onClose, onSelect, currentAvata
                   }`}
                   style={{ backgroundColor: avatar.bgColor }}
                 >
-                  <IconComponent 
-                    size={40} 
-                    color={avatar.color}
-                    strokeWidth={1.5}
-                  />
+                  <IconComponent size={40} color={avatar.color} strokeWidth={1.5} />
                   {selectedAvatar === avatar.id && (
                     <div className="absolute inset-0 bg-blue-500 bg-opacity-20 rounded-full flex items-center justify-center">
                       <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
@@ -117,6 +130,7 @@ export default function AvatarSelector({ isOpen, onClose, onSelect, currentAvata
             );
           })}
         </div>
+        <p className="text-xs text-gray-500 mb-4">提示：默认选择“几何头像（默认）”，将基于你的账户信息自动生成独一无二的几何头像；字母头像将使用你的姓名或邮箱前缀生成。</p>
 
         {/* 操作按钮 */}
         <div className="flex space-x-3">
