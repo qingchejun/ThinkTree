@@ -2,6 +2,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core import register_exception_handlers
+from app.core.config import settings
 
 app = FastAPI(
     title="ThinkSo API",
@@ -12,17 +13,21 @@ app = FastAPI(
 # 注册全局异常处理系统
 register_exception_handlers(app)
 
-# CORS 中间件配置
+# CORS 中间件配置（读取配置文件/环境变量）
+_origins = settings.allowed_origins or [
+    "https://thinkso.io",
+    "https://www.thinkso.io",
+    "http://localhost:3000",
+]
+
+print("[CORS] allow_origins:", _origins)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://thinkso.io",
-        "https://www.thinkso.io",
-        "http://localhost:3000",  # 本地开发环境的前端端口号
-    ],
+    allow_origins=_origins,
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"]
+    allow_headers=["*"],
 )
 
 # 健康检查接口
