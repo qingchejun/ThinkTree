@@ -5,6 +5,7 @@
 
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
+import { ToastManager } from './Toast'
 
 export function DailyRewardToast() {
   const { showDailyRewardToast, setShowDailyRewardToast } = useAuth()
@@ -27,31 +28,21 @@ export function DailyRewardToast() {
     }
   }, [])
 
-  if (!showDailyRewardToast || !isClient) {
-    return null
-  }
+  // 如果关闭展示开关，直接不显示
+  if (!isClient) return null
+  if (!showDailyRewardToast) return null
 
-  return (
-    <div className="fixed top-4 right-4 z-50 animate-slide-in">
-      <div className="bg-green-500 text-white px-6 py-4 rounded-lg shadow-lg border border-green-600 max-w-sm">
-        <div className="flex items-center space-x-3">
-          <div className="text-2xl">🎉</div>
-          <div>
-            <div className="font-semibold">每日登录奖励</div>
-            <div className="text-sm opacity-90">+10 积分！</div>
-          </div>
-          <button
-            onClick={() => setShowDailyRewardToast(false)}
-            className="text-white hover:text-gray-200 transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-      </div>
-    </div>
-  )
+  // 收敛为全局 Toast 的一次性提示（轻量），并触发积分角标闪现事件
+  try {
+    ToastManager.success('每日登录奖励 +10', 1200)
+  } catch {}
+  // 触发全局事件让 Navbar 的积分角标做闪现动画（可选监听）
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('credits:delta', { detail: { delta: +10, source: 'daily-reward' } }))
+  }
+  // 只显示一次
+  setTimeout(() => setShowDailyRewardToast(false), 0)
+  return null
 }
 
 // 添加动画样式

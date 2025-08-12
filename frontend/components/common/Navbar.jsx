@@ -31,6 +31,26 @@ const Navbar = () => {
     if (user) {
       setCurrentAvatar(getCurrentAvatar());
     }
+    // 监听积分变化事件，实现角标闪现动画
+    const onCreditsDelta = (e) => {
+      const el = document.getElementById('credits-counter')
+      if (!el) return
+      const bubble = document.createElement('span')
+      bubble.textContent = (e.detail?.delta > 0 ? '+' : '') + String(e.detail?.delta || '')
+      bubble.className = 'absolute -top-2 right-8 text-emerald-600 text-xs font-semibold animate-[toastfloat_1s_ease-out]' // 临时关键帧名
+      // 注入关键帧（一次性）
+      const id = 'keyframes-toastfloat'
+      if (!document.getElementById(id)) {
+        const style = document.createElement('style')
+        style.id = id
+        style.textContent = '@keyframes toastfloat{0%{transform:translateY(0);opacity:1}100%{transform:translateY(-14px);opacity:0}}'
+        document.head.appendChild(style)
+      }
+      el.parentElement?.appendChild(bubble)
+      setTimeout(() => bubble.remove(), 1000)
+    }
+    window.addEventListener('credits:delta', onCreditsDelta)
+    return () => window.removeEventListener('credits:delta', onCreditsDelta)
   }, [user]);
 
   useEffect(() => {
@@ -123,10 +143,10 @@ const Navbar = () => {
           <div className="relative" ref={menuRef}>
             <button 
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="flex items-center space-x-2 bg-gray-100 hover:bg-gray-200 p-1 rounded-full transition-colors"
+              className="flex items-center space-x-2 bg-gray-100 hover:bg-gray-200 p-1 rounded-full transition-colors relative"
             >
               <Zap className="w-4 h-4 text-yellow-500 ml-2" />
-              <span className="font-semibold text-gray-800 px-2">{credits}</span>
+              <span className="font-semibold text-gray-800 px-2" id="credits-counter">{credits}</span>
               <AvatarDisplay 
                 avatarId={currentAvatar}
                 size={32}
