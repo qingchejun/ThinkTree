@@ -45,8 +45,8 @@ const SettingsContent = () => {
   const [toast, setToast] = useState(null);
   const [displayName, setDisplayName] = useState('');
   const [isAvatarSelectorOpen, setIsAvatarSelectorOpen] = useState(false);
-  const [currentAvatar, setCurrentAvatar] = useState('default');
-  const [tempAvatar, setTempAvatar] = useState('default'); // 临时头像选择
+  const [currentAvatar, setCurrentAvatar] = useState('blob:default');
+  const [tempAvatar, setTempAvatar] = useState('blob:default'); // 临时头像选择
   const [isClient, setIsClient] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
@@ -82,8 +82,9 @@ const SettingsContent = () => {
   useEffect(() => {
     if (!isClient) return;
     const savedAvatar = getCurrentAvatar();
-    setCurrentAvatar(savedAvatar);
-    setTempAvatar(savedAvatar);
+    const fallback = 'blob:default';
+    setCurrentAvatar(savedAvatar || fallback);
+    setTempAvatar(savedAvatar || fallback);
   }, [isClient]);
 
   // 处理头像选择（仅临时选择，不立即生效）

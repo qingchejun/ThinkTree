@@ -9,37 +9,29 @@ import { useState, useEffect } from 'react';
 import { CircleUser, CircleUserRound, User, UserRound } from 'lucide-react';
 
 const AVATAR_OPTIONS = [
-  { 
-    id: 'geo:default', 
-    icon: CircleUser, 
-    name: '几何头像（默认）', 
-    color: '#6b7280',
-    bgColor: '#f3f4f6'
-  },
-  // 渐变字母（B 方案）
-  {
-    id: 'mono:TT',
-    icon: UserRound,
-    name: '字母头像（TT 示例）',
-    color: '#111827',
-    bgColor: '#e5e7eb'
-  },
-  // 流体头像（C 方案）
+  // 流体头像（默认）
   {
     id: 'blob:default',
     icon: CircleUserRound,
-    name: '流体头像（Blob）',
+    name: '流体头像（默认）',
     color: '#0ea5e9',
     bgColor: '#ecfeff'
   },
-  // 以下旧图标方案暂时下线，保留两项即可（A/B）
+  // 渐变字母
+  {
+    id: 'mono:TT',
+    icon: UserRound,
+    name: '字母头像',
+    color: '#111827',
+    bgColor: '#e5e7eb'
+  },
 ];
 
 export default function AvatarSelector({ isOpen, onClose, onSelect, currentAvatar, user }) {
-  const [selectedAvatar, setSelectedAvatar] = useState(currentAvatar || 'default');
+  const [selectedAvatar, setSelectedAvatar] = useState(currentAvatar || 'blob:default');
 
   useEffect(() => {
-    setSelectedAvatar(currentAvatar || 'default');
+    setSelectedAvatar(currentAvatar || 'blob:default');
   }, [currentAvatar, isOpen]);
 
   const handleSelect = (avatarId) => {
@@ -48,11 +40,6 @@ export default function AvatarSelector({ isOpen, onClose, onSelect, currentAvata
 
   const handleConfirm = () => {
     let finalId = selectedAvatar;
-    // 对于默认几何头像，用用户的唯一信息作为种子
-    if (selectedAvatar.startsWith('geo:')) {
-      const seed = (user?.id || user?.email || 'thinkso').toString();
-      finalId = `geo:${seed}`;
-    }
     // 对于流体头像，使用同样的稳定种子
     if (selectedAvatar.startsWith('blob:')) {
       const seed = (user?.id || user?.email || 'thinkso').toString();
@@ -70,7 +57,7 @@ export default function AvatarSelector({ isOpen, onClose, onSelect, currentAvata
   };
 
   const handleCancel = () => {
-    setSelectedAvatar(currentAvatar || 'default');
+    setSelectedAvatar(currentAvatar || 'blob:default');
     onClose();
   };
 
@@ -116,7 +103,7 @@ export default function AvatarSelector({ isOpen, onClose, onSelect, currentAvata
             );
           })}
         </div>
-        <p className="text-xs text-gray-500 mb-4">提示：默认选择“几何头像（默认）”，将基于你的账户信息自动生成独一无二的几何头像；字母头像将使用你的姓名或邮箱前缀生成。</p>
+        <p className="text-xs text-gray-500 mb-4">提示：默认选择“流体头像”，将基于你的账户信息自动生成稳定的图形；字母头像将使用你的姓名或邮箱前缀生成。</p>
 
         {/* 操作按钮 */}
         <div className="flex space-x-3">
@@ -141,9 +128,9 @@ export default function AvatarSelector({ isOpen, onClose, onSelect, currentAvata
 // 工具函数：获取用户当前头像
 export function getCurrentAvatar() {
   if (typeof window !== 'undefined') {
-    return localStorage.getItem('userAvatar') || 'default';
+    return localStorage.getItem('userAvatar') || 'blob:default';
   }
-  return 'default';
+  return 'blob:default';
 }
 
 // 工具函数：根据头像ID获取头像配置

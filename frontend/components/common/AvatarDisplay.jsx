@@ -138,7 +138,7 @@ function MonogramAvatar({ letters, size, showBorder, className }) {
 }
 
 export default function AvatarDisplay({
-  avatarId = 'default',
+  avatarId = 'blob:default',
   size = 40,
   className = '',
   showBorder = true,
