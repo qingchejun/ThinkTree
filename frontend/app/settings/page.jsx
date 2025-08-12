@@ -1,5 +1,5 @@
 'use client';
-import { useState, useContext, useEffect, Suspense } from 'react';
+import { useState, useContext, useEffect, Suspense, useRef, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AuthContext from '@/context/AuthContext';
 
@@ -67,6 +67,9 @@ const SettingsContent = () => {
     has_prev: false
   });
   const [currentBalance, setCurrentBalance] = useState(0);
+  // 计费筛选
+  const [historyRange, setHistoryRange] = useState('ALL'); // ALL|7|30
+  const [typeFilters, setTypeFilters] = useState(new Set()); // e.g., INVITE/REDEEM/DEDUCTION/REFUND/DAILY_REWARD
   
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
@@ -111,6 +114,9 @@ const SettingsContent = () => {
   // 共享：邀请链接复制/分享的就地微反馈
   const [linkCopied, setLinkCopied] = useState(false);
   const [linkShared, setLinkShared] = useState(false);
+  const [showQR, setShowQR] = useState(false);
+  const qrCanvasRef = useRef(null);
+  const [qrBusy, setQrBusy] = useState(false);
   const handleCopyLink = async (referralLink) => {
     try {
       await navigator.clipboard.writeText(referralLink);
@@ -135,6 +141,84 @@ const SettingsContent = () => {
       // 用户取消不提示；其余错误提示
       if (e && e.name !== 'AbortError') toastApi.error('分享失败');
     }
+  };
+
+  // 生成二维码（展开时异步渲染）
+  useEffect(() => {
+    (async () => {
+      if (!showQR) return; 
+      if (!referralLink?.referral_link) return;
+      if (!qrCanvasRef.current) return;
+      try {
+        setQrBusy(true);
+        const QRCode = (await import('qrcode')).default;
+        await QRCode.toCanvas(qrCanvasRef.current, referralLink.referral_link, { width: 184, margin: 2 });
+      } catch (e) {
+        toastApi.error('二维码生成失败');
+      } finally {
+        setQrBusy(false);
+      }
+    })();
+  }, [showQR, referralLink]);
+
+  const downloadQR = () => {
+    try {
+      const canvas = qrCanvasRef.current;
+      if (!canvas) return;
+      const url = canvas.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'thinkso_invite.png';
+      a.click();
+    } catch {}
+  };
+
+  // 历史类型归一
+  const getTypeKey = (item) => {
+    const summary = (item.summary || '').toLowerCase();
+    const t = (item.transaction_type || item.type || '').toUpperCase();
+    if (summary.includes('邀请')) return 'INVITE';
+    if (summary.includes('兑换码')) return 'REDEEM';
+    if (summary.includes('退款')) return 'REFUND';
+    if (summary.includes('每日')) return 'DAILY_REWARD';
+    if (t === 'DEDUCTION' || summary.includes('扣除')) return 'DEDUCTION';
+    return 'GRANT';
+  };
+
+  // 过滤后的历史
+  const displayHistory = useMemo(() => {
+    const now = Date.now();
+    const inRange = (ts) => {
+      if (historyRange === 'ALL') return true;
+      const days = historyRange === '7' ? 7 : 30;
+      return (now - new Date(ts).getTime()) <= days * 24 * 60 * 60 * 1000;
+    };
+    const typeOk = (it) => (typeFilters.size === 0 ? true : typeFilters.has(getTypeKey(it)));
+    return (creditHistory || []).filter((it) => inRange(it.created_at) && typeOk(it));
+  }, [creditHistory, historyRange, typeFilters]);
+
+  const toggleType = (key) => {
+    setTypeFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  };
+
+  const exportCSV = () => {
+    const headers = ['id','summary','type','amount','created_at'];
+    const lines = [headers.join(',')];
+    displayHistory.forEach((it) => {
+      const row = [it.id, (it.summary || formatTransactionSummary(it)).replace(/,/g,' '), (it.transaction_type || it.type), it.amount, it.created_at];
+      lines.push(row.join(','));
+    });
+    const blob = new Blob(["\ufeff" + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `credits_${Date.now()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
   
   // 格式化交易类型显示文本
@@ -499,7 +583,19 @@ const SettingsContent = () => {
                               <Share2 className={`w-4 h-4 ${linkShared ? 'text-blue-600' : 'text-gray-700'}`} />
                             </button>
                           </div>
-                        <div className="text-xs text-gray-500 mt-2">已邀请 {referralStats?.invited_count ?? referralLink?.invited_count ?? 0}/{referralStats?.limit ?? referralLink?.limit ?? 10}</div>
+                          <div className="text-xs text-gray-500 mt-2">已邀请 {referralStats?.invited_count ?? referralLink?.invited_count ?? 0}/{referralStats?.limit ?? referralLink?.limit ?? 10}</div>
+                          <div className="mt-3">
+                            <button onClick={() => setShowQR(!showQR)} className="text-xs px-2 py-1 border rounded-lg text-gray-700 bg-white hover:bg-gray-50">{showQR ? '隐藏二维码' : '显示二维码'}</button>
+                            {showQR && (
+                              <div className="mt-3 p-3 border rounded-lg inline-flex flex-col items-center bg-white">
+                                <canvas ref={qrCanvasRef} width={184} height={184} className="rounded"/>
+                                <div className="mt-2 flex items-center gap-2">
+                                  <span className="text-xs text-gray-500">扫码或保存图片</span>
+                                  <button onClick={downloadQR} className="text-xs px-2 py-1 border rounded-lg hover:bg-gray-50">保存PNG</button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                       </div>
 
 
@@ -612,15 +708,40 @@ const SettingsContent = () => {
                         <div>
                           <div className="flex items-center justify-between mb-4">
                             <h3 className="text-lg font-medium text-gray-900">积分历史</h3>
-                            <button onClick={() => loadCreditHistory(1, false)} className="inline-flex items-center px-2.5 py-1.5 text-xs border rounded-lg text-gray-700 bg-white hover:bg-gray-50">
-                              <RefreshCcw className="w-3.5 h-3.5 mr-1"/> 重新加载
-                            </button>
+                            <div className="flex items-center gap-2">
+                              {isAdmin && (
+                                <button onClick={exportCSV} className="inline-flex items-center px-2.5 py-1.5 text-xs border rounded-lg text-gray-700 bg-white hover:bg-gray-50">导出 CSV</button>
+                              )}
+                              <button onClick={() => loadCreditHistory(1, false)} className="inline-flex items-center px-2.5 py-1.5 text-xs border rounded-lg text-gray-700 bg-white hover:bg-gray-50">
+                                <RefreshCcw className="w-3.5 h-3.5 mr-1"/> 重新加载
+                              </button>
+                            </div>
+                          </div>
+                          {/* 筛选条 */}
+                          <div className="flex flex-wrap items-center gap-2 mb-3 text-xs">
+                            <span className="text-gray-500">时间:</span>
+                            {['ALL','7','30'].map(v => (
+                              <button key={v} onClick={() => setHistoryRange(v)} className={`px-2 py-1 rounded-full border ${historyRange===v?'bg-black text-white border-black':'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}>{v==='ALL'?'全部':`${v}天`}</button>
+                            ))}
+                            <span className="ml-3 text-gray-500">类型:</span>
+                            {['INVITE','REDEEM','DAILY_REWARD','DEDUCTION','REFUND','GRANT'].map(k => (
+                              <button key={k} onClick={() => toggleType(k)} className={`px-2 py-1 rounded-full border ${typeFilters.has(k)?'bg-black text-white border-black':'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}>{
+                                {INVITE:'邀请',REDEEM:'兑换码',DAILY_REWARD:'每日登录',DEDUCTION:'扣除',REFUND:'退款',GRANT:'奖励'}[k]
+                              }</button>
+                            ))}
                           </div>
                           {creditLoading && !creditHistory.length ? (
-                            <p className="text-gray-600">加载中...</p>
+                            <div className="space-y-3">
+                              {Array.from({length:8}).map((_,i)=> (
+                                <div key={i} className="p-4 rounded-lg border border-gray-200 bg-gray-50 animate-pulse">
+                                  <div className="h-4 bg-gray-200 rounded w-1/3 mb-2"/>
+                                  <div className="h-3 bg-gray-200 rounded w-1/4"/>
+                                </div>
+                              ))}
+                            </div>
                           ) : creditHistory.length > 0 ? (
                             <div className="space-y-3">
-                              {creditHistory.map((item) => (
+                              {displayHistory.map((item) => (
                                 <div key={item.id} className="flex items-center p-4 bg-gray-50 rounded-lg border border-gray-200">
                                   <div className="flex-1">
                                     <p className="font-semibold text-gray-900">{item.summary || formatTransactionSummary(item)}</p>
