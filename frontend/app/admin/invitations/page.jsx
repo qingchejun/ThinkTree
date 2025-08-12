@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useContext } from 'react';
+import { ToastManager } from '../../../components/common/Toast';
 import { useRouter } from 'next/navigation';
 import AuthContext from '../../../context/AuthContext';
 
@@ -67,8 +68,8 @@ const AdminInvitations = () => {
       }
     } catch (err) {
       console.error('获取邀请码列表失败:', err);
-      setError(err.message);
-      setError(`获取邀请码列表失败: ${err.message}`);
+      setError(null);
+      ToastManager.error(`获取邀请码列表失败：${err.message}`, 4000);
     } finally {
       setLoading(false);
     }
@@ -89,8 +90,8 @@ const AdminInvitations = () => {
 
       if (response.ok) {
         const data = await response.json();
-        setSuccessMessage(data.message);
-        setTimeout(() => setSuccessMessage(null), 3000);
+        setSuccessMessage(data.message || '已生成');
+        setTimeout(() => setSuccessMessage(null), 1200);
         setShowCreateModal(false);
         setCreateCount(5);
         setCreateDescription('');
@@ -103,7 +104,7 @@ const AdminInvitations = () => {
       }
     } catch (err) {
       console.error('创建邀请码失败:', err);
-      setError(`创建邀请码失败: ${err.message}`);
+      ToastManager.error(`创建邀请码失败：${err.message}`, 4000);
     } finally {
       setCreating(false);
     }
@@ -251,19 +252,7 @@ const AdminInvitations = () => {
             </div>
           )}
 
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-              <div className="text-red-500 text-4xl mb-4">❌</div>
-              <h3 className="text-lg font-semibold text-red-900 mb-2">加载失败</h3>
-              <p className="text-red-700 mb-4">{error}</p>
-              <button
-                onClick={() => fetchInvitations(currentPage, statusFilter)}
-                className="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700"
-              >
-                重新加载
-              </button>
-            </div>
-          )}
+          {/* 错误提示统一走全局 Toast，这里去除红块 */}
 
           {!loading && !error && (
             <>
@@ -392,6 +381,11 @@ const AdminInvitations = () => {
             </>
           )}
         </div>
+        {successMessage && (
+          <div className="fixed right-4 top-16 sm:top-4 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-md px-3 py-2 shadow-sm">
+            {successMessage || '操作成功'}
+          </div>
+        )}
 
         {/* 创建邀请码模态框 */}
         {showCreateModal && (

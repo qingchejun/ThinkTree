@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useContext } from 'react';
+import { ToastManager } from '../../../components/common/Toast';
 import { useRouter } from 'next/navigation';
 import AuthContext from '../../../context/AuthContext';
 
@@ -68,8 +69,8 @@ const AdminUsers = () => {
       }
     } catch (err) {
       console.error('获取用户列表失败:', err);
-      setError(err.message);
-      setError(`获取用户列表失败: ${err.message}`);
+      setError(null);
+      ToastManager.error(`获取用户列表失败：${err.message}`, 4000);
     } finally {
       setLoading(false);
     }
@@ -90,8 +91,8 @@ const AdminUsers = () => {
 
       if (response.ok) {
         const data = await response.json();
-        setSuccessMessage(data.message);
-        setTimeout(() => setSuccessMessage(null), 3000);
+        setSuccessMessage(data.message || '已更新');
+        setTimeout(() => setSuccessMessage(null), 1200);
         // 重新获取用户列表
         fetchUsers(currentPage, searchTerm, statusFilter);
       } else {
@@ -100,7 +101,7 @@ const AdminUsers = () => {
       }
     } catch (err) {
       console.error('更新用户失败:', err);
-      setError(`更新用户失败: ${err.message}`);
+      ToastManager.error(`更新用户失败：${err.message}`, 4000);
     } finally {
       setUpdatingUser(null);
     }
@@ -124,8 +125,8 @@ const AdminUsers = () => {
 
       if (response.ok) {
         const data = await response.json();
-        setSuccessMessage(data.message);
-        setTimeout(() => setSuccessMessage(null), 3000);
+        setSuccessMessage(data.message || '已删除');
+        setTimeout(() => setSuccessMessage(null), 1200);
         // 重新获取用户列表
         fetchUsers(currentPage, searchTerm, statusFilter);
       } else {
@@ -134,7 +135,7 @@ const AdminUsers = () => {
       }
     } catch (err) {
       console.error('删除用户失败:', err);
-      setError(`删除用户失败: ${err.message}`);
+      ToastManager.error(`删除用户失败：${err.message}`, 4000);
     } finally {
       setUpdatingUser(null);
     }
@@ -196,11 +197,11 @@ const AdminUsers = () => {
         setResetPasswordModal({ show: false, user: null, mode: null });
         setNewPassword('');
       } else {
-        alert(data.detail || '重置密码失败');
+        ToastManager.error(data.detail || '重置密码失败', 4000);
       }
     } catch (error) {
       console.error('重置密码失败:', error);
-      alert('重置密码失败，请稍后重试');
+      ToastManager.error('重置密码失败，请稍后重试', 4000);
     } finally {
       setUpdatingUser(null);
     }
@@ -236,11 +237,11 @@ const AdminUsers = () => {
         setSuccessMessage('临时密码生成成功');
         setTimeout(() => setSuccessMessage(null), 3000);
       } else {
-        setError(data.detail || '生成临时密码失败');
+        ToastManager.error(data.detail || '生成临时密码失败', 4000);
       }
     } catch (error) {
       console.error('生成临时密码失败:', error);
-      setError('生成临时密码失败，请稍后重试');
+      ToastManager.error('生成临时密码失败，请稍后重试', 4000);
     } finally {
       setUpdatingUser(null);
     }
@@ -394,19 +395,7 @@ const AdminUsers = () => {
             </div>
           )}
 
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-              <div className="text-red-500 text-4xl mb-4">❌</div>
-              <h3 className="text-lg font-semibold text-red-900 mb-2">加载失败</h3>
-              <p className="text-red-700 mb-4">{error}</p>
-              <button
-                onClick={() => fetchUsers(currentPage, searchTerm, statusFilter)}
-                className="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700"
-              >
-                重新加载
-              </button>
-            </div>
-          )}
+          {/* 错误提示统一由全局 Toast 承担，这里不再渲染红块 */}
 
           {!loading && !error && (
             <>
@@ -604,6 +593,12 @@ const AdminUsers = () => {
             </>
           )}
         </div>
+        {/* 轻量成功提示：右上角小条，1200ms 自动消失 */}
+        {successMessage && (
+          <div className="fixed right-4 top-16 sm:top-4 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-md px-3 py-2 shadow-sm">
+            {successMessage || '操作成功'}
+          </div>
+        )}
       </div>
 
       {/* 重置密码模态框 */}
