@@ -23,6 +23,7 @@
 'use client';
 
 import React, { useState, useContext, useRef, useEffect } from 'react';
+import { useToast } from '../hooks/useToast';
 import { useRouter } from 'next/navigation';
 import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 import AuthContext from '../context/AuthContext'; 
@@ -42,6 +43,7 @@ const LoginModal = ({ isOpen, onClose, initialInvitationCode, autoOpenRegister }
   const [isClient, setIsClient] = useState(false);
   
   const { login } = useContext(AuthContext);
+  const toast = useToast();
   const router = useRouter();
   const { executeRecaptcha } = useGoogleReCaptcha();
 
@@ -149,17 +151,21 @@ const LoginModal = ({ isOpen, onClose, initialInvitationCode, autoOpenRegister }
         try {
           const errorData = await response.json();
           setError(errorData.detail || '发送验证码失败，请稍后重试');
+          toast?.error(errorData.detail || '发送验证码失败');
         } catch (e) {
           // 如果无法解析错误响应，显示HTTP状态
           setError(`请求失败 (${response.status})，请稍后重试`);
+          toast?.error(`请求失败 (${response.status})`);
         }
       }
     } catch (error) {
       console.error('发送验证码失败:', error);
       if (error.name === 'TypeError' && error.message.includes('fetch')) {
         setError('无法连接到服务器，请检查网络连接');
+        toast?.error('网络错误，请检查连接');
       } else {
         setError('网络错误，请稍后重试');
+        toast?.error('网络错误，请稍后重试');
       }
     } finally {
       setIsEmailLoading(false);
@@ -242,8 +248,10 @@ const LoginModal = ({ isOpen, onClose, initialInvitationCode, autoOpenRegister }
         try {
           const errorData = await response.json();
           setError(errorData.detail || '验证码不正确，请重试');
+          toast?.error(errorData.detail || '验证码不正确');
         } catch (e) {
           setError(`验证失败 (${response.status})，请重试`);
+          toast?.error(`验证失败 (${response.status})`);
         }
         setCode(new Array(6).fill("")); // 清空验证码
         inputRefs.current[0]?.focus();
@@ -252,8 +260,10 @@ const LoginModal = ({ isOpen, onClose, initialInvitationCode, autoOpenRegister }
       console.error('验证失败:', error);
       if (error.name === 'TypeError' && error.message.includes('fetch')) {
         setError('无法连接到服务器，请检查网络连接');
+        toast?.error('网络错误，请检查连接');
       } else {
         setError('网络错误，请重试');
+        toast?.error('网络错误，请重试');
       }
       setCode(new Array(6).fill("")); // 清空验证码
       inputRefs.current[0]?.focus();
