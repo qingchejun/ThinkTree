@@ -400,7 +400,7 @@ export default function MindmapsPage() {
 
   // 创建新思维导图
   const handleCreateNew = () => {
-    router.push('/create')
+    router.push('/new')
   }
 
   // 搜索逻辑

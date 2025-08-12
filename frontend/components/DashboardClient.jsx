@@ -353,7 +353,7 @@ const RecentProjects = React.memo(({ mindmaps, onCardClick, onCreateNew, loading
     };
 
     const handleCreateNew = () => {
-      router.push('/create');
+      router.push('/new');
     };
 
     const handleView = (e, id) => {
@@ -807,7 +807,7 @@ const DashboardClient = ({ initialData }) => {
       <div className="min-h-screen bg-gray-50">
         <main className="container mx-auto px-6 py-8">
           <CreationPanel onCreate={handleCreateMindMap} loading={createMindMapLoading} />
-          <RecentProjects mindmaps={projects} onCardClick={(id) => router.push(`/mindmap/${id}`)} onCreateNew={() => router.push('/create')} loading={projectsLoading} />
+          <RecentProjects mindmaps={projects} onCardClick={(id) => router.push(`/mindmap/${id}`)} onCreateNew={() => router.push('/new')} loading={projectsLoading} />
         </main>
       </div>
     </ErrorBoundary>
