@@ -1,14 +1,27 @@
-# Render 部署配置 (最佳实践最终版)
+# Render 部署配置（生产 + 测试）
+
+# ----------------------------------------------------------------------
+# 环境分组说明：
+# 1) production：部署 main 分支的稳定版本（面向用户）
+# 2) staging：   部署 develop 分支的测试版本（内部验证）
+# ----------------------------------------------------------------------
+
 services:
-  # FastAPI 后端服务
+  # ======================================================
+  #                 生产环境 (Production)
+  # ======================================================
+
+  # 生产后端（FastAPI）
   - type: web
-    name: thinktree-backend
+    name: thinktree-backend-prod
+    branch: main
+    autoDeploy: true
     env: python
     plan: free
     region: singapore
-    rootDir: backend # 关键：为后端服务设置根目录
-    buildCommand: pip install -r requirements.txt # 简洁的构建命令 (因为已在 backend 目录)
-    startCommand: alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port $PORT  # 移除管理员设置命令
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     envVars:
       - key: GEMINI_API_KEY
@@ -25,7 +38,7 @@ services:
         sync: false
       - key: DATABASE_URL
         fromDatabase:
-          name: thinktree-db
+          name: thinktree-db-prod
           property: connectionString
       - key: ALGORITHM
         value: HS256
@@ -36,26 +49,94 @@ services:
       - key: UPLOAD_DIR
         value: ./uploads
 
-  # Next.js 前端服务
+  # 生产前端（Next.js）
   - type: web
-    name: thinktree-frontend
+    name: thinktree-frontend-prod
+    branch: main
+    autoDeploy: true
     env: node
     plan: free
     region: singapore
-    rootDir: frontend # 关键：为前端服务设置根目录
+    rootDir: frontend
     buildCommand: npm install && npm run build
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:
       - key: NEXT_PUBLIC_API_URL
-        value: https://thinktree-backend.onrender.com
+        value: https://thinktree-backend-prod.onrender.com
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: "10000"
 
-# PostgreSQL 数据库
+  # ======================================================
+  #                  测试环境 (Staging)
+  # ======================================================
+
+  # 测试后端（FastAPI）
+  - type: web
+    name: thinktree-backend-staging
+    branch: develop
+    autoDeploy: true
+    env: python
+    plan: free
+    region: singapore
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: SECRET_KEY
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RECAPTCHA_SECRET_KEY
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: thinktree-db-staging
+          property: connectionString
+      - key: ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 30
+      - key: MAX_FILE_SIZE
+        value: 10485760
+      - key: UPLOAD_DIR
+        value: ./uploads
+
+  # 测试前端（Next.js）
+  - type: web
+    name: thinktree-frontend-staging
+    branch: develop
+    autoDeploy: true
+    env: node
+    plan: free
+    region: singapore
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        value: https://thinktree-backend-staging.onrender.com
+      - key: NODE_ENV
+        value: production
+
+# ======================================================
+#                     数据库定义
+# ======================================================
 databases:
-  - name: thinktree-db
+  # 生产数据库
+  - name: thinktree-db-prod
+    plan: free
+    region: singapore
+
+  # 测试数据库
+  - name: thinktree-db-staging
     plan: free
     region: singapore
