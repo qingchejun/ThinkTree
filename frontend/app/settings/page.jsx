@@ -62,6 +62,8 @@ const SettingsContent = () => {
   // 积分历史相关状态
   const [creditHistory, setCreditHistory] = useState([]);
   const [creditLoading, setCreditLoading] = useState(false);
+  const [creditError, setCreditError] = useState(null);
+  const creditRetryRef = useRef(0);
   const [creditPagination, setCreditPagination] = useState({
     current_page: 1,
     total_pages: 1,
@@ -394,6 +396,7 @@ const SettingsContent = () => {
     
     try {
       setCreditLoading(true);
+      setCreditError(null);
       const response = await getCreditHistory(page, 20);
       
       if (response.success) {
@@ -406,10 +409,12 @@ const SettingsContent = () => {
         }
         setCreditPagination(response.pagination);
         setCurrentBalance(response.current_balance);
+      } else {
+        setCreditError(response.message || '加载积分历史失败');
       }
     } catch (error) {
       console.error('加载积分历史失败:', error);
-      showToast('加载积分历史失败', 'error');
+      setCreditError('网络异常，加载失败');
     } finally {
       setCreditLoading(false);
     }
@@ -574,8 +579,14 @@ const SettingsContent = () => {
             <main className="md:col-span-3">
                 <TabsContent value="profile">
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-                  <div className="px-6 py-5 border-b border-gray-200">
+                  <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
                     <h3 id="profile" className="text-lg font-semibold text-gray-900">个人资料</h3>
+                    <div className="flex items-center gap-3 text-sm text-gray-600">
+                      <span className="hidden sm:inline">积分 <span className="font-semibold text-gray-900">{currentBalance}</span></span>
+                      <button onClick={() => loadProfileData()} className="inline-flex items-center px-2.5 py-1 border rounded-lg bg-white text-gray-700 hover:bg-gray-50">
+                        <RefreshCcw className="w-3.5 h-3.5 mr-1"/> 刷新
+                      </button>
+                    </div>
                   </div>
                   <div className="p-6">
                     <div className="space-y-6">
@@ -815,6 +826,7 @@ const SettingsContent = () => {
                           </div>
                         </div>
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                          <div id="redeem" className="contents"></div>
                           <RedemptionCodeForm 
                             onRedemptionSuccess={handleRedemptionSuccess}
                             onRedemptionError={handleRedemptionError}
@@ -824,11 +836,11 @@ const SettingsContent = () => {
                         <div>
                           <div className="flex items-center justify-between mb-4">
                             <h3 className="text-lg font-medium text-gray-900">积分历史</h3>
-                            <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2">
                               {isAdmin && (
                                 <button onClick={exportCSV} className="inline-flex items-center px-2.5 py-1.5 text-xs border rounded-lg text-gray-700 bg-white hover:bg-gray-50">导出 CSV</button>
                               )}
-                              <button onClick={() => loadCreditHistory(1, false)} className="inline-flex items-center px-2.5 py-1.5 text-xs border rounded-lg text-gray-700 bg-white hover:bg-gray-50">
+                              <button onClick={() => { const now=Date.now(); if (now - creditRetryRef.current < 800) return; creditRetryRef.current = now; loadCreditHistory(1, false); }} className="inline-flex items-center px-2.5 py-1.5 text-xs border rounded-lg text-gray-700 bg-white hover:bg-gray-50">
                                 <RefreshCcw className="w-3.5 h-3.5 mr-1"/> 重新加载
                               </button>
                             </div>
@@ -846,6 +858,12 @@ const SettingsContent = () => {
                               }</button>
                             ))}
                           </div>
+                          {creditError && (
+                            <div className="p-3 mb-3 rounded-lg border border-rose-200 bg-rose-50 text-rose-700 text-xs flex items-center justify-between">
+                              <span>{creditError}</span>
+                              <button onClick={() => { const now=Date.now(); if (now - creditRetryRef.current < 800) return; creditRetryRef.current = now; loadCreditHistory(1, false); }} className="px-2 py-1 border rounded bg-white text-rose-700 hover:bg-rose-100">重试</button>
+                            </div>
+                          )}
                           {creditLoading && !creditHistory.length ? (
                             <div className="space-y-3">
                               {Array.from({length:8}).map((_,i)=> (
@@ -878,8 +896,17 @@ const SettingsContent = () => {
                                 </button>
                               )}
                             </div>
-                          ) : (
-                            <p className="text-gray-600">暂无积分历史记录。</p>
+                           ) : (
+                            <div className="text-center p-8 border border-dashed border-gray-200 rounded-lg bg-gray-50">
+                              <svg className="w-10 h-10 mx-auto text-gray-300" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1a4 4 0 0 1 4 4v1h1a3 3 0 0 1 3 3v6a5 5 0 0 1-4 4.9V22a1 1 0 1 1-2 0v-2H10v2a1 1 0 1 1-2 0v-2.1A5 5 0 0 1 4 15V9a3 3 0 0 1 3-3h1V5a4 4 0 0 1 4-4Zm0 2a2 2 0 0 0-2 2v1h4V5a2 2 0 0 0-2-2Z"/></svg>
+                              <p className="mt-2 text-sm text-gray-600">暂无积分历史</p>
+                              <div className="mt-3 flex items-center justify-center gap-2 text-xs">
+                                <a href="#redeem" className="px-2.5 py-1.5 border rounded-lg bg-white text-gray-700 hover:bg-gray-50">输入兑换码</a>
+                                {isAdmin ? (
+                                  <a href="/settings?tab=invitations#invitations" className="px-2.5 py-1.5 border rounded-lg bg-white text-gray-700 hover:bg-gray-50">邀请好友</a>
+                                ) : null}
+                              </div>
+                            </div>
                           )}
                         </div>
                       </div>
