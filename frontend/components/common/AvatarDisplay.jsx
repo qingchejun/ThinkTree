@@ -59,6 +59,66 @@ function GeneratedGeoAvatar({ seed, size, showBorder, className }) {
   );
 }
 
+function BlobAvatar({ seed, size, showBorder, className }) {
+  const seedInt = hashStringToInt(seed || 'thinkso')
+  const [, c1, c2] = getPalette(seedInt)
+  const points = 8
+  const radius = 42
+  const variance = 10 + (seedInt % 8) // 10 - 17
+
+  function rand(i) {
+    // 简单可复现伪随机
+    const x = Math.sin(seedInt + i * 9973) * 43758.5453
+    return x - Math.floor(x)
+  }
+
+  const anchors = Array.from({ length: points }).map((_, i) => {
+    const angle = (Math.PI * 2 * i) / points
+    const r = radius + (rand(i) * 2 - 1) * variance
+    return [50 + r * Math.cos(angle), 50 + r * Math.sin(angle)]
+  })
+
+  // 生成平滑贝塞尔曲线路径
+  const path = anchors
+    .map((p, i, arr) => {
+      const [x1, y1] = p
+      const [x2, y2] = arr[(i + 1) % arr.length]
+      const cx1 = x1 + (x2 - x1) * 0.35
+      const cy1 = y1 + (y2 - y1) * 0.35
+      const cx2 = x2 - (x2 - x1) * 0.35
+      const cy2 = y2 - (y2 - y1) * 0.35
+      return i === 0
+        ? `M ${x1.toFixed(2)} ${y1.toFixed(2)} C ${cx1.toFixed(2)} ${cy1.toFixed(2)}, ${cx2.toFixed(2)} ${cy2.toFixed(2)}, ${x2.toFixed(2)} ${y2.toFixed(2)}`
+        : `C ${cx1.toFixed(2)} ${cy1.toFixed(2)}, ${cx2.toFixed(2)} ${cy2.toFixed(2)}, ${x2.toFixed(2)} ${y2.toFixed(2)}`
+    })
+    .join(' ') + ' Z'
+
+  return (
+    <div
+      className={`rounded-full overflow-hidden ${showBorder ? 'ring-1 ring-gray-200' : ''} ${className}`}
+      style={{ width: size, height: size, background: '#ffffff' }}
+      aria-label="流体头像"
+    >
+      <svg width={size} height={size} viewBox="0 0 100 100" role="img" className="blob-avatar">
+        <defs>
+          <linearGradient id={`blobg-${seedInt}`} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor={c1} />
+            <stop offset="100%" stopColor={c2} />
+          </linearGradient>
+        </defs>
+        <rect x="0" y="0" width="100" height="100" fill="#fff" />
+        <g transform="translate(0,0)">
+          <path d={path} fill={`url(#blobg-${seedInt})`} opacity="0.95" />
+        </g>
+      </svg>
+      <style jsx>{`
+        .blob-avatar { animation: blob-breathe 4s ease-in-out infinite; }
+        @keyframes blob-breathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.02); } }
+      `}</style>
+    </div>
+  )
+}
+
 function MonogramAvatar({ letters, size, showBorder, className }) {
   const seedInt = hashStringToInt(letters || 'TT');
   const [, c1, c2] = getPalette(seedInt);
@@ -90,6 +150,12 @@ export default function AvatarDisplay({
       return (
         <GeneratedGeoAvatar seed={seed} size={size} showBorder={showBorder} className={className} />
       );
+    }
+    if (avatarId.startsWith('blob:')) {
+      const seed = avatarId.slice(5)
+      return (
+        <BlobAvatar seed={seed} size={size} showBorder={showBorder} className={className} />
+      )
     }
     if (avatarId.startsWith('mono:')) {
       const letters = avatarId.slice(5) || 'TT';

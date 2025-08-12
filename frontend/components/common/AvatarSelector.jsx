@@ -24,6 +24,14 @@ const AVATAR_OPTIONS = [
     color: '#111827',
     bgColor: '#e5e7eb'
   },
+  // 流体头像（C 方案）
+  {
+    id: 'blob:default',
+    icon: CircleUserRound,
+    name: '流体头像（Blob）',
+    color: '#0ea5e9',
+    bgColor: '#ecfeff'
+  },
   // 以下旧图标方案暂时下线，保留两项即可（A/B）
 ];
 
@@ -44,6 +52,11 @@ export default function AvatarSelector({ isOpen, onClose, onSelect, currentAvata
     if (selectedAvatar.startsWith('geo:')) {
       const seed = (user?.id || user?.email || 'thinkso').toString();
       finalId = `geo:${seed}`;
+    }
+    // 对于流体头像，使用同样的稳定种子
+    if (selectedAvatar.startsWith('blob:')) {
+      const seed = (user?.id || user?.email || 'thinkso').toString();
+      finalId = `blob:${seed}`;
     }
     // 对于字母头像，优先显示名缩写/邮箱前缀
     if (selectedAvatar.startsWith('mono:')) {
