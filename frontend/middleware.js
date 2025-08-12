@@ -3,6 +3,13 @@ import { NextResponse } from 'next/server'
 export function middleware(request) {
   const { pathname, searchParams } = request.nextUrl
 
+  // /create -> /new 永久重定向（308）
+  if (pathname === '/create') {
+    const url = request.nextUrl.clone()
+    url.pathname = '/new'
+    return NextResponse.redirect(url, 308)
+  }
+
   // 支持新前缀 /referralCode=<CODE>
   if (pathname.startsWith('/referralCode=')) {
     const code = pathname.split('=')[1] || ''
@@ -32,6 +39,7 @@ export function middleware(request) {
 
 export const config = {
   matcher: [
+    '/create',
     '/referralCode=:path*',
     '/register/:path*'
   ]
