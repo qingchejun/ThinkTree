@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../../../context/AuthContext'
+import { useToast } from '../../../hooks/useToast'
 import ShareModal from '../../../components/share/ShareModal'
 import MindmapThumbnail from '../../../components/mindmap/MindmapThumbnail'
 import Sidebar from '../../../components/common/Sidebar'
@@ -13,13 +14,10 @@ import { Input } from '../../../components/ui/Input'
 import Pagination from '../../../components/ui/Pagination'
 import { 
   Eye, 
-  Trash2, 
   Share2, 
   Download, 
-  FileX, 
   Search,
   Calendar,
-  AlertCircle,
   CheckCircle,
   Loader2,
   Star,
@@ -29,6 +27,7 @@ import {
 export default function FavoritesPage() {
   const { user, isLoading } = useAuth()
   const router = useRouter()
+  const toast = useToast()
   
   // 页面状态管理
   const [mindmaps, setMindmaps] = useState([])
@@ -102,7 +101,8 @@ export default function FavoritesPage() {
         }
       } catch (err) {
         console.error('获取收藏列表失败:', err)
-        setError(err.message)
+        setError(null)
+        toast.error(`获取收藏列表失败：${err.message}`)
       } finally {
         setLoading(false)
       }
@@ -138,6 +138,7 @@ export default function FavoritesPage() {
             }
           } catch (err) {
             console.error('更新收藏列表失败:', err)
+            toast.error('更新收藏列表失败')
           }
         }
         fetchFavorites()
@@ -340,14 +341,8 @@ export default function FavoritesPage() {
       <Sidebar />
       <main className="flex-1 overflow-y-auto p-8">
         <div className="max-w-7xl mx-auto">
-          {/* 错误和成功消息提示 */}
+          {/* 成功消息就地微反馈 */}
           <div className="mb-6 space-y-3">
-            {error && (
-              <div className="flex items-center p-4 bg-red-50 text-red-800 border border-red-200 rounded-lg">
-                <AlertCircle className="w-5 h-5 mr-2 flex-shrink-0" />
-                <span>{error}</span>
-              </div>
-            )}
             {successMessage && (
               <div className="flex items-center p-4 bg-green-50 text-green-800 border border-green-200 rounded-lg">
                 <CheckCircle className="w-5 h-5 mr-2 flex-shrink-0" />

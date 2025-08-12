@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../../../context/AuthContext'
+import { useToast } from '../../../hooks/useToast'
 import MindmapThumbnail from '../../../components/mindmap/MindmapThumbnail'
 import Sidebar from '../../../components/common/Sidebar'
 import { Input } from '../../../components/ui/Input'
@@ -13,10 +14,8 @@ import Pagination from '../../../components/ui/Pagination'
 import { 
   RotateCcw, 
   Trash2, 
-  FileX, 
   Search,
   Calendar,
-  AlertCircle,
   CheckCircle,
   Loader2,
   AlertTriangle
@@ -25,6 +24,7 @@ import {
 export default function TrashPage() {
   const { user, isLoading } = useAuth()
   const router = useRouter()
+  const toast = useToast()
   
   // 页面状态管理
   const [trashedMindmaps, setTrashedMindmaps] = useState([])
@@ -103,7 +103,8 @@ export default function TrashPage() {
         setTrashedMindmaps(validTrashedData)
       } catch (err) {
         console.error('获取回收站列表失败:', err)
-        setError(err.message)
+        setError(null)
+        toast.error(`获取回收站列表失败：${err.message}`)
       } finally {
         setLoading(false)
       }
@@ -138,6 +139,7 @@ export default function TrashPage() {
             setTrashedMindmaps(validTrashedData)
           } catch (err) {
             console.error('更新回收站列表失败:', err)
+            toast.error('更新回收站列表失败')
           }
         }
         fetchTrashedMindmaps()
@@ -244,8 +246,7 @@ export default function TrashPage() {
       
     } catch (error) {
       console.error('恢复思维导图失败:', error)
-      setError(error.message || '恢复失败，请重试')
-      setTimeout(() => setError(null), 5000)
+      toast.error(error.message || '恢复失败，请重试')
     } finally {
       setRestoreModal({
         isOpen: false,
@@ -301,8 +302,7 @@ export default function TrashPage() {
       
     } catch (error) {
       console.error('永久删除思维导图失败:', error)
-      setError('删除失败，请重试')
-      setTimeout(() => setError(null), 5000)
+      toast.error('删除失败，请重试')
     } finally {
       setDeleteModal({
         isOpen: false,
@@ -351,8 +351,7 @@ export default function TrashPage() {
       
     } catch (error) {
       console.error('清空回收站失败:', error)
-      setError('清空失败，请重试')
-      setTimeout(() => setError(null), 5000)
+      toast.error('清空失败，请重试')
     } finally {
       setClearAllModal({
         isOpen: false,
@@ -412,14 +411,8 @@ export default function TrashPage() {
       <Sidebar />
       <main className="flex-1 overflow-y-auto p-8">
         <div className="max-w-7xl mx-auto">
-          {/* 错误和成功消息提示 */}
+          {/* 成功消息就地微反馈 */}
           <div className="mb-6 space-y-3">
-            {error && (
-              <div className="flex items-center p-4 bg-red-50 text-red-800 border border-red-200 rounded-lg">
-                <AlertCircle className="w-5 h-5 mr-2 flex-shrink-0" />
-                <span>{error}</span>
-              </div>
-            )}
             {successMessage && (
               <div className="flex items-center p-4 bg-green-50 text-green-800 border border-green-200 rounded-lg">
                 <CheckCircle className="w-5 h-5 mr-2 flex-shrink-0" />

@@ -6,10 +6,12 @@
 import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { useToast } from '../../hooks/useToast'
 
 function VerifyEmailContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const toast = useToast()
   const [verifying, setVerifying] = useState(true)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
@@ -20,7 +22,9 @@ function VerifyEmailContent() {
     if (token) {
       verifyEmail(token)
     } else {
-      setError('验证链接无效，缺少验证令牌')
+      const msg = '验证链接无效，缺少验证令牌'
+      setError(msg)
+      toast.error(msg)
       setVerifying(false)
     }
   }, [searchParams]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -49,10 +53,14 @@ function VerifyEmailContent() {
           router.push('/?auth=login&verified=true')
         }, 3000)
       } else {
-        setError(data.message || '邮箱验证失败，请稍后重试')
+        const msg = data.message || '邮箱验证失败，请稍后重试'
+        setError(msg)
+        toast.error(msg)
       }
     } catch (err) {
-      setError('网络错误，请稍后重试')
+      const msg = '网络错误，请稍后重试'
+      setError(msg)
+      toast.networkError()
       console.error('邮箱验证错误:', err)
     } finally {
       setVerifying(false)
@@ -165,37 +173,17 @@ function VerifyEmailContent() {
     )
   }
 
-  // 验证失败
+  // 验证失败（使用全局 Toast 展示详情，这里保留轻量页面）
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-orange-100">
       <div className="max-w-md w-full space-y-8 p-8">
         <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-          {/* 错误图标 */}
-          <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-6">
-            <div className="text-red-500 text-2xl">❌</div>
-          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">邮箱验证失败</h2>
+          <p className="text-sm text-gray-600 mb-6">请重试或前往登录</p>
 
-          {/* 标题 */}
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            邮箱验证失败
-          </h2>
-
-          {/* 错误信息 */}
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-            <p className="text-red-800 text-sm">
-              {error}
-            </p>
-          </div>
-
-          {/* 可能的原因 */}
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-            <h3 className="font-medium text-yellow-800 mb-2">可能的原因：</h3>
-            <ul className="text-xs text-yellow-700 text-left space-y-1">
-              <li>• 验证链接已过期（24小时有效期）</li>
-              <li>• 验证链接已被使用过</li>
-              <li>• 验证链接格式不正确</li>
-              <li>• 网络连接问题</li>
-            </ul>
+          {/* 保留精简引导 */}
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-6 text-xs text-yellow-800">
+            验证链接可能已过期或已被使用，请尝试重新注册或直接登录。
           </div>
 
           {/* 操作按钮 */}
