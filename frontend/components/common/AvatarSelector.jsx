@@ -24,34 +24,7 @@ const AVATAR_OPTIONS = [
     color: '#111827',
     bgColor: '#e5e7eb'
   },
-  { 
-    id: 'female1', 
-    icon: CircleUserRound, 
-    name: '女性头像 1', 
-    color: '#ec4899',
-    bgColor: '#fdf2f8'
-  },
-  { 
-    id: 'female2', 
-    icon: User, 
-    name: '女性头像 2', 
-    color: '#8b5cf6',
-    bgColor: '#f5f3ff'
-  },
-  { 
-    id: 'male1', 
-    icon: UserRound, 
-    name: '男性头像 1', 
-    color: '#3b82f6',
-    bgColor: '#eff6ff'
-  },
-  { 
-    id: 'male2', 
-    icon: CircleUser, 
-    name: '男性头像 2', 
-    color: '#10b981',
-    bgColor: '#ecfdf5'
-  }
+  // 以下旧图标方案暂时下线，保留两项即可（A/B）
 ];
 
 export default function AvatarSelector({ isOpen, onClose, onSelect, currentAvatar, user }) {

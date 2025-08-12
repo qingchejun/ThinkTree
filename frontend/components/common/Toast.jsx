@@ -3,14 +3,14 @@
  */
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 
 const Toast = ({ message, type = 'info', duration, onClose, count = 1 }) => {
   const [isVisible, setIsVisible] = useState(true)
   const [paused, setPaused] = useState(false)
-  const timerRef = React.useRef(null)
-  const startedAtRef = React.useRef(0)
-  const remainingRef = React.useRef(duration)
+  const timerRef = useRef(null)
+  const startedAtRef = useRef(0)
+  const remainingRef = useRef(duration)
 
   // 默认时长（进一步收紧）
   const defaultDurations = {
