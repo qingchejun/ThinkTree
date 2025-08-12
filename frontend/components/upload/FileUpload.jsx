@@ -4,6 +4,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { ToastManager } from '../common/Toast'
 import { useAuth } from '../../context/AuthContext'
 
 const SUPPORTED_FORMATS = {
@@ -184,6 +185,7 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
     } catch (error) {
       console.error('文件分析错误:', error)
       if (onUploadError) onUploadError(error.message)
+      else ToastManager.error(error.message || '文件分析失败', 4000)
     } finally {
       setIsAnalyzing(false)
     }
@@ -232,6 +234,7 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
     } catch (error) {
       console.error('思维导图生成错误:', error)
       if (onUploadError) onUploadError(error.message)
+      else ToastManager.error(error.message || '生成失败', 4000)
     } finally {
       setIsGenerating(false)
     }
@@ -280,6 +283,7 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
     } catch (error) {
       console.error('文本处理错误:', error)
       if (onUploadError) onUploadError(error.message)
+      else ToastManager.error(error.message || '处理失败', 4000)
     } finally {
       setIsUploading(false)
     }
