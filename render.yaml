@@ -14,7 +14,7 @@ services:
   # 生产后端（FastAPI）
   - type: web
     name: thinktree-backend-prod
-    group: production # 用于UI分组，清晰明了
+    group: production
     branch: main
     autoDeploy: true
     env: python
@@ -53,7 +53,7 @@ services:
   # 生产前端（Next.js）
   - type: web
     name: thinktree-frontend-prod
-    group: production # 用于UI分组，清晰明了
+    group: production
     branch: main
     autoDeploy: true
     env: node
@@ -76,7 +76,7 @@ services:
   # 测试后端（FastAPI）
   - type: web
     name: thinktree-backend-staging
-    group: staging # 用于UI分组，清晰明了
+    group: staging
     branch: develop
     autoDeploy: true
     env: python
@@ -115,7 +115,7 @@ services:
   # 测试前端（Next.js）
   - type: web
     name: thinktree-frontend-staging
-    group: staging # 用于UI分组，清晰明了
+    group: staging
     branch: develop
     autoDeploy: true
     env: node
