@@ -732,24 +732,25 @@ async def initiate_login(request: Request, data: InitiateLoginRequest, db: Sessi
         if code_in:
             if not re.fullmatch(r"[A-Z0-9]{6,16}", code_in):
                 raise HTTPException(status_code=400, detail="邀请码格式不正确")
-        # 先尝试在用户固定推荐码上匹配
-        inviter = db.query(User).filter(User.referral_code == code_in).first()
-        if inviter:
-            # 校验邀请上限
-            ref_limit = getattr(inviter, 'referral_limit', 10)
-            ref_used = getattr(inviter, 'referral_used', 0)
-            if ref_used >= ref_limit:
-                raise HTTPException(status_code=400, detail="该推荐码当前不可用：邀请名额已满")
-            inviter_user_id_to_store = inviter.id
-        else:
-            # 回退到一次性邀请码（旧逻辑，保持兼容）
-            is_valid, error_msg, invitation = validate_invitation_code(db, code_in)
-            if not is_valid:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"邀请码无效: {error_msg}"
-                )
-            inviter_user_id_to_store = invitation.generated_by_user_id if invitation else None
+        if code_in:
+            # 仅当提供了邀请码/推荐码时才进行匹配与校验
+            inviter = db.query(User).filter(User.referral_code == code_in).first()
+            if inviter:
+                # 校验邀请上限
+                ref_limit = getattr(inviter, 'referral_limit', 10)
+                ref_used = getattr(inviter, 'referral_used', 0)
+                if ref_used >= ref_limit:
+                    raise HTTPException(status_code=400, detail="该推荐码当前不可用：邀请名额已满")
+                inviter_user_id_to_store = inviter.id
+            else:
+                # 回退到一次性邀请码（旧逻辑，保持兼容）
+                is_valid, error_msg, invitation = validate_invitation_code(db, code_in)
+                if not is_valid:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"邀请码无效: {error_msg}"
+                    )
+                inviter_user_id_to_store = invitation.generated_by_user_id if invitation else None
     
     # 二次限流：针对同邮箱的短时间频繁请求进行限制
     try:
