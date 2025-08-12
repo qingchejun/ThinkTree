@@ -150,7 +150,7 @@ export default function CreatePage() {
     <div className="min-h-screen bg-background-secondary">
       <div className="bg-background-primary border-b border-border-primary py-4">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-2xl font-bold text-text-primary">🎨 思维导图创建</h1>
+          <h1 className="text-2xl font-bold text-text-primary">🎨 新建思维导图</h1>
           <p className="text-sm text-text-secondary mt-1">上传文档或输入文本，AI智能生成专业思维导图</p>
         </div>
       </div>

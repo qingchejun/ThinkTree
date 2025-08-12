@@ -17,8 +17,10 @@ import MindmapHeader from '../../../components/mindmap/MindmapHeader.jsx'
 import DeleteConfirmationModal from '../../../components/mindmap/DeleteConfirmationModal.jsx'
 // 移除ToastManager，使用内联提示样式
 import { exportSVG, exportPNG, getSafeFilename, getTimestamp } from '../../../lib/exportUtils.js'
+import { useToast } from '../../../hooks/useToast.js'
 
 export default function ViewMindmapPage() {
+  const toast = useToast()
   const { user, isLoading: isAuthLoading } = useAuth()
   const router = useRouter()
   const params = useParams()
@@ -252,8 +254,7 @@ export default function ViewMindmapPage() {
   // 统一导出处理函数
   const handleExport = async (exportFunc, format) => {
     if (!markmapRef.current || isExportingRef.current) {
-      setError('思维导图未准备就绪或正在导出中，请稍后重试')
-      setTimeout(() => setError(null), 3000)
+      toast.error('思维导图未准备就绪或正在导出中')
       return
     }
     isExportingRef.current = true
@@ -267,13 +268,13 @@ export default function ViewMindmapPage() {
       const markmapInstance = markmapRef.current.getMarkmapInstance()
       if (!markmapInstance) throw new Error('无法获取思维导图实例')
       const filename = `${getSafeFilename(mindmap.title)}_${getTimestamp()}`
-      setSuccessMessage(`正在生成 ${format} 文件，请稍候...`)
+      setSuccessMessage(`正在生成 ${format} 文件...`)
       const result = await exportFunc(markmapInstance, filename, 2) // 2x分辨率
       if (!result.success) throw new Error(result.error)
-      setSuccessMessage(`${format} 文件导出成功: ${result.filename}`)
+      setSuccessMessage(`${format} 已导出`)
     } catch (err) {
       console.error(`${format} 导出失败:`, err)
-      setError(`${format} 导出失败: ${err.message}`)
+      toast.error(`${format} 导出失败：${err.message}`)
     } finally {
       isExportingRef.current = false
       setIsExportingUI(false)
@@ -283,8 +284,7 @@ export default function ViewMindmapPage() {
           markmapRef.current.setProcessing(false)
         }
       }, 100)
-      setTimeout(() => setSuccessMessage(null), 3000) // 清除成功消息
-      setTimeout(() => setError(null), 3000) // 清除错误消息
+      setTimeout(() => setSuccessMessage(null), 1000)
     }
   }
 

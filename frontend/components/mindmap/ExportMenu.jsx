@@ -3,7 +3,7 @@
  */
 import { Download } from 'lucide-react';
 
-export default function ExportMenu({ onExportSVG, onExportPNG, isExportingUI, showExportMenu, setShowExportMenu }) {
+export default function ExportMenu({ onExportSVG, onExportPNG, isExportingUI, showExportMenu, setShowExportMenu, onFeedback }) {
   return (
     <div className="relative">
       <button
@@ -23,7 +23,10 @@ export default function ExportMenu({ onExportSVG, onExportPNG, isExportingUI, sh
         <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-2xl border border-gray-100 z-50 overflow-hidden">
           <div className="py-2">
             <button
-              onClick={onExportSVG}
+              onClick={() => {
+                onExportSVG?.();
+                onFeedback?.('已导出 SVG');
+              }}
               className="flex items-center w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
             >
               <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3 flex-shrink-0">
@@ -37,7 +40,10 @@ export default function ExportMenu({ onExportSVG, onExportPNG, isExportingUI, sh
               </div>
             </button>
             <button
-              onClick={onExportPNG}
+              onClick={() => {
+                onExportPNG?.();
+                onFeedback?.('已导出 PNG');
+              }}
               className="flex items-center w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
             >
               <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3 flex-shrink-0">
