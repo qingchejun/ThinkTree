@@ -68,7 +68,9 @@ const SettingsContent = () => {
   
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
+    // 缩短显示时间：成功1200ms、信息1600ms、警告2000ms、错误4000ms
+    const ms = type === 'success' ? 1200 : type === 'info' ? 1600 : type === 'warning' ? 2000 : 4000;
+    setTimeout(() => setToast(null), ms);
   };
 
   // 初始化客户端状态
