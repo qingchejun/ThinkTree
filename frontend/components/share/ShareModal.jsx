@@ -5,6 +5,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { ToastManager } from '../common/Toast'
 import { useAuth } from '../../context/AuthContext'
 // 移除ToastManager，使用内联提示样式
 
@@ -56,6 +57,7 @@ export default function ShareModal({ isOpen, onClose, mindmapId, mindmapTitle })
     } catch (err) {
       console.error('获取分享信息失败:', err)
       setError(err.message)
+      ToastManager.error(err.message || '获取分享信息失败', 4000)
     } finally {
       setLoading(false)
     }
@@ -86,9 +88,9 @@ export default function ShareModal({ isOpen, onClose, mindmapId, mindmapTitle })
           share_url: data.share_url,
           updated_at: new Date().toISOString()
         })
+        // 成功类提示：右上轻条即可
         setSuccessMessage(data.is_existing ? '使用现有分享链接' : '分享链接创建成功')
-        // 3秒后清除成功消息
-        setTimeout(() => setSuccessMessage(null), 3000)
+        setTimeout(() => setSuccessMessage(null), 1200)
       } else {
         const errorData = await response.json()
         throw new Error(errorData.detail || '创建分享链接失败')
@@ -96,6 +98,7 @@ export default function ShareModal({ isOpen, onClose, mindmapId, mindmapTitle })
     } catch (err) {
       console.error('创建分享链接失败:', err)
       setError(err.message)
+      ToastManager.error(err.message || '创建分享链接失败', 4000)
     } finally {
       setLoading(false)
     }
@@ -126,8 +129,7 @@ export default function ShareModal({ isOpen, onClose, mindmapId, mindmapTitle })
           updated_at: new Date().toISOString()
         })
         setSuccessMessage('分享已禁用')
-        // 3秒后清除成功消息
-        setTimeout(() => setSuccessMessage(null), 3000)
+        setTimeout(() => setSuccessMessage(null), 1200)
       } else {
         const errorData = await response.json()
         throw new Error(errorData.detail || '禁用分享失败')
@@ -135,6 +137,7 @@ export default function ShareModal({ isOpen, onClose, mindmapId, mindmapTitle })
     } catch (err) {
       console.error('禁用分享失败:', err)
       setError(err.message)
+      ToastManager.error(err.message || '禁用分享失败', 4000)
     } finally {
       setLoading(false)
     }
@@ -150,7 +153,8 @@ export default function ShareModal({ isOpen, onClose, mindmapId, mindmapTitle })
       
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(fullUrl)
-        setSuccessMessage('分享链接已复制到剪贴板')
+        // 复制成功 - 改为按钮附近轻提示由本地 successMessage 显示短暂文本
+        setSuccessMessage('分享链接已复制')
       } else {
         // 降级方案：使用传统的复制方法
         const textArea = document.createElement('textarea')
@@ -159,7 +163,7 @@ export default function ShareModal({ isOpen, onClose, mindmapId, mindmapTitle })
         textArea.select()
         document.execCommand('copy')
         document.body.removeChild(textArea)
-        setSuccessMessage('分享链接已复制到剪贴板')
+        setSuccessMessage('分享链接已复制')
       }
       
       // 2秒后清除成功消息
@@ -167,6 +171,7 @@ export default function ShareModal({ isOpen, onClose, mindmapId, mindmapTitle })
     } catch (err) {
       console.error('复制失败:', err)
       setError('复制失败，请手动复制')
+      ToastManager.error('复制失败，请手动复制', 3000)
     }
   }
 
