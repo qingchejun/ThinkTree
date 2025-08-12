@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useContext } from 'react';
+import { useToast } from '../../../hooks/useToast';
 import { useRouter } from 'next/navigation';
 import AuthContext from '../../../context/AuthContext';
 
@@ -8,6 +9,7 @@ import AdminRoute from '../../../components/common/AdminRoute';
 
 const AdminDashboard = () => {
   const { user, token } = useContext(AuthContext);
+  const toast = useToast();
   const router = useRouter();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -39,10 +41,8 @@ const AdminDashboard = () => {
         }
       } catch (err) {
         console.error('获取统计数据失败:', err);
-        setError(err.message);
-        setError(`获取统计数据失败: ${err.message}`);
-        // 5秒后清除错误消息
-        setTimeout(() => setError(null), 5000);
+        setError(null);
+        toast.error(`获取统计数据失败：${err.message}`);
       } finally {
         setLoading(false);
       }
