@@ -241,6 +241,45 @@ const SettingsContent = () => {
     });
   };
 
+  // 计算迷你趋势图数据（基于 displayHistory 与当前 historyRange）
+  const sparkData = useMemo(() => {
+    const days = historyRange === '7' ? 7 : historyRange === '30' ? 30 : 7;
+    // 构建最近 N 天的日期桶
+    const buckets = Array.from({ length: days }).map((_, i) => {
+      const d = new Date();
+      d.setHours(0, 0, 0, 0);
+      d.setDate(d.getDate() - (days - 1 - i));
+      return { day: new Date(d), value: 0 };
+    });
+    const toKey = (d) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    const indexByKey = new Map(buckets.map((b, i) => [toKey(b.day), i]));
+    displayHistory.forEach((it) => {
+      const dt = new Date(it.created_at);
+      dt.setHours(0, 0, 0, 0);
+      const idx = indexByKey.get(toKey(dt));
+      if (idx != null) {
+        const type = (it.transaction_type || it.type);
+        const amount = Number(it.amount || 0);
+        const signed = type === 'DEDUCTION' ? -amount : amount;
+        buckets[idx].value += signed;
+      }
+    });
+    // 生成 polyline points
+    const values = buckets.map((b) => b.value);
+    const maxV = Math.max(1, ...values, 0);
+    const minV = Math.min(0, ...values);
+    const w = 180, h = 40, pad = 2;
+    const scaleX = (i) => pad + (i * (w - pad * 2)) / Math.max(1, days - 1);
+    const scaleY = (v) => {
+      if (maxV === minV) return h / 2;
+      return h - pad - ((v - minV) * (h - pad * 2)) / (maxV - minV);
+    };
+    const points = values.map((v, i) => `${scaleX(i)},${scaleY(v)}`).join(' ');
+    const last = values[values.length - 1] || 0;
+    const trendUp = last >= 0;
+    return { points, w, h, trendUp, last, days };
+  }, [displayHistory, historyRange]);
+
   const exportCSV = () => {
     const headers = ['id','summary','type','amount','created_at'];
     const lines = [headers.join(',')];
@@ -487,6 +526,19 @@ const SettingsContent = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-6 py-12">
+        {/* 统一页头：标题/描述/操作组 */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+          <div className="mb-3 md:mb-0">
+            <h1 className="text-2xl font-semibold text-gray-900">账户设置</h1>
+            <p className="text-sm text-gray-500 mt-1">管理个人资料、用量计费与邀请奖励。</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="text-sm text-gray-600 hidden sm:block">当前积分：<span className="font-semibold text-gray-900">{currentBalance}</span></div>
+            <button onClick={() => { loadProfileData(); loadInvitations(); loadCreditHistory(); }} className="inline-flex items-center px-3 py-1.5 text-xs border rounded-lg bg-white text-gray-700 hover:bg-gray-50">
+              <RefreshCcw className="w-3.5 h-3.5 mr-1"/> 刷新资料
+            </button>
+          </div>
+        </div>
         <Tabs value={activeTab} onValueChange={(value) => router.push(`/settings?tab=${value}`)} className="w-full">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             {/* 左侧导航 */}
@@ -505,8 +557,9 @@ const SettingsContent = () => {
                   return (
                     <button
                       key={item.id}
-                      onClick={() => { if (!isDisabled) router.push(`/settings?tab=${item.id}`) }}
+                      onClick={() => { if (!isDisabled) router.push(`/settings?tab=${item.id}#${item.id}`) }}
                       aria-disabled={isDisabled}
+                      title={isDisabled ? '暂未开放' : undefined}
                       className={`w-full flex items-center justify-start px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${baseClass}`}
                     >
                       <item.icon className={`mr-3 w-4 h-4 ${iconClass}`} />
@@ -522,7 +575,7 @@ const SettingsContent = () => {
                 <TabsContent value="profile">
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200">
                   <div className="px-6 py-5 border-b border-gray-200">
-                    <h3 className="text-lg font-semibold text-gray-900">个人资料</h3>
+                    <h3 id="profile" className="text-lg font-semibold text-gray-900">个人资料</h3>
                   </div>
                   <div className="p-6">
                     <div className="space-y-6">
@@ -585,10 +638,10 @@ const SettingsContent = () => {
                   </div>
                 </div>
               </TabsContent>
-              <TabsContent value="invitations">
+               <TabsContent value="invitations">
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200">
                   <div className="px-6 py-5 border-b border-gray-200">
-                    <h3 className="text-lg font-semibold text-gray-900">邀请好友</h3>
+                    <h3 id="invitations" className="text-lg font-semibold text-gray-900">邀请好友</h3>
                   </div>
                   <div className="p-6">
                     <div className="space-y-6">
@@ -737,10 +790,10 @@ const SettingsContent = () => {
                   </div>
                 </div>
               </TabsContent>
-                <TabsContent value="billing">
+                 <TabsContent value="billing">
                   <div className="bg-white rounded-xl shadow-sm border border-gray-200">
                     <div className="px-6 py-5 border-b border-gray-200">
-                      <h3 className="text-lg font-semibold text-gray-900">用量计费</h3>
+                      <h3 id="billing" className="text-lg font-semibold text-gray-900">用量计费</h3>
                     </div>
                     <div className="p-6">
                       <div className="space-y-6">
@@ -750,6 +803,16 @@ const SettingsContent = () => {
                             {currentBalance}
                           </p>
                           <p className="text-sm text-gray-600 mt-1">积分</p>
+                          {/* 迷你趋势图 */}
+                          <div className="mt-3">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-xs text-gray-500">最近{historyRange==='30'?'30':'7'}天趋势</span>
+                              <span className={`text-xs ${sparkData.trendUp ? 'text-emerald-600' : 'text-rose-600'}`}>{sparkData.last >= 0 ? '+' : ''}{sparkData.last}</span>
+                            </div>
+                            <svg width={sparkData.w} height={sparkData.h} className="block">
+                              <polyline fill="none" stroke={sparkData.trendUp ? '#10b981' : '#ef4444'} strokeWidth="2" points={sparkData.points} />
+                            </svg>
+                          </div>
                         </div>
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                           <RedemptionCodeForm 
