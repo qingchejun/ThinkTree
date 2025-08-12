@@ -14,7 +14,8 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { Label } from "@/components/ui/Label";
-import { User, CreditCard, Gift } from 'lucide-react';
+import { User, CreditCard, Gift, Share2, RefreshCcw } from 'lucide-react';
+import { useToast } from '@/hooks/useToast';
 // 占位：无密码体系，复用 Input 以避免未定义引用
 const PasswordInput = Input;
 // 停用旧密码相关API占位，防止未定义错误
@@ -32,6 +33,7 @@ const settingsNavItems = [
 
 const SettingsContent = () => {
   const { user, loading, refreshUser, isAuthenticated } = useContext(AuthContext);
+  const toastApi = useToast();
   const isAdmin = !!user?.is_superuser;
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -104,6 +106,35 @@ const SettingsContent = () => {
   // 兑换码失败处理
   const handleRedemptionError = (message) => {
     showToast(message, 'error');
+  };
+
+  // 共享：邀请链接复制/分享的就地微反馈
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [linkShared, setLinkShared] = useState(false);
+  const handleCopyLink = async (referralLink) => {
+    try {
+      await navigator.clipboard.writeText(referralLink);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 1200);
+    } catch (e) {
+      toastApi.error('复制失败，请手动复制');
+    }
+  };
+  const handleShareLink = async (referralLink) => {
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'ThinkSo 邀请', text: '和我一起用 ThinkSo，领取积分', url: referralLink });
+        setLinkShared(true);
+        setTimeout(() => setLinkShared(false), 1200);
+      } else {
+        await navigator.clipboard.writeText(referralLink);
+        setLinkCopied(true);
+        setTimeout(() => setLinkCopied(false), 1200);
+      }
+    } catch (e) {
+      // 用户取消不提示；其余错误提示
+      if (e && e.name !== 'AbortError') toastApi.error('分享失败');
+    }
   };
   
   // 格式化交易类型显示文本
@@ -443,19 +474,31 @@ const SettingsContent = () => {
                     <div className="space-y-6">
                       {/* 新推荐卡片 */}
                       <div className="bg-white p-6 rounded-lg border border-gray-200">
-                        <h3 className="text-lg font-medium text-gray-900 mb-3">我的邀请链接</h3>
-                        <p className="text-sm text-gray-600 mb-2">{referralLink?.rule_text || '你和好友各得 100 积分'}</p>
-                        <div className="flex items-center gap-2">
-                          <span className="flex-1 font-mono text-sm break-all text-gray-900 select-all">{referralLink?.referral_link || ''}</span>
-                          <button
-                            onClick={() => referralLink?.referral_link && navigator.clipboard.writeText(referralLink.referral_link)}
-                            className="inline-flex items-center justify-center w-10 h-10 rounded-lg border border-gray-300 hover:bg-gray-100 hover:border-gray-400 active:bg-gray-200 disabled:opacity-50"
-                            disabled={!referralLink?.referral_link}
-                            title="复制"
-                          >
-                            <svg className="w-4 h-4 text-gray-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                          </button>
-                        </div>
+                          <h3 className="text-lg font-medium text-gray-900 mb-2">我的邀请链接</h3>
+                          <p className="text-sm text-gray-600 mb-3">{referralLink?.rule_text || '你和好友各得 100 积分'}</p>
+                          <div className="flex items-center gap-2">
+                            <span className="flex-1 font-mono text-sm break-all text-gray-900 select-all">{referralLink?.referral_link || ''}</span>
+                            <button
+                              onClick={() => referralLink?.referral_link && handleCopyLink(referralLink.referral_link)}
+                              className={`inline-flex items-center justify-center w-10 h-10 rounded-lg border transition-colors ${linkCopied ? 'border-emerald-300 bg-emerald-50' : 'border-gray-300 hover:bg-gray-100 hover:border-gray-400 active:bg-gray-200'}`}
+                              disabled={!referralLink?.referral_link}
+                              title={linkCopied ? '已复制' : '复制'}
+                            >
+                              {linkCopied ? (
+                                <svg className="w-4 h-4 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 6L9 17l-5-5"/></svg>
+                              ) : (
+                                <svg className="w-4 h-4 text-gray-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                              )}
+                            </button>
+                            <button
+                              onClick={() => referralLink?.referral_link && handleShareLink(referralLink.referral_link)}
+                              className={`inline-flex items-center justify-center w-10 h-10 rounded-lg border transition-colors ${linkShared ? 'border-blue-300 bg-blue-50' : 'border-gray-300 hover:bg-gray-100 hover:border-gray-400 active:bg-gray-200'}`}
+                              disabled={!referralLink?.referral_link}
+                              title={linkShared ? '已分享' : '分享'}
+                            >
+                              <Share2 className={`w-4 h-4 ${linkShared ? 'text-blue-600' : 'text-gray-700'}`} />
+                            </button>
+                          </div>
                         <div className="text-xs text-gray-500 mt-2">已邀请 {referralStats?.invited_count ?? referralLink?.invited_count ?? 0}/{referralStats?.limit ?? referralLink?.limit ?? 10}</div>
                       </div>
 
@@ -567,18 +610,25 @@ const SettingsContent = () => {
                           <RedemptionHistory />
                         </div>
                         <div>
-                          <h3 className="text-lg font-medium text-gray-900 mb-4">积分历史</h3>
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-medium text-gray-900">积分历史</h3>
+                            <button onClick={() => loadCreditHistory(1, false)} className="inline-flex items-center px-2.5 py-1.5 text-xs border rounded-lg text-gray-700 bg-white hover:bg-gray-50">
+                              <RefreshCcw className="w-3.5 h-3.5 mr-1"/> 重新加载
+                            </button>
+                          </div>
                           {creditLoading && !creditHistory.length ? (
                             <p className="text-gray-600">加载中...</p>
                           ) : creditHistory.length > 0 ? (
                             <div className="space-y-3">
                               {creditHistory.map((item) => (
-                                <div key={item.id} className="flex justify-between items-center p-4 bg-gray-50 rounded-lg border border-gray-200">
-                                  <div>
+                                <div key={item.id} className="flex items-center p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                  <div className="flex-1">
                                     <p className="font-semibold text-gray-900">{item.summary || formatTransactionSummary(item)}</p>
                                     <p className="text-sm text-gray-600">{formatDate(item.created_at)}</p>
                                   </div>
-                                  <p className={getAmountStyle(item.transaction_type || item.type)}>{getAmountText(item.transaction_type || item.type, item.amount)}</p>
+                                  <div className="ml-4 text-right">
+                                    <p className={getAmountStyle(item.transaction_type || item.type)}>{getAmountText(item.transaction_type || item.type, item.amount)}</p>
+                                  </div>
                                 </div>
                               ))}
                               {creditPagination.has_next && (
