@@ -43,6 +43,9 @@ const SettingsContent = () => {
   const [referralLink, setReferralLink] = useState(null);
   const [referralStats, setReferralStats] = useState(null);
   const [referralHistory, setReferralHistory] = useState([]);
+  // 邀请记录筛选
+  const [refSearch, setRefSearch] = useState('');
+  const [refRange, setRefRange] = useState('ALL'); // ALL|7|30
   const [isLoading, setIsLoading] = useState(false);
   const [toast, setToast] = useState(null);
   const [displayName, setDisplayName] = useState('');
@@ -171,6 +174,39 @@ const SettingsContent = () => {
       a.download = 'thinkso_invite.png';
       a.click();
     } catch {}
+  };
+
+  // 过滤邀请记录
+  const filteredReferrals = useMemo(() => {
+    const now = Date.now();
+    const inRange = (ts) => {
+      if (refRange === 'ALL') return true;
+      const days = refRange === '7' ? 7 : 30;
+      return (now - new Date(ts).getTime()) <= days * 24 * 60 * 60 * 1000;
+    };
+    const q = refSearch.trim().toLowerCase();
+    const match = (e) => {
+      if (!q) return true;
+      const id = String(e.invitee_user_id || '').toLowerCase();
+      const mail = String(e.invitee_email_masked || '').toLowerCase();
+      return id.includes(q) || mail.includes(q);
+    };
+    return (referralHistory || []).filter(e => inRange(e.created_at) && match(e));
+  }, [referralHistory, refRange, refSearch]);
+
+  const exportReferralCSV = () => {
+    const headers = ['invitee_user_id','invitee_email','created_at'];
+    const lines = [headers.join(',')];
+    filteredReferrals.forEach((e) => {
+      lines.push([e.invitee_user_id, (e.invitee_email_masked||'').replace(/,/g,' '), new Date(e.created_at).toISOString()].join(','));
+    });
+    const blob = new Blob(["\ufeff" + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `referrals_${Date.now()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   // 历史类型归一
@@ -613,8 +649,20 @@ const SettingsContent = () => {
                       )}
                       
                       <div>
-                        <h3 className="text-lg font-medium text-gray-900 mb-4">我的邀请记录</h3>
-                        {referralHistory.length > 0 ? (
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="text-lg font-medium text-gray-900">我的邀请记录</h3>
+                          {isAdmin && referralHistory.length > 0 && (
+                            <button onClick={exportReferralCSV} className="text-xs px-2.5 py-1.5 border rounded-lg bg-white text-gray-700 hover:bg-gray-50">导出 CSV</button>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 mb-3 text-xs">
+                          <Input value={refSearch} onChange={(e)=>setRefSearch(e.target.value)} placeholder="搜索邮箱或ID" className="h-8 w-56"/>
+                          <span className="text-gray-500">时间:</span>
+                          {['ALL','7','30'].map(v => (
+                            <button key={v} onClick={()=>setRefRange(v)} className={`px-2 py-1 rounded-full border ${refRange===v?'bg-black text-white border-black':'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}>{v==='ALL'?'全部':`${v}天`}</button>
+                          ))}
+                        </div>
+                        {filteredReferrals.length > 0 ? (
                           <div className="overflow-x-auto">
                             <table className="min-w-full text-sm">
                               <thead>
@@ -625,7 +673,7 @@ const SettingsContent = () => {
                                 </tr>
                               </thead>
                               <tbody>
-                                {referralHistory.map((e, idx) => (
+                                {filteredReferrals.map((e, idx) => (
                                   <tr key={idx} className="border-t">
                                     <td className="py-2 pr-4">{e.invitee_user_id}</td>
                                     <td className="py-2 pr-4">{e.invitee_email_masked || '***'}</td>
@@ -636,7 +684,12 @@ const SettingsContent = () => {
                             </table>
                           </div>
                         ) : (
-                          <p className="text-gray-500 text-sm">暂无邀请记录</p>
+                          <div className="text-gray-500 text-sm">
+                            <p>暂无邀请记录</p>
+                            {referralLink?.referral_link && (
+                              <button onClick={()=>handleCopyLink(referralLink.referral_link)} className="mt-2 inline-flex items-center px-3 py-1.5 text-xs border rounded-lg bg-white text-gray-700 hover:bg-gray-50">复制我的邀请链接</button>
+                            )}
+                          </div>
                         )}
                       </div>
                       {user?.is_superuser && (
