@@ -5,6 +5,7 @@ ThinkSo 应用配置
 import os
 from pydantic_settings import BaseSettings
 from dotenv import load_dotenv
+import json
 
 # 优先加载 .env.local，并覆盖现有环境变量，确保本地开发环境的正确性
 # 这个文件在生产环境中不存在，因此不会影响生产部署
@@ -59,8 +60,18 @@ class Settings(BaseSettings):
         super().__init__(**values)
         env_allowed = os.getenv("ALLOWED_ORIGINS")
         if env_allowed:
-            # 兼容逗号或空格分隔
-            self.allowed_origins = [o.strip() for o in env_allowed.replace(" ", "").split(",") if o.strip()]
+            parsed = None
+            s = env_allowed.strip()
+            # 兼容 JSON 数组字符串，如 '["https://a.com","https://b.com"]'
+            if s.startswith("[") and s.endswith("]"):
+                try:
+                    parsed = json.loads(s)
+                except Exception:
+                    parsed = None
+            # 兼容逗号/空格分隔的纯字符串
+            if parsed is None:
+                parsed = [o.strip() for o in s.replace(" ", "").split(",") if o.strip()]
+            self.allowed_origins = parsed
         else:
             # 默认包含本地与线上前端域名（含测试环境域名）
             self.allowed_origins = [
