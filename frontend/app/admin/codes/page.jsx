@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/Input';
 import Toast from '@/components/common/Toast';
 
 const AdminCodesPageComponent = () => {
-  const { user, token, loading } = useContext(AuthContext);
+  const { user, loading } = useContext(AuthContext);
   const router = useRouter();
   
   // 表单状态
@@ -48,14 +48,10 @@ const AdminCodesPageComponent = () => {
 
   // 加载兑换码列表
   const loadCodesList = async (page = 1, filter = statusFilter) => {
-    if (!token) return;
-    
     setListLoading(true);
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/redemption-codes?page=${page}&per_page=20&status_filter=${filter}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        credentials: 'include'
       });
 
       const data = await response.json();
@@ -78,11 +74,11 @@ const AdminCodesPageComponent = () => {
 
   // 页面加载时获取兑换码列表
   React.useEffect(() => {
-    if (user && user.is_superuser && token) {
+    if (user && user.is_superuser) {
       loadCodesList();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, token]);
+  }, [user]);
 
   // 状态筛选改变时重新加载
   const handleStatusFilterChange = (newFilter) => {
@@ -135,11 +131,6 @@ const AdminCodesPageComponent = () => {
   const handleGenerateCodes = async (e) => {
     e.preventDefault();
     
-    if (!token) {
-      showToast('请先登录', 'error');
-      return;
-    }
-
     // 表单验证
     if (formData.quantity < 1 || formData.quantity > 100) {
       showToast('生成数量必须在1-100之间', 'error');
@@ -161,9 +152,9 @@ const AdminCodesPageComponent = () => {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/redemption-codes`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(formData)
       });
