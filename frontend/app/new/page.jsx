@@ -32,9 +32,10 @@ export default function NewPage() {
   const [submitting, setSubmitting] = useState(false)
   const uploadRef = useRef(null)
   // 基础/高级参数（占位，后续接入）
-  const [language, setLanguage] = useState('auto')
+  // const [language, setLanguage] = useState('auto') // 暂时隐藏
   const [depth, setDepth] = useState('medium') // simple/medium/deep
-  const [style, setStyle] = useState('general')
+  // const [style, setStyle] = useState('general') // 暂时隐藏
+  const [savedId, setSavedId] = useState(null)
 
   useEffect(() => {
     if (!isLoading && !user) router.push('/?auth=login')
@@ -57,6 +58,28 @@ export default function NewPage() {
     } catch { setEstimate(null) } finally { setEstimating(false) }
   }
 
+  // 自动保存到「我的导图」
+  const autoSave = async (result) => {
+    try {
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
+      const res = await fetch(`${API_BASE_URL}/api/mindmaps/`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: result?.data?.title || title || '未命名思维导图',
+          content: result?.data?.markdown || '',
+          description: null,
+          is_public: false,
+        })
+      })
+      if (res.ok) {
+        const saved = await res.json()
+        setSavedId(saved?.id || null)
+      }
+    } catch {}
+  }
+
   // 生成（文本）
   const handleGenerateFromText = async () => {
     if (!text.trim()) return
@@ -65,17 +88,17 @@ export default function NewPage() {
       const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
       const res = await fetch(`${API_BASE_URL}/api/process-text`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: text.trim() }) })
       const result = await res.json()
-      if (res.ok && result.success) setPreview(result)
+      if (res.ok && result.success) { setPreview(result); autoSave(result) }
       else throw new Error(result?.detail?.message || result?.detail || '生成失败')
     } catch (e) { setError(String(e.message || e)) } finally { setSubmitting(false) }
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-[1400px] mx-auto px-6 py-8">
         <div className="flex gap-6">
           {/* 左侧侧栏 */}
-          <aside className="w-[360px] shrink-0 bg-white rounded-xl border border-gray-200 p-3 h-[calc(100vh-160px)] overflow-auto">
+          <aside className="w-[340px] shrink-0 bg-white rounded-xl border border-gray-200 p-3 h-[calc(100vh-160px)] overflow-auto">
             {/* 来源（Accordion 风格） */}
             <div className="mb-4">
               <div className="text-xs font-semibold text-gray-700 mb-1">来源</div>
@@ -109,10 +132,6 @@ export default function NewPage() {
             {source === 'text' && (
               <div className="mt-3 space-y-3">
                 <div>
-                  <Label htmlFor="ttitle">标题</Label>
-                  <Input id="ttitle" value={title} onChange={(e)=>setTitle(e.target.value)} placeholder="请输入标题"/>
-                </div>
-                <div>
                   <Label htmlFor="tcontent">文本内容</Label>
                   <Textarea id="tcontent" rows={8} value={text} onChange={(e)=>{ setText(e.target.value); const v=e.target.value; clearTimeout(window.__est); window.__est=setTimeout(()=>handleEstimateText(v), 500) }} placeholder="在此粘贴文本..."/>
                   <div className="mt-1 flex justify-between text-xs text-gray-500">
@@ -124,7 +143,7 @@ export default function NewPage() {
             )}
             {source === 'upload' && (
               <div className="mt-3">
-                <FileUpload ref={uploadRef} hideModeToggle initialMode="file" forceMode="file" showGenerateButton={false} onStateChange={(s)=>{
+                <FileUpload ref={uploadRef} hideModeToggle initialMode="file" forceMode="file" showGenerateButton={false} showEstimatePanel={false} onStateChange={(s)=>{
                   setEstimate(prev => prev ? { ...prev, estimated_cost: s.estimated_cost, user_balance: s.user_balance, sufficient_credits: s.user_balance >= (s.estimated_cost||0) } : (s.estimated_cost? { estimated_cost: s.estimated_cost, user_balance: s.user_balance, sufficient_credits: s.user_balance >= (s.estimated_cost||0) } : null))
                 }} onUploadStart={()=>{ setError(null); setPreview(null) }} onUploadSuccess={(res)=> setPreview(res)} onUploadError={(msg)=> setError(msg)} />
               </div>
@@ -135,29 +154,11 @@ export default function NewPage() {
               <div className="text-xs font-semibold text-gray-700 mb-2">基础参数</div>
               <div className="space-y-3 text-sm">
                 <div>
-                  <Label>语言</Label>
-                  <select value={language} onChange={(e)=>setLanguage(e.target.value)} className="mt-1 w-full border rounded-md px-2 py-1">
-                    <option value="auto">自动</option>
-                    <option value="zh">中文</option>
-                    <option value="en">English</option>
-                  </select>
-                </div>
-                <div>
                   <Label>大纲深度</Label>
                   <select value={depth} onChange={(e)=>setDepth(e.target.value)} className="mt-1 w-full border rounded-md px-2 py-1">
                     <option value="simple">简略</option>
                     <option value="medium">中等</option>
                     <option value="deep">详细</option>
-                  </select>
-                </div>
-                <div>
-                  <Label>风格</Label>
-                  <select value={style} onChange={(e)=>setStyle(e.target.value)} className="mt-1 w-full border rounded-md px-2 py-1">
-                    <option value="general">通用</option>
-                    <option value="edu">教学</option>
-                    <option value="academic">学术</option>
-                    <option value="product">产品</option>
-                    <option value="plan">计划</option>
                   </select>
                 </div>
               </div>
@@ -190,14 +191,14 @@ export default function NewPage() {
 
           {/* 中线分界 + 右侧预览 */}
           <div className="flex-1 border-l border-gray-200 pl-6">
-            <Card className="h-[calc(100vh-160px)]">
+            <Card className="h-[calc(100vh-140px)]">
               {preview ? (
                 <div className="h-full rounded-lg overflow-hidden">
                   <div className="flex items-center justify-between p-4 border-b">
-                    <h2 className="text-lg font-semibold">{preview.data?.title || title || '思维导图'}</h2>
+                    <h2 className="text-base font-semibold">{preview.data?.title || title || '思维导图'}{savedId && <span className="ml-2 text-xs text-emerald-600">已自动保存</span>}</h2>
                     <div className="text-xs text-gray-500">Markmap 预览</div>
                   </div>
-                  <div className="h-[calc(100%-52px)]">
+                  <div className="h-[calc(100%-44px)]">
                     <SimpleMarkmapBasic mindmapData={preview.data} />
                   </div>
                 </div>
