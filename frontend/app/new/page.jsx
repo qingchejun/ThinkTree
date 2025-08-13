@@ -9,6 +9,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
 import FileUpload from '@/components/upload/FileUpload'
+import { useRef } from 'react'
 import SimpleMarkmapBasic from '@/components/mindmap/SimpleMarkmapBasic'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card'
 import { Textarea } from '@/components/ui/Textarea'
@@ -28,6 +29,7 @@ export default function NewPage() {
   const [estimating, setEstimating] = useState(false)
   const [estimate, setEstimate] = useState(null)
   const [submitting, setSubmitting] = useState(false)
+  const uploadRef = useRef(null)
   // 基础/高级参数（占位，后续接入）
   const [language, setLanguage] = useState('auto')
   const [depth, setDepth] = useState('medium') // simple/medium/deep
@@ -72,10 +74,10 @@ export default function NewPage() {
       <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="flex gap-6">
           {/* 左侧侧栏 */}
-          <aside className="w-[380px] shrink-0 bg-white rounded-xl border border-gray-200 p-4 h-[calc(100vh-160px)] overflow-auto">
+          <aside className="w-[360px] shrink-0 bg-white rounded-xl border border-gray-200 p-3 h-[calc(100vh-160px)] overflow-auto">
             {/* 来源（Accordion 风格） */}
             <div className="mb-4">
-              <div className="text-sm font-semibold text-gray-700 mb-2">来源</div>
+              <div className="text-xs font-semibold text-gray-700 mb-1">来源</div>
               <div className="space-y-2">
                 {[
                   { key: 'text', label: '长文本' },
@@ -88,7 +90,7 @@ export default function NewPage() {
                   <button
                     key={item.key}
                     onClick={()=>{ if(item.disabled) return; setSource(item.key); setError(null); setPreview(null); }}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg border ${source===item.key? 'border-black bg-gray-900 text-white':'border-gray-200 bg-white text-gray-800 hover:bg-gray-50'} ${item.disabled? 'opacity-50 cursor-not-allowed':''}`}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg border text-sm ${source===item.key? 'border-black bg-gray-900 text-white':'border-gray-200 bg-white text-gray-800 hover:bg-gray-50'} ${item.disabled? 'opacity-50 cursor-not-allowed':''}`}
                     aria-expanded={source===item.key}
                     aria-disabled={item.disabled}
                   >
@@ -118,13 +120,15 @@ export default function NewPage() {
             )}
             {source === 'upload' && (
               <div className="mt-3">
-                <FileUpload hideModeToggle initialMode="file" forceMode="file" onUploadStart={()=>{ setError(null); setPreview(null) }} onUploadSuccess={(res)=> setPreview(res)} onUploadError={(msg)=> setError(msg)} />
+                <FileUpload ref={uploadRef} hideModeToggle initialMode="file" forceMode="file" showGenerateButton={false} onStateChange={(s)=>{
+                  setEstimate(prev => prev ? { ...prev, estimated_cost: s.estimated_cost, user_balance: s.user_balance, sufficient_credits: s.user_balance >= (s.estimated_cost||0) } : (s.estimated_cost? { estimated_cost: s.estimated_cost, user_balance: s.user_balance, sufficient_credits: s.user_balance >= (s.estimated_cost||0) } : null))
+                }} onUploadStart={()=>{ setError(null); setPreview(null) }} onUploadSuccess={(res)=> setPreview(res)} onUploadError={(msg)=> setError(msg)} />
               </div>
             )}
 
             {/* 基础参数 */}
             <div className="mt-6">
-              <div className="text-sm font-semibold text-gray-700 mb-2">基础参数</div>
+              <div className="text-xs font-semibold text-gray-700 mb-2">基础参数</div>
               <div className="space-y-3 text-sm">
                 <div>
                   <Label>语言</Label>
@@ -157,19 +161,20 @@ export default function NewPage() {
 
             {/* 高级参数（占位） */}
             <div className="mt-6">
-              <div className="text-sm font-semibold text-gray-700 mb-2">高级参数</div>
+              <div className="text-xs font-semibold text-gray-700 mb-2">高级参数</div>
               <div className="text-xs text-gray-500">更多可选项将在下一步接入</div>
             </div>
 
             {/* 操作区 */}
             <div className="mt-6 border-t pt-4">
-              <div className="flex items-center justify-between text-xs text-gray-600 mb-3">
+              <div className="flex items-center justify-between text-[11px] text-gray-600 mb-2">
                 <span>预计消耗：{estimate? estimate.estimated_cost : '--'} 分</span>
                 {estimate && <span>余额{estimate.user_balance}分</span>}
               </div>
-              <Button onClick={handleGenerateFromText} disabled={source!=='text' || !canSubmit || submitting} className="w-full">{submitting? '生成中...' : '🚀 生成'}</Button>
-              {source==='upload' && (
-                <div className="mt-2 text-[11px] text-gray-500">在上方解析并生成，结果将自动在右侧展示</div>
+              {source==='text' ? (
+                <Button onClick={handleGenerateFromText} disabled={!canSubmit || submitting} className="w-full">{submitting? '生成中...' : '🚀 生成'}</Button>
+              ) : (
+                <Button onClick={()=> uploadRef.current?.generate()} disabled={!uploadRef.current || !uploadRef.current?.canGenerate?.()} className="w-full">🚀 生成</Button>
               )}
             </div>
           </aside>
