@@ -16,6 +16,7 @@ import { Textarea } from '@/components/ui/Textarea'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { Label } from '@/components/ui/Label'
+import { FileText, Upload, Youtube, Mic, AudioLines, Globe } from 'lucide-react'
 
 export default function NewPage() {
   const { user, isLoading } = useAuth()
@@ -80,12 +81,12 @@ export default function NewPage() {
               <div className="text-xs font-semibold text-gray-700 mb-1">来源</div>
               <div className="space-y-2">
                 {[
-                  { key: 'text', label: '长文本' },
-                  { key: 'upload', label: '文档上传' },
-                  { key: 'yt', label: 'YouTube（开发中）', disabled: true },
-                  { key: 'pod', label: '播客（开发中）', disabled: true },
-                  { key: 'audio', label: '音频文件（开发中）', disabled: true },
-                  { key: 'web', label: '网页链接（开发中）', disabled: true },
+                  { key: 'text', label: '长文本', Icon: FileText },
+                  { key: 'upload', label: '文档上传', Icon: Upload },
+                  { key: 'yt', label: 'YouTube（开发中）', Icon: Youtube, disabled: true },
+                  { key: 'pod', label: '播客（开发中）', Icon: Mic, disabled: true },
+                  { key: 'audio', label: '音频文件（开发中）', Icon: AudioLines, disabled: true },
+                  { key: 'web', label: '网页链接（开发中）', Icon: Globe, disabled: true },
                 ].map(item => (
                   <button
                     key={item.key}
@@ -94,7 +95,10 @@ export default function NewPage() {
                     aria-expanded={source===item.key}
                     aria-disabled={item.disabled}
                   >
-                    <span>{item.label}</span>
+                    <span className="flex items-center gap-2">
+                      {item.Icon && <item.Icon size={16} className={source===item.key? 'text-white':'text-gray-600'} />}
+                      {item.label}
+                    </span>
                     <span>{source===item.key? '−':'+'}</span>
                   </button>
                 ))}
@@ -174,7 +178,12 @@ export default function NewPage() {
               {source==='text' ? (
                 <Button onClick={handleGenerateFromText} disabled={!canSubmit || submitting} className="w-full">{submitting? '生成中...' : '🚀 生成'}</Button>
               ) : (
-                <Button onClick={()=> uploadRef.current?.generate()} disabled={!uploadRef.current || !uploadRef.current?.canGenerate?.()} className="w-full">🚀 生成</Button>
+                <>
+                  <Button onClick={()=> uploadRef.current?.generate()} disabled={!uploadRef.current || !uploadRef.current?.canGenerate?.()} className="w-full">🚀 生成</Button>
+                  {estimate && estimate.sufficient_credits === false && (
+                    <div className="mt-2 text-[11px] text-rose-600">积分不足，请前往邀请/充值后再试</div>
+                  )}
+                </>
               )}
             </div>
           </aside>
