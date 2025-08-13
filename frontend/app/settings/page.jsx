@@ -563,7 +563,9 @@ const SettingsContent = () => {
                     <button
                       key={item.id}
                       onClick={() => { if (!isDisabled) router.push(`/settings?tab=${item.id}#${item.id}`) }}
+                      onKeyDown={(e) => { if (isDisabled) return; if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); router.push(`/settings?tab=${item.id}#${item.id}`) } }}
                       aria-disabled={isDisabled}
+                      aria-current={isActive ? 'page' : undefined}
                       title={isDisabled ? '暂未开放' : undefined}
                       className={`w-full flex items-center justify-start px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${baseClass}`}
                     >
@@ -875,6 +877,12 @@ const SettingsContent = () => {
                             </div>
                           ) : creditHistory.length > 0 ? (
                             <div className="space-y-3">
+                              {displayHistory.length === 0 ? (
+                                <div className="text-center p-6 rounded-lg border border-gray-200 bg-white">
+                                  <p className="text-sm text-gray-600">无符合当前筛选条件的记录</p>
+                                  <button onClick={() => { setHistoryRange('ALL'); setTypeFilters(new Set()); }} className="mt-3 inline-flex items-center px-2.5 py-1.5 text-xs border rounded-lg bg-white text-gray-700 hover:bg-gray-50">清除筛选</button>
+                                </div>
+                              ) : null}
                               {displayHistory.map((item) => (
                                 <div key={item.id} className="flex items-center p-4 bg-gray-50 rounded-lg border border-gray-200">
                                   <div className="flex-1">
@@ -899,7 +907,7 @@ const SettingsContent = () => {
                            ) : (
                             <div className="text-center p-8 border border-dashed border-gray-200 rounded-lg bg-gray-50">
                               <svg className="w-10 h-10 mx-auto text-gray-300" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1a4 4 0 0 1 4 4v1h1a3 3 0 0 1 3 3v6a5 5 0 0 1-4 4.9V22a1 1 0 1 1-2 0v-2H10v2a1 1 0 1 1-2 0v-2.1A5 5 0 0 1 4 15V9a3 3 0 0 1 3-3h1V5a4 4 0 0 1 4-4Zm0 2a2 2 0 0 0-2 2v1h4V5a2 2 0 0 0-2-2Z"/></svg>
-                              <p className="mt-2 text-sm text-gray-600">暂无积分历史</p>
+                              <p className="mt-2 text-sm text-gray-600">还没有积分历史，试试以下操作</p>
                               <div className="mt-3 flex items-center justify-center gap-2 text-xs">
                                 <a href="#redeem" className="px-2.5 py-1.5 border rounded-lg bg-white text-gray-700 hover:bg-gray-50">输入兑换码</a>
                                 {isAdmin ? (
