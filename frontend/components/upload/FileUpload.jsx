@@ -7,6 +7,8 @@ import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 're
 import { ToastManager } from '../common/Toast'
 import { useAuth } from '../../context/AuthContext'
 
+const MAX_TEXT_LEN = 100000 // 100k 字符上限
+
 const SUPPORTED_FORMATS = {
   '.txt': 'text/plain',
   '.md': 'text/markdown',
@@ -57,6 +59,7 @@ const FileUpload = forwardRef(function FileUpload({ onUploadStart, onUploadSucce
   const [isAnalyzing, setIsAnalyzing] = useState(false) // 文件分析中
   const [isGenerating, setIsGenerating] = useState(false) // 思维导图生成中
   const [generationComplete, setGenerationComplete] = useState(false) // 生成完成标志
+  const [analyzeStatus, setAnalyzeStatus] = useState('idle') // idle | parsing | done | failed
   
   const fileInputRef = useRef(null)
 
@@ -65,6 +68,11 @@ const FileUpload = forwardRef(function FileUpload({ onUploadStart, onUploadSucce
     if (!text.trim()) {
       setCreditEstimate(null)
       return
+    }
+    // 超大文本优化：本地阈值校验，截断估算
+    let payload = text
+    if (payload.length > MAX_TEXT_LEN) {
+      payload = payload.slice(0, MAX_TEXT_LEN)
     }
 
     try {
@@ -76,18 +84,18 @@ const FileUpload = forwardRef(function FileUpload({ onUploadStart, onUploadSucce
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ text: text.trim() })
+        body: JSON.stringify({ text: payload.trim() })
       })
 
       if (response.ok) {
         const result = await response.json()
         setCreditEstimate(result)
       } else {
-        setCreditEstimate(null)
+        setCreditEstimate({ sufficient_credits: true, estimated_cost: null, user_balance: null })
       }
     } catch (error) {
       console.error('积分估算失败:', error)
-      setCreditEstimate(null)
+      setCreditEstimate({ sufficient_credits: true, estimated_cost: null, user_balance: null })
     } finally {
       setEstimating(false)
     }
@@ -165,6 +173,7 @@ const FileUpload = forwardRef(function FileUpload({ onUploadStart, onUploadSucce
     try {
       validateFile(file)
       setIsAnalyzing(true)
+      setAnalyzeStatus('parsing')
       setFileAnalysis(null)
       // 注意：这里不调用onUploadStart，只在实际生成时才调用
 
@@ -182,14 +191,13 @@ const FileUpload = forwardRef(function FileUpload({ onUploadStart, onUploadSucce
       
       if (response.ok && result.success) {
         setFileAnalysis(result)
-        console.log('文件分析成功:', result)
-        console.log('fileAnalysis state将被设置为:', result)
+        setAnalyzeStatus('done')
       } else {
-        console.error('文件分析失败:', result)
+        setAnalyzeStatus('failed')
         throw new Error(getErrorMessage(result.detail, '文件分析失败'))
       }
     } catch (error) {
-      console.error('文件分析错误:', error)
+      setAnalyzeStatus('failed')
       if (onUploadError) onUploadError(error.message)
       else ToastManager.error(error.message || '文件分析失败', 4000)
     } finally {
@@ -408,6 +416,19 @@ const FileUpload = forwardRef(function FileUpload({ onUploadStart, onUploadSucce
                     <p className="text-sm text-gray-500 mt-2">
                       支持 TXT, MD, DOCX, PDF, SRT 格式，最大 10MB
                     </p>
+                    {isAnalyzing && (
+                      <div className="mt-3 text-xs text-gray-600">
+                        <div className="w-full bg-gray-100 rounded h-2 overflow-hidden">
+                          <div className="h-2 bg-indigo-500 animate-pulse" style={{ width: '75%' }} />
+                        </div>
+                        <div className="mt-1">正在解析文件...</div>
+                      </div>
+                    )}
+                    {analyzeStatus === 'failed' && (
+                      <div className="mt-2 text-xs text-rose-600">解析失败。
+                        <button className="ml-2 underline" onClick={() => fileInputRef.current?.click()}>重新选择</button>
+                      </div>
+                    )}
                   </div>
                 </>
               )}
@@ -527,7 +548,7 @@ const FileUpload = forwardRef(function FileUpload({ onUploadStart, onUploadSucce
                     ? 'text-green-600' 
                     : 'text-red-600'
                 }`}>
-                  {estimating ? '计算中...' : `预计消耗: ${creditEstimate.estimated_cost} 积分`}
+                  {estimating ? '计算中...' : (creditEstimate.estimated_cost != null ? `预计消耗: ${creditEstimate.estimated_cost} 积分` : '暂无法获取预计消耗，可直接生成')}
                 </span>
               )}
             </div>

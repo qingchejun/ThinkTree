@@ -6,7 +6,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
 import { useModal } from '@/context/ModalContext'
 import FileUpload from '@/components/upload/FileUpload'
@@ -67,6 +67,22 @@ export default function NewPage() {
   useEffect(() => {
     if (!isLoading && !user) router.push('/?auth=login')
   }, [user, isLoading, router])
+
+  // 路由参数直达：?source=upload|text&style=refined|original
+  const searchParams = useSearchParams()
+  useEffect(() => {
+    try {
+      const src = (searchParams?.get('source') || '').toLowerCase()
+      const sty = (searchParams?.get('style') || '').toLowerCase()
+      if (src === 'upload' || src === 'text') setSource(src)
+      if (sty === 'refined' || sty === 'original') setMapStyle(sty)
+      setTimeout(() => {
+        const el = document.getElementById('group-source')
+        if (el && typeof el.scrollIntoView === 'function') el.scrollIntoView({ block: 'start', behavior: 'smooth' })
+      }, 150)
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const canSubmit = useMemo(() => {
     const credits = user?.credits || 0
@@ -155,6 +171,23 @@ export default function NewPage() {
     if (estimate?.estimated_cost != null) return `生成（预计${estimate.estimated_cost}分）`
     return '🚀 生成'
   }, [submitting, estimating, estimate])
+
+  // 键盘快捷键：Cmd/Ctrl + Enter 生成
+  useEffect(() => {
+    const onKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+        if (source === 'text' && canSubmit) {
+          e.preventDefault()
+          handleGenerateFromText()
+        } else if (source === 'upload' && uploadRef.current?.canGenerate?.() && canSubmit) {
+          e.preventDefault()
+          uploadRef.current?.generate({ style: mapStyle })
+        }
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [source, canSubmit, mapStyle])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -298,6 +331,7 @@ export default function NewPage() {
                         <>
                           <Button size="sm" variant="outline" onClick={()=>window.open(`/mindmap/${savedId}`, '_blank')} aria-label="在新标签打开导图">打开导图</Button>
                           <Button size="sm" onClick={()=>router.push(`/mindmap/${savedId}`)} aria-label="查看导图详情">查看详情</Button>
+                          <Button size="sm" variant="ghost" onClick={()=>router.push('/mindmaps')} aria-label="返回我的导图">返回我的导图</Button>
                         </>
                       )}
                       <div className="text-xs text-gray-500">Markmap 预览</div>
