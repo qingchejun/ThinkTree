@@ -606,7 +606,7 @@ const SettingsContent = () => {
 
             {/* 右侧内容区 */}
             <main className="md:col-span-3">
-                <TabsContent value="profile">
+                <TabsContent value="profile" className="mt-0">
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200">
                   <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
                     <h3 id="profile" className="text-lg font-semibold text-gray-900">个人资料</h3>
@@ -678,7 +678,7 @@ const SettingsContent = () => {
                   </div>
                 </div>
               </TabsContent>
-               <TabsContent value="invitations">
+               <TabsContent value="invitations" className="mt-0">
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200">
                   <div className="px-6 py-5 border-b border-gray-200">
                     <h3 id="invitations" className="text-lg font-semibold text-gray-900">邀请好友</h3>
@@ -830,7 +830,7 @@ const SettingsContent = () => {
                   </div>
                 </div>
               </TabsContent>
-                 <TabsContent value="billing">
+                 <TabsContent value="billing" className="mt-0">
                   <div className="bg-white rounded-xl shadow-sm border border-gray-200">
                     <div className="px-6 py-5 border-b border-gray-200">
                       <h3 id="billing" className="text-lg font-semibold text-gray-900">用量计费</h3>
