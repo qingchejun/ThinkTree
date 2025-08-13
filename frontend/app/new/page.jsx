@@ -5,8 +5,8 @@
  */
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useEffect, useMemo, useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
 import { useModal } from '@/context/ModalContext'
 import FileUpload from '@/components/upload/FileUpload'
@@ -68,12 +68,12 @@ export default function NewPage() {
     if (!isLoading && !user) router.push('/?auth=login')
   }, [user, isLoading, router])
 
-  // 路由参数直达：?source=upload|text&style=refined|original
-  const searchParams = useSearchParams()
+  // 路由参数直达：?source=upload|text&style=refined|original（使用 window.location 避免 suspense 要求）
   useEffect(() => {
     try {
-      const src = (searchParams?.get('source') || '').toLowerCase()
-      const sty = (searchParams?.get('style') || '').toLowerCase()
+      const params = new URLSearchParams(window.location.search)
+      const src = (params.get('source') || '').toLowerCase()
+      const sty = (params.get('style') || '').toLowerCase()
       if (src === 'upload' || src === 'text') setSource(src)
       if (sty === 'refined' || sty === 'original') setMapStyle(sty)
       setTimeout(() => {
@@ -81,7 +81,6 @@ export default function NewPage() {
         if (el && typeof el.scrollIntoView === 'function') el.scrollIntoView({ block: 'start', behavior: 'smooth' })
       }, 150)
     } catch {}
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const canSubmit = useMemo(() => {
@@ -113,6 +112,7 @@ export default function NewPage() {
     }
   }
 
+  const MAX_TEXT_LEN = 100000
   const handleEstimateText = async (val) => {
     if (estimateAbortRef.current) { try { estimateAbortRef.current.abort() } catch {} }
     if (!val.trim()) { setEstimate(null); return }
@@ -121,8 +121,9 @@ export default function NewPage() {
       const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
       const controller = new AbortController()
       estimateAbortRef.current = controller
+      const payload = val.length > MAX_TEXT_LEN ? val.slice(0, MAX_TEXT_LEN) : val
       const res = await fetchWithRetry(`${API_BASE_URL}/api/estimate-credit-cost`, {
-        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: val.trim() }), signal: controller.signal
+        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: payload.trim() }), signal: controller.signal
       }, { retries: 2 })
       if (res.ok) setEstimate(await res.json()); else setEstimate(null)
     } catch { setEstimate(null) } finally { setEstimating(false); estimateAbortRef.current = null }
@@ -151,7 +152,7 @@ export default function NewPage() {
   }
 
   // 生成（文本）
-  const handleGenerateFromText = async () => {
+  const handleGenerateFromText = useCallback(async () => {
     if (!text.trim() || submitting) return
     try {
       setSubmitting(true); setError(null)
@@ -163,7 +164,8 @@ export default function NewPage() {
       if (res.ok && result.success) { setPreview(result); autoSave(result); refreshUser?.() }
       else throw new Error(result?.detail?.message || result?.detail || '生成失败')
     } catch (e) { setError(String(e.message || e)) } finally { setSubmitting(false) }
-  }
+  // deps
+  }, [text, submitting, mapStyle, refreshUser])
 
   const submitBtnLabel = useMemo(() => {
     if (submitting) return '生成中...'
@@ -187,7 +189,7 @@ export default function NewPage() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [source, canSubmit, mapStyle])
+  }, [source, canSubmit, mapStyle, handleGenerateFromText])
 
   return (
     <div className="min-h-screen bg-gray-50">
