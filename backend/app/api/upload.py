@@ -31,6 +31,7 @@ from .auth import get_current_user
 class TextProcessRequest(BaseModel):
     text: str
     format_type: Optional[str] = "standard"
+    style: Optional[str] = None  # original/refined
 
 class CreditEstimateRequest(BaseModel):
     text: str
@@ -38,6 +39,7 @@ class CreditEstimateRequest(BaseModel):
 class FileGenerateRequest(BaseModel):
     file_token: str
     format_type: Optional[str] = "standard"
+    style: Optional[str] = None  # original/refined
 
 # 确保上传目录存在
 os.makedirs(settings.upload_dir, exist_ok=True)
@@ -149,6 +151,7 @@ async def upload_file(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     format_type: str = "standard",
+    style: Optional[str] = None,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -204,7 +207,7 @@ async def upload_file(
         # 4. 调用AI服务生成思维导图（使用try-except处理失败情况）
         try:
             mindmap_result = await ai_processor.generate_mindmap_structure(
-                parsed_content
+                parsed_content, style=style
             )
             
             if not mindmap_result["success"]:
@@ -329,7 +332,7 @@ async def process_text(
     # 4. 调用AI服务生成思维导图（使用try-except处理失败情况）
     try:
         mindmap_result = await ai_processor.generate_mindmap_structure(
-            text_request.text
+            text_request.text, style=text_request.style
         )
         
         if not mindmap_result["success"]:
