@@ -80,6 +80,9 @@ const SettingsContent = () => {
   const [disabledTipId, setDisabledTipId] = useState(null);
   const [disabledTipVisible, setDisabledTipVisible] = useState(false);
   const tooltipTimerRef = useRef(null);
+  const [disabledTipPlacement, setDisabledTipPlacement] = useState('right');
+  // 迷你图 hover 状态
+  const [sparkHover, setSparkHover] = useState(null);
   
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
@@ -591,9 +594,9 @@ const SettingsContent = () => {
                         tabIndex={0}
                         onClick={() => { if (!isDisabled) router.push(`/settings?tab=${item.id}#${item.id}`) }}
                         onKeyDown={(e) => { if (isDisabled) { if (e.key === 'Escape') { setDisabledTipVisible(false); setDisabledTipId(null); } return; } if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); router.push(`/settings?tab=${item.id}#${item.id}`) } }}
-                        onMouseEnter={() => { if (!isDisabled) return; setDisabledTipId(item.id); if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current); tooltipTimerRef.current = setTimeout(() => setDisabledTipVisible(true), 200); }}
+                        onMouseEnter={(e) => { if (!isDisabled) return; setDisabledTipId(item.id); if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current); tooltipTimerRef.current = setTimeout(() => { const rect = e.currentTarget.getBoundingClientRect(); const tipW = 120; setDisabledTipPlacement(rect.right + tipW > window.innerWidth ? 'left' : 'right'); setDisabledTipVisible(true); }, 200); }}
                         onMouseLeave={() => { if (!isDisabled) return; if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current); setDisabledTipVisible(false); setDisabledTipId(null); }}
-                        onFocus={() => { if (!isDisabled) return; setDisabledTipId(item.id); if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current); tooltipTimerRef.current = setTimeout(() => setDisabledTipVisible(true), 200); }}
+                        onFocus={(e) => { if (!isDisabled) return; setDisabledTipId(item.id); if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current); tooltipTimerRef.current = setTimeout(() => { const rect = e.currentTarget.getBoundingClientRect(); const tipW = 120; setDisabledTipPlacement(rect.right + tipW > window.innerWidth ? 'left' : 'right'); setDisabledTipVisible(true); }, 200); }}
                         onBlur={() => { if (!isDisabled) return; if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current); setDisabledTipVisible(false); setDisabledTipId(null); }}
                         aria-disabled={isDisabled}
                         aria-current={isActive ? 'page' : undefined}
@@ -604,7 +607,7 @@ const SettingsContent = () => {
                         {item.name}{isDisabled && '（开发中）'}
                       </button>
                       {isDisabled && disabledTipVisible && disabledTipId === item.id && (
-                        <div id={`${item.id}-tip`} role="tooltip" className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2 py-1 rounded bg-gray-900 text-white text-xs shadow-md">
+                        <div id={`${item.id}-tip`} role="tooltip" className={`absolute top-1/2 -translate-y-1/2 px-2 py-1 rounded bg-gray-900 text-white text-xs shadow-md ${disabledTipPlacement==='right' ? 'left-full ml-2' : 'right-full mr-2'}`}>
                           暂未开放
                         </div>
                       )}
@@ -854,14 +857,40 @@ const SettingsContent = () => {
                           </p>
                           <p className="text-sm text-gray-600 mt-1">积分</p>
                           {/* 迷你趋势图 */}
-                          <div className="mt-3">
+                           <div className="mt-3">
                             <div className="flex items-center justify-between mb-1">
                               <span className="text-xs text-gray-500">最近{historyRange==='30'?'30':'7'}天趋势</span>
                               <span className={`text-xs ${sparkData.trendUp ? 'text-emerald-600' : 'text-rose-600'}`}>{sparkData.last >= 0 ? '+' : ''}{sparkData.last}</span>
                             </div>
-                            <svg width={sparkData.w} height={sparkData.h} className="block">
-                              <polyline fill="none" stroke={sparkData.trendUp ? '#10b981' : '#ef4444'} strokeWidth="2" points={sparkData.points} />
-                            </svg>
+                            <div className="relative" style={{ width: sparkData.w, height: sparkData.h }}>
+                              <svg width={sparkData.w} height={sparkData.h} className="block">
+                                <polyline className="sparkline" fill="none" stroke={sparkData.trendUp ? '#10b981' : '#ef4444'} strokeWidth="2" points={sparkData.points} />
+                                {sparkHover && (
+                                  <g>
+                                    <circle cx={sparkHover.x} cy={sparkHover.y} r="2.5" fill="#111827" />
+                                    <text x={Math.min(sparkHover.x + 6, sparkData.w - 30)} y={Math.max(10, sparkHover.y - 6)} fontSize="10" fill="#374151">{(sparkHover.value>=0?'+':'')+sparkHover.value} · {sparkHover.label}</text>
+                                  </g>
+                                )}
+                              </svg>
+                              <div className="absolute inset-0" onMouseLeave={() => setSparkHover(null)} onMouseMove={(e) => {
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                const mx = e.clientX - rect.left;
+                                const pts = sparkData.points.split(' ');
+                                if (!pts.length) return;
+                                let ni = 0, best = Infinity;
+                                for (let i = 0; i < pts.length; i++) {
+                                  const x = Number(pts[i].split(',')[0]);
+                                  const d = Math.abs(x - mx);
+                                  if (d < best) { best = d; ni = i; }
+                                }
+                                const [sx, sy] = pts[ni].split(',').map(Number);
+                                setSparkHover({ x: sx, y: sy, label: `${ni+1}/${sparkData.days}`, value: 0 });
+                              }}></div>
+                              <style jsx>{`
+                                @keyframes sparkfade { from { opacity: 0 } to { opacity: 1 } }
+                                .sparkline { animation: sparkfade .3s ease-in; }
+                              `}</style>
+                            </div>
                           </div>
                         </div>
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -915,7 +944,7 @@ const SettingsContent = () => {
                                 </span>
                               ))}
                               {(historyRange!=='ALL' || typeFilters.size>0) && (
-                                <button onClick={()=> { setHistoryRange('ALL'); setTypeFilters(new Set()); }} className="text-gray-600 hover:text-gray-900">清空</button>
+                                <button onClick={()=> { setHistoryRange('ALL'); setTypeFilters(new Set()); }} className="text-gray-600 hover:text-gray-900">清空（⌘/Ctrl+Backspace）</button>
                               )}
                             </div>
                           </div>
