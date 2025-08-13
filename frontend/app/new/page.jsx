@@ -67,8 +67,8 @@ export default function NewPage() {
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: result?.data?.title || title || '未命名思维导图',
-          content: result?.data?.markdown || '',
+          title: (result?.data?.title || title || '未命名思维导图').toString().slice(0, 80),
+          content: (result?.data?.markdown || '').toString(),
           description: null,
           is_public: false,
         })
@@ -145,7 +145,7 @@ export default function NewPage() {
               <div className="mt-3">
                 <FileUpload ref={uploadRef} hideModeToggle initialMode="file" forceMode="file" showGenerateButton={false} showEstimatePanel={false} onStateChange={(s)=>{
                   setEstimate(prev => prev ? { ...prev, estimated_cost: s.estimated_cost, user_balance: s.user_balance, sufficient_credits: s.user_balance >= (s.estimated_cost||0) } : (s.estimated_cost? { estimated_cost: s.estimated_cost, user_balance: s.user_balance, sufficient_credits: s.user_balance >= (s.estimated_cost||0) } : null))
-                }} onUploadStart={()=>{ setError(null); setPreview(null) }} onUploadSuccess={(res)=> setPreview(res)} onUploadError={(msg)=> setError(msg)} />
+                }} onUploadStart={()=>{ setError(null); setPreview(null) }} onUploadSuccess={(res)=> { setPreview(res); autoSave(res) }} onUploadError={(msg)=> setError(msg)} />
               </div>
             )}
 
