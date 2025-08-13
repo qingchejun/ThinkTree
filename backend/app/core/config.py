@@ -53,11 +53,20 @@ class Settings(BaseSettings):
     upload_dir: str = "uploads"
     allowed_file_types: list = [".txt", ".md", ".docx", ".pdf", ".srt"]
     
-    # CORS 配置
-    allowed_origins: list = [
-        "http://localhost:3000",
-        "https://thinkso.io"
-    ]
+    # CORS 配置（支持通过环境变量 ALLOWED_ORIGINS 覆盖，逗号分隔）
+    allowed_origins: list = []
+    def __init__(self, **values):
+        super().__init__(**values)
+        env_allowed = os.getenv("ALLOWED_ORIGINS")
+        if env_allowed:
+            # 兼容逗号或空格分隔
+            self.allowed_origins = [o.strip() for o in env_allowed.replace(" ", "").split(",") if o.strip()]
+        else:
+            self.allowed_origins = [
+                "http://localhost:3000",
+                "https://thinkso.io",
+                "https://www.thinkso.io",
+            ]
     
     # Resend 邮件服务配置
     resend_api_key: str = os.getenv("RESEND_API_KEY", "")
