@@ -64,6 +64,7 @@ const SettingsContent = () => {
   const [creditLoading, setCreditLoading] = useState(false);
   const [creditError, setCreditError] = useState(null);
   const creditRetryRef = useRef(0);
+  const creditInFlightRef = useRef(false);
   const [creditPagination, setCreditPagination] = useState({
     current_page: 1,
     total_pages: 1,
@@ -75,6 +76,10 @@ const SettingsContent = () => {
   // 计费筛选
   const [historyRange, setHistoryRange] = useState('ALL'); // ALL|7|30
   const [typeFilters, setTypeFilters] = useState(new Set()); // e.g., INVITE/REDEEM/DEDUCTION/REFUND/DAILY_REWARD
+  // 禁用项 tooltip 控制
+  const [disabledTipId, setDisabledTipId] = useState(null);
+  const [disabledTipVisible, setDisabledTipVisible] = useState(false);
+  const tooltipTimerRef = useRef(null);
   
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
@@ -243,6 +248,23 @@ const SettingsContent = () => {
     });
   };
 
+  // 今日变动计算
+  const todaysDelta = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    let sum = 0;
+    (creditHistory || []).forEach((it) => {
+      const d = new Date(it.created_at);
+      d.setHours(0, 0, 0, 0);
+      if (d.getTime() === today.getTime()) {
+        const type = (it.transaction_type || it.type);
+        const amount = Number(it.amount || 0);
+        sum += type === 'DEDUCTION' ? -amount : amount;
+      }
+    });
+    return sum;
+  }, [creditHistory]);
+
   // 计算迷你趋势图数据（基于 displayHistory 与当前 historyRange）
   const sparkData = useMemo(() => {
     const days = historyRange === '7' ? 7 : historyRange === '30' ? 30 : 7;
@@ -393,8 +415,10 @@ const SettingsContent = () => {
   // 加载积分历史数据
   const loadCreditHistory = async (page = 1, loadMore = false) => {
     if (!user) return;
+    if (creditInFlightRef.current) return;
     
     try {
+      creditInFlightRef.current = true;
       setCreditLoading(true);
       setCreditError(null);
       const response = await getCreditHistory(page, 20);
@@ -417,6 +441,7 @@ const SettingsContent = () => {
       setCreditError('网络异常，加载失败');
     } finally {
       setCreditLoading(false);
+      creditInFlightRef.current = false;
     }
   };
 
@@ -560,18 +585,30 @@ const SettingsContent = () => {
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                   const iconClass = isDisabled ? 'text-gray-300' : (isActive ? 'text-white' : item.iconColor)
                   return (
-                    <button
-                      key={item.id}
-                      onClick={() => { if (!isDisabled) router.push(`/settings?tab=${item.id}#${item.id}`) }}
-                      onKeyDown={(e) => { if (isDisabled) return; if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); router.push(`/settings?tab=${item.id}#${item.id}`) } }}
-                      aria-disabled={isDisabled}
-                      aria-current={isActive ? 'page' : undefined}
-                      title={isDisabled ? '暂未开放' : undefined}
-                      className={`w-full flex items-center justify-start px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${baseClass}`}
-                    >
-                      <item.icon className={`mr-3 w-4 h-4 ${iconClass}`} />
-                      {item.name}{isDisabled && '（开发中）'}
-                    </button>
+                    <div key={item.id} className="relative">
+                      <button
+                        role="link"
+                        tabIndex={0}
+                        onClick={() => { if (!isDisabled) router.push(`/settings?tab=${item.id}#${item.id}`) }}
+                        onKeyDown={(e) => { if (isDisabled) { if (e.key === 'Escape') { setDisabledTipVisible(false); setDisabledTipId(null); } return; } if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); router.push(`/settings?tab=${item.id}#${item.id}`) } }}
+                        onMouseEnter={() => { if (!isDisabled) return; setDisabledTipId(item.id); if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current); tooltipTimerRef.current = setTimeout(() => setDisabledTipVisible(true), 200); }}
+                        onMouseLeave={() => { if (!isDisabled) return; if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current); setDisabledTipVisible(false); setDisabledTipId(null); }}
+                        onFocus={() => { if (!isDisabled) return; setDisabledTipId(item.id); if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current); tooltipTimerRef.current = setTimeout(() => setDisabledTipVisible(true), 200); }}
+                        onBlur={() => { if (!isDisabled) return; if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current); setDisabledTipVisible(false); setDisabledTipId(null); }}
+                        aria-disabled={isDisabled}
+                        aria-current={isActive ? 'page' : undefined}
+                        className={`w-full flex items-center justify-start px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${baseClass}`}
+                        aria-describedby={isDisabled && disabledTipVisible && disabledTipId === item.id ? `${item.id}-tip` : undefined}
+                      >
+                        <item.icon className={`mr-3 w-4 h-4 ${iconClass}`} aria-hidden={isDisabled ? true : undefined} />
+                        {item.name}{isDisabled && '（开发中）'}
+                      </button>
+                      {isDisabled && disabledTipVisible && disabledTipId === item.id && (
+                        <div id={`${item.id}-tip`} role="tooltip" className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2 py-1 rounded bg-gray-900 text-white text-xs shadow-md">
+                          暂未开放
+                        </div>
+                      )}
+                    </div>
                   )
                 })}
               </div>
@@ -859,11 +896,33 @@ const SettingsContent = () => {
                                 {INVITE:'邀请',REDEEM:'兑换码',DAILY_REWARD:'每日登录',DEDUCTION:'扣除',REFUND:'退款',GRANT:'奖励'}[k]
                               }</button>
                             ))}
+                            {/* 已选条件 chips 与清空快捷键 */}
+                            <div
+                              className="ml-auto flex items-center gap-2"
+                              tabIndex={0}
+                              onKeyDown={(e)=>{ if ((e.metaKey || e.ctrlKey) && e.key === 'Backspace') { setHistoryRange('ALL'); setTypeFilters(new Set()); } }}
+                            >
+                              {historyRange !== 'ALL' && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">
+                                  {historyRange==='7'?'7天':'30天'}
+                                  <button onClick={()=> setHistoryRange('ALL')} className="hover:text-gray-900" aria-label="移除时间筛选">×</button>
+                                </span>
+                              )}
+                              {Array.from(typeFilters).map(k => (
+                                <span key={k} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">
+                                  {{INVITE:'邀请',REDEEM:'兑换码',DAILY_REWARD:'每日登录',DEDUCTION:'扣除',REFUND:'退款',GRANT:'奖励'}[k]}
+                                  <button onClick={()=> { const next = new Set(typeFilters); next.delete(k); setTypeFilters(next); }} className="hover:text-gray-900" aria-label={`移除${k}筛选`}>×</button>
+                                </span>
+                              ))}
+                              {(historyRange!=='ALL' || typeFilters.size>0) && (
+                                <button onClick={()=> { setHistoryRange('ALL'); setTypeFilters(new Set()); }} className="text-gray-600 hover:text-gray-900">清空</button>
+                              )}
+                            </div>
                           </div>
                           {creditError && (
-                            <div className="p-3 mb-3 rounded-lg border border-rose-200 bg-rose-50 text-rose-700 text-xs flex items-center justify-between">
+                            <div className="p-3 mb-3 rounded-lg border border-rose-200 bg-rose-50 text-rose-700 text-xs flex items-center justify-between" role="alert">
                               <span>{creditError}</span>
-                              <button onClick={() => { const now=Date.now(); if (now - creditRetryRef.current < 800) return; creditRetryRef.current = now; loadCreditHistory(1, false); }} className="px-2 py-1 border rounded bg-white text-rose-700 hover:bg-rose-100">重试</button>
+                              <button onClick={() => { const now=Date.now(); if (now - creditRetryRef.current < 800) return; creditRetryRef.current = now; loadCreditHistory(1, false); }} disabled={creditLoading} className="px-2 py-1 border rounded bg-white text-rose-700 hover:bg-rose-100 disabled:opacity-50 disabled:cursor-not-allowed">重试</button>
                             </div>
                           )}
                           {creditLoading && !creditHistory.length ? (
