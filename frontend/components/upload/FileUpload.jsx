@@ -573,8 +573,8 @@ const FileUpload = forwardRef(function FileUpload({ onUploadStart, onUploadSucce
                     }
                   </div>
                   <div className="mt-1 text-xs opacity-75">
-                    当前余额: {creditEstimate.user_balance} 积分 | 
-                    预计消耗: {creditEstimate.estimated_cost} 积分 | 
+                    当前余额: {creditEstimate.user_balance ?? '--'} 积分 | 
+                    {creditEstimate.estimated_cost != null ? `预计消耗: ${creditEstimate.estimated_cost} 积分 | ` : ''}
                     {creditEstimate.pricing_rule}
                   </div>
                   {!creditEstimate.sufficient_credits && (

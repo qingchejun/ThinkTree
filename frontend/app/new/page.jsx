@@ -239,7 +239,6 @@ export default function NewPage() {
                   <Textarea id="tcontent" rows={8} value={text} onChange={(e)=>{ setText(e.target.value); const v=e.target.value; clearTimeout(window.__est); window.__est=setTimeout(()=>handleEstimateText(v), 500) }} placeholder="在此粘贴文本..."/>
                   <div className="mt-1 flex justify-between text-xs text-gray-500">
                     <span>字符数：{text.length}</span>
-                    {estimate && <span className={`${estimate.sufficient_credits? 'text-emerald-600':'text-rose-600'}`}>{estimating ? '计算中...' : `预计消耗: ${estimate.estimated_cost} 积分`}</span>}
                   </div>
                 </div>
               </div>
@@ -291,8 +290,7 @@ export default function NewPage() {
               </button>
               {!collapsed.actions && (
               <div id="group-actions">
-                <div className="flex items-center justify-between text-[11px] text-gray-600 mb-2" aria-live="polite">
-                  <span>预计消耗：{estimate? estimate.estimated_cost : '--'} 分</span>
+                <div className="flex items-center justify-end text-[11px] text-gray-600 mb-2" aria-live="polite">
                   <span>余额{user?.credits ?? '--'}分</span>
                 </div>
                 {source==='text' ? (
