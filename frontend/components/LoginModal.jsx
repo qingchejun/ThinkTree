@@ -238,6 +238,11 @@ const LoginModal = ({ isOpen, onClose, initialInvitationCode, autoOpenRegister }
         const loginResult = await login(user);
         
         if (loginResult.success) {
+          try {
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('thinkso:login:success'))
+            }
+          } catch {}
           onClose();
           router.push('/dashboard');
         } else {

@@ -1,6 +1,7 @@
 # main.py - ThinkSo API 服务
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import os
 from app.core import register_exception_handlers
 from app.core.config import settings
 
@@ -18,13 +19,18 @@ _origins = settings.allowed_origins or [
     "https://thinkso.io",
     "https://www.thinkso.io",
     "http://localhost:3000",
+    "https://thinktree-frontend-staging.onrender.com",
 ]
+_origin_regex = os.getenv("ALLOWED_ORIGIN_REGEX", "")
 
 print("[CORS] allow_origins:", _origins)
+if _origin_regex:
+    print("[CORS] allow_origin_regex:", _origin_regex)
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_origins,
+    allow_origin_regex=_origin_regex if _origin_regex else None,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

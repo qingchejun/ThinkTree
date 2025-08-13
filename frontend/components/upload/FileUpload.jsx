@@ -3,9 +3,11 @@
  */
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react'
 import { ToastManager } from '../common/Toast'
 import { useAuth } from '../../context/AuthContext'
+
+const MAX_TEXT_LEN = 100000 // 100k 字符上限
 
 const SUPPORTED_FORMATS = {
   '.txt': 'text/plain',
@@ -37,11 +39,17 @@ const getErrorMessage = (detail, defaultMessage = '处理失败') => {
   return defaultMessage
 }
 
-export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadError }) {
+const FileUpload = forwardRef(function FileUpload({ onUploadStart, onUploadSuccess, onUploadError, initialMode = 'file', forceMode = null, hideModeToggle = false, showGenerateButton = true, showEstimatePanel = true, onStateChange }, ref) {
   const { user, refreshUser } = useAuth()
   const [dragActive, setDragActive] = useState(false)
   const [textInput, setTextInput] = useState('')
-  const [uploadMode, setUploadMode] = useState('file') // 'file' or 'text'
+  const [uploadMode, setUploadMode] = useState(forceMode || initialMode) // 'file' or 'text'
+  // 如果父组件强制模式，保持与 forceMode 同步
+  useEffect(() => {
+    if (forceMode && uploadMode !== forceMode) {
+      setUploadMode(forceMode)
+    }
+  }, [forceMode, uploadMode])
   const [isUploading, setIsUploading] = useState(false)
   const [creditEstimate, setCreditEstimate] = useState(null)
   const [estimating, setEstimating] = useState(false)
@@ -51,6 +59,7 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
   const [isAnalyzing, setIsAnalyzing] = useState(false) // 文件分析中
   const [isGenerating, setIsGenerating] = useState(false) // 思维导图生成中
   const [generationComplete, setGenerationComplete] = useState(false) // 生成完成标志
+  const [analyzeStatus, setAnalyzeStatus] = useState('idle') // idle | parsing | done | failed
   
   const fileInputRef = useRef(null)
 
@@ -59,6 +68,11 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
     if (!text.trim()) {
       setCreditEstimate(null)
       return
+    }
+    // 超大文本优化：本地阈值校验，截断估算
+    let payload = text
+    if (payload.length > MAX_TEXT_LEN) {
+      payload = payload.slice(0, MAX_TEXT_LEN)
     }
 
     try {
@@ -70,18 +84,18 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ text: text.trim() })
+        body: JSON.stringify({ text: payload.trim() })
       })
 
       if (response.ok) {
         const result = await response.json()
         setCreditEstimate(result)
       } else {
-        setCreditEstimate(null)
+        setCreditEstimate({ sufficient_credits: true, estimated_cost: null, user_balance: null })
       }
     } catch (error) {
       console.error('积分估算失败:', error)
-      setCreditEstimate(null)
+      setCreditEstimate({ sufficient_credits: true, estimated_cost: null, user_balance: null })
     } finally {
       setEstimating(false)
     }
@@ -159,6 +173,7 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
     try {
       validateFile(file)
       setIsAnalyzing(true)
+      setAnalyzeStatus('parsing')
       setFileAnalysis(null)
       // 注意：这里不调用onUploadStart，只在实际生成时才调用
 
@@ -176,14 +191,13 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
       
       if (response.ok && result.success) {
         setFileAnalysis(result)
-        console.log('文件分析成功:', result)
-        console.log('fileAnalysis state将被设置为:', result)
+        setAnalyzeStatus('done')
       } else {
-        console.error('文件分析失败:', result)
+        setAnalyzeStatus('failed')
         throw new Error(getErrorMessage(result.detail, '文件分析失败'))
       }
     } catch (error) {
-      console.error('文件分析错误:', error)
+      setAnalyzeStatus('failed')
       if (onUploadError) onUploadError(error.message)
       else ToastManager.error(error.message || '文件分析失败', 4000)
     } finally {
@@ -192,7 +206,7 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
   }
 
   // 第二步：处理文件生成
-  const handleFileGenerate = async () => {
+  const handleFileGenerate = async (options = {}) => {
     if (!fileAnalysis?.file_token) return
 
     try {
@@ -208,7 +222,8 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          file_token: fileAnalysis.file_token
+          file_token: fileAnalysis.file_token,
+          ...options
         })
       })
 
@@ -239,6 +254,23 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
       setIsGenerating(false)
     }
   }
+
+  // 对外暴露控制能力（供外部统一操作区触发）
+  useImperativeHandle(ref, () => ({
+    generate: (opts) => handleFileGenerate(opts || {}),
+    canGenerate: () => Boolean(fileAnalysis?.analysis?.sufficient_credits && fileAnalysis?.file_token && !isAnalyzing && !isGenerating),
+  }), [fileAnalysis, isAnalyzing, isGenerating])
+
+  // 向父组件同步状态（用于底部CTA禁用与估算展示）
+  useEffect(() => {
+    if (typeof onStateChange === 'function') {
+      onStateChange({
+        canGenerate: Boolean(fileAnalysis?.analysis?.sufficient_credits && fileAnalysis?.file_token && !isAnalyzing && !isGenerating),
+        estimated_cost: fileAnalysis?.analysis?.estimated_cost,
+        user_balance: fileAnalysis?.analysis?.user_balance,
+      })
+    }
+  }, [fileAnalysis, isAnalyzing, isGenerating])
 
   // 处理文本输入
   const handleTextSubmit = async () => {
@@ -291,37 +323,41 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
 
   return (
     <div className="w-full">
-      {/* 上传模式选择 */}
-      <div className="flex mb-6 border-b border-gray-200">
-        <button
-          onClick={() => {
-            setUploadMode('file')
-            setFileAnalysis(null) // 切换模式时清空分析结果
-            setGenerationComplete(false) // 重置生成完成状态
-          }}
-          className={`px-4 py-2 font-medium ${
-            uploadMode === 'file'
-              ? 'text-indigo-600 border-b-2 border-indigo-600'
-              : 'text-gray-600 hover:text-indigo-600'
-          }`}
-        >
-          📁 上传文件
-        </button>
-        <button
-          onClick={() => {
-            setUploadMode('text')
-            setFileAnalysis(null) // 切换模式时清空分析结果
-            setGenerationComplete(false) // 重置生成完成状态
-          }}
-          className={`px-4 py-2 font-medium ml-4 ${
-            uploadMode === 'text'
-              ? 'text-indigo-600 border-b-2 border-indigo-600'
-              : 'text-gray-600 hover:text-indigo-600'
-          }`}
-        >
-          ✏️ 直接输入
-        </button>
-      </div>
+      {/* 上传模式选择（可隐藏） */}
+      {!hideModeToggle && (
+        <div className="flex mb-6 border-b border-gray-200">
+          <button
+            onClick={() => {
+              if (forceMode) return
+              setUploadMode('file')
+              setFileAnalysis(null)
+              setGenerationComplete(false)
+            }}
+            className={`px-4 py-2 font-medium ${
+              uploadMode === 'file'
+                ? 'text-indigo-600 border-b-2 border-indigo-600'
+                : 'text-gray-600 hover:text-indigo-600'
+            } ${forceMode ? 'cursor-not-allowed opacity-50' : ''}`}
+          >
+            📁 上传文件
+          </button>
+          <button
+            onClick={() => {
+              if (forceMode) return
+              setUploadMode('text')
+              setFileAnalysis(null)
+              setGenerationComplete(false)
+            }}
+            className={`px-4 py-2 font-medium ml-4 ${
+              uploadMode === 'text'
+                ? 'text-indigo-600 border-b-2 border-indigo-600'
+                : 'text-gray-600 hover:text-indigo-600'
+            } ${forceMode ? 'cursor-not-allowed opacity-50' : ''}`}
+          >
+            ✏️ 直接输入
+          </button>
+        </div>
+      )}
 
       {/* 文件上传区域 */}
       {uploadMode === 'file' && (
@@ -380,6 +416,19 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
                     <p className="text-sm text-gray-500 mt-2">
                       支持 TXT, MD, DOCX, PDF, SRT 格式，最大 10MB
                     </p>
+                    {isAnalyzing && (
+                      <div className="mt-3 text-xs text-gray-600">
+                        <div className="w-full bg-gray-100 rounded h-2 overflow-hidden">
+                          <div className="h-2 bg-indigo-500 animate-pulse" style={{ width: '75%' }} />
+                        </div>
+                        <div className="mt-1">正在解析文件...</div>
+                      </div>
+                    )}
+                    {analyzeStatus === 'failed' && (
+                      <div className="mt-2 text-xs text-rose-600">解析失败。
+                        <button className="ml-2 underline" onClick={() => fileInputRef.current?.click()}>重新选择</button>
+                      </div>
+                    )}
                   </div>
                 </>
               )}
@@ -401,7 +450,7 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
           </div>
 
           {/* 积分成本信息 - 仅在文件分析完成后显示 */}
-          {fileAnalysis && (
+          {showEstimatePanel && fileAnalysis && (
             <div className={`mt-4 p-3 rounded-md text-sm ${
               fileAnalysis.analysis?.sufficient_credits
                 ? 'bg-green-50 border border-green-200 text-green-800'
@@ -440,38 +489,40 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
           )}
 
           {/* 开始生成按钮 - 始终显示在文件上传框下方 */}
-          <div className="flex space-x-3 mt-4">
-            <button
-              onClick={handleFileGenerate}
-              disabled={isAnalyzing || isGenerating || !fileAnalysis || !fileAnalysis.analysis?.sufficient_credits}
-              className="flex-1 bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isGenerating ? (
-                <>
-                  <div className="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
-                  正在生成思维导图...
-                </>
-              ) : isAnalyzing ? (
-                <>
-                  <div className="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
-                  正在分析文件...
-                </>
-              ) : (
-                '🚀 生成思维导图'
-              )}
-            </button>
-            
-            <button
-              onClick={() => {
-                setFileAnalysis(null)
-                setGenerationComplete(false)
-              }}
-              disabled={isGenerating || isAnalyzing}
-              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
-            >
-              {generationComplete ? '重新上传' : '取消'}
-            </button>
-          </div>
+          {showGenerateButton && (
+            <div className="flex space-x-3 mt-4">
+              <button
+                onClick={handleFileGenerate}
+                disabled={isAnalyzing || isGenerating || !fileAnalysis || !fileAnalysis.analysis?.sufficient_credits}
+                className="flex-1 bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isGenerating ? (
+                  <>
+                    <div className="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+                    正在生成思维导图...
+                  </>
+                ) : isAnalyzing ? (
+                  <>
+                    <div className="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+                    正在分析文件...
+                  </>
+                ) : (
+                  '🚀 生成思维导图'
+                )}
+              </button>
+              
+              <button
+                onClick={() => {
+                  setFileAnalysis(null)
+                  setGenerationComplete(false)
+                }}
+                disabled={isGenerating || isAnalyzing}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
+              >
+                {generationComplete ? '重新上传' : '取消'}
+              </button>
+            </div>
+          )}
         </>
       )}
 
@@ -497,7 +548,7 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
                     ? 'text-green-600' 
                     : 'text-red-600'
                 }`}>
-                  {estimating ? '计算中...' : `预计消耗: ${creditEstimate.estimated_cost} 积分`}
+                  {estimating ? '计算中...' : (creditEstimate.estimated_cost != null ? `预计消耗: ${creditEstimate.estimated_cost} 积分` : '暂无法获取预计消耗，可直接生成')}
                 </span>
               )}
             </div>
@@ -522,8 +573,8 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
                     }
                   </div>
                   <div className="mt-1 text-xs opacity-75">
-                    当前余额: {creditEstimate.user_balance} 积分 | 
-                    预计消耗: {creditEstimate.estimated_cost} 积分 | 
+                    当前余额: {creditEstimate.user_balance ?? '--'} 积分 | 
+                    {creditEstimate.estimated_cost != null ? `预计消耗: ${creditEstimate.estimated_cost} 积分 | ` : ''}
                     {creditEstimate.pricing_rule}
                   </div>
                   {!creditEstimate.sufficient_credits && (
@@ -559,4 +610,6 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
       )}
     </div>
   )
-}
+})
+
+export default FileUpload

@@ -5,6 +5,7 @@ ThinkSo 应用配置
 import os
 from pydantic_settings import BaseSettings
 from dotenv import load_dotenv
+import json
 
 # 优先加载 .env.local，并覆盖现有环境变量，确保本地开发环境的正确性
 # 这个文件在生产环境中不存在，因此不会影响生产部署
@@ -53,11 +54,32 @@ class Settings(BaseSettings):
     upload_dir: str = "uploads"
     allowed_file_types: list = [".txt", ".md", ".docx", ".pdf", ".srt"]
     
-    # CORS 配置
-    allowed_origins: list = [
-        "http://localhost:3000",
-        "https://thinkso.io"
-    ]
+    # CORS 配置（支持通过环境变量 ALLOWED_ORIGINS 覆盖，逗号分隔）
+    allowed_origins: list = []
+    def __init__(self, **values):
+        super().__init__(**values)
+        env_allowed = os.getenv("ALLOWED_ORIGINS")
+        if env_allowed:
+            parsed = None
+            s = env_allowed.strip()
+            # 兼容 JSON 数组字符串，如 '["https://a.com","https://b.com"]'
+            if s.startswith("[") and s.endswith("]"):
+                try:
+                    parsed = json.loads(s)
+                except Exception:
+                    parsed = None
+            # 兼容逗号/空格分隔的纯字符串
+            if parsed is None:
+                parsed = [o.strip() for o in s.replace(" ", "").split(",") if o.strip()]
+            self.allowed_origins = parsed
+        else:
+            # 默认包含本地与线上前端域名（含测试环境域名）
+            self.allowed_origins = [
+                "http://localhost:3000",
+                "https://thinkso.io",
+                "https://www.thinkso.io",
+                "https://thinktree-frontend-staging.onrender.com",
+            ]
     
     # Resend 邮件服务配置
     resend_api_key: str = os.getenv("RESEND_API_KEY", "")
