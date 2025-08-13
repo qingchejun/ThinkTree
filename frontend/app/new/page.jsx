@@ -192,13 +192,13 @@ export default function NewPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-[1400px] mx-auto px-6 py-8">
-        <div className="flex gap-6">
+      <div className="max-w-[1280px] mx-auto px-8 py-8">
+        <div className="flex gap-8">
           {/* 左侧侧栏 */}
-          <aside className="w-[340px] shrink-0 bg-white rounded-xl border border-gray-200 p-3 h-[calc(100vh-160px)] overflow-auto" aria-label="新建导图设置侧栏">
+          <aside className="w-[320px] shrink-0 bg-white rounded-xl border border-gray-200 p-4 h-[calc(100vh-160px)] overflow-auto" aria-label="新建导图设置侧栏">
             {/* 来源（可折叠） */}
             <div className="mb-4">
-              <button onClick={()=>setCollapsed(v=>({...v, source: !v.source}))} className="w-full flex items-center justify-between text-left text-xs font-semibold text-gray-700 mb-1" role="button" aria-expanded={!collapsed.source} aria-controls="group-source">
+              <button onClick={()=>setCollapsed(v=>({...v, source: !v.source}))} className="w-full flex items-center justify-between text-left text-sm font-semibold text-gray-800 mb-2" role="button" aria-expanded={!collapsed.source} aria-controls="group-source">
                 <span>来源</span>
                 <span aria-hidden>{collapsed.source? '+' : '−'}</span>
               </button>
@@ -253,7 +253,7 @@ export default function NewPage() {
 
             {/* 基础参数（可折叠） */}
             <div className="mt-6">
-              <button onClick={()=>setCollapsed(v=>({...v, basic: !v.basic}))} className="w-full flex items-center justify-between text-left text-xs font-semibold text-gray-700 mb-2" role="button" aria-expanded={!collapsed.basic} aria-controls="group-basic">
+              <button onClick={()=>setCollapsed(v=>({...v, basic: !v.basic}))} className="w-full flex items-center justify-between text-left text-sm font-semibold text-gray-800 mb-2" role="button" aria-expanded={!collapsed.basic} aria-controls="group-basic">
                 <span>基础参数</span>
                 <span aria-hidden>{collapsed.basic? '+' : '−'}</span>
               </button>
@@ -270,20 +270,11 @@ export default function NewPage() {
               )}
             </div>
 
-            {/* 高级参数（可折叠，占位） */}
-            <div className="mt-6">
-              <button onClick={()=>setCollapsed(v=>({...v, advanced: !v.advanced}))} className="w-full flex items-center justify-between text-left text-xs font-semibold text-gray-700 mb-2" role="button" aria-expanded={!collapsed.advanced} aria-controls="group-advanced">
-                <span>高级参数</span>
-                <span aria-hidden>{collapsed.advanced? '+' : '−'}</span>
-              </button>
-              {!collapsed.advanced && (
-              <div id="group-advanced" className="text-xs text-gray-500">更多可选项将在下一步接入</div>
-              )}
-            </div>
+            {/* 已移除 高级参数 分组 */}
 
             {/* 操作区（可折叠，sticky 固钉到底部） */}
             <div className="mt-6 border-t pt-2 sticky bottom-0 bg-white">
-              <button onClick={()=>setCollapsed(v=>({...v, actions: !v.actions}))} className="w-full flex items-center justify-between text-left text-xs font-semibold text-gray-700 mb-2" role="button" aria-expanded={!collapsed.actions} aria-controls="group-actions">
+              <button onClick={()=>setCollapsed(v=>({...v, actions: !v.actions}))} className="w-full flex items-center justify-between text-left text-sm font-semibold text-gray-800 mb-2" role="button" aria-expanded={!collapsed.actions} aria-controls="group-actions">
                 <span>操作区</span>
                 <span aria-hidden>{collapsed.actions? '+' : '−'}</span>
               </button>
@@ -301,9 +292,7 @@ export default function NewPage() {
                     {estimate && estimate.sufficient_credits === false && (
                       <div className="mt-2 text-[11px] text-rose-600">积分不足，请前往邀请/充值后再试</div>
                     )}
-                    <div className="mt-2 text-[11px] text-gray-400">
-                      <button className="underline" onClick={()=> setRetrySignal(x=>x+1)}>重试</button>
-                    </div>
+                    {/* 已移除 生成按钮下方的“重试”入口 */}
                   </>
                 )}
               </div>
@@ -312,7 +301,7 @@ export default function NewPage() {
           </aside>
 
           {/* 中线分界 + 右侧预览 */}
-          <div className="flex-1 border-l border-gray-200 pl-6">
+          <div className="flex-1 border-l border-gray-200 pl-8">
             <Card className="h-[calc(100vh-140px)]">
               {submitting ? (
                 <CardContent className="h-full">
