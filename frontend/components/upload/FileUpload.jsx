@@ -37,11 +37,17 @@ const getErrorMessage = (detail, defaultMessage = '处理失败') => {
   return defaultMessage
 }
 
-export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadError }) {
+export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadError, initialMode = 'file', forceMode = null, hideModeToggle = false }) {
   const { user, refreshUser } = useAuth()
   const [dragActive, setDragActive] = useState(false)
   const [textInput, setTextInput] = useState('')
-  const [uploadMode, setUploadMode] = useState('file') // 'file' or 'text'
+  const [uploadMode, setUploadMode] = useState(forceMode || initialMode) // 'file' or 'text'
+  // 如果父组件强制模式，保持与 forceMode 同步
+  useEffect(() => {
+    if (forceMode && uploadMode !== forceMode) {
+      setUploadMode(forceMode)
+    }
+  }, [forceMode, uploadMode])
   const [isUploading, setIsUploading] = useState(false)
   const [creditEstimate, setCreditEstimate] = useState(null)
   const [estimating, setEstimating] = useState(false)
@@ -291,37 +297,41 @@ export default function FileUpload({ onUploadStart, onUploadSuccess, onUploadErr
 
   return (
     <div className="w-full">
-      {/* 上传模式选择 */}
-      <div className="flex mb-6 border-b border-gray-200">
-        <button
-          onClick={() => {
-            setUploadMode('file')
-            setFileAnalysis(null) // 切换模式时清空分析结果
-            setGenerationComplete(false) // 重置生成完成状态
-          }}
-          className={`px-4 py-2 font-medium ${
-            uploadMode === 'file'
-              ? 'text-indigo-600 border-b-2 border-indigo-600'
-              : 'text-gray-600 hover:text-indigo-600'
-          }`}
-        >
-          📁 上传文件
-        </button>
-        <button
-          onClick={() => {
-            setUploadMode('text')
-            setFileAnalysis(null) // 切换模式时清空分析结果
-            setGenerationComplete(false) // 重置生成完成状态
-          }}
-          className={`px-4 py-2 font-medium ml-4 ${
-            uploadMode === 'text'
-              ? 'text-indigo-600 border-b-2 border-indigo-600'
-              : 'text-gray-600 hover:text-indigo-600'
-          }`}
-        >
-          ✏️ 直接输入
-        </button>
-      </div>
+      {/* 上传模式选择（可隐藏） */}
+      {!hideModeToggle && (
+        <div className="flex mb-6 border-b border-gray-200">
+          <button
+            onClick={() => {
+              if (forceMode) return
+              setUploadMode('file')
+              setFileAnalysis(null)
+              setGenerationComplete(false)
+            }}
+            className={`px-4 py-2 font-medium ${
+              uploadMode === 'file'
+                ? 'text-indigo-600 border-b-2 border-indigo-600'
+                : 'text-gray-600 hover:text-indigo-600'
+            } ${forceMode ? 'cursor-not-allowed opacity-50' : ''}`}
+          >
+            📁 上传文件
+          </button>
+          <button
+            onClick={() => {
+              if (forceMode) return
+              setUploadMode('text')
+              setFileAnalysis(null)
+              setGenerationComplete(false)
+            }}
+            className={`px-4 py-2 font-medium ml-4 ${
+              uploadMode === 'text'
+                ? 'text-indigo-600 border-b-2 border-indigo-600'
+                : 'text-gray-600 hover:text-indigo-600'
+            } ${forceMode ? 'cursor-not-allowed opacity-50' : ''}`}
+          >
+            ✏️ 直接输入
+          </button>
+        </div>
+      )}
 
       {/* 文件上传区域 */}
       {uploadMode === 'file' && (
