@@ -17,7 +17,7 @@ import { Textarea } from '@/components/ui/Textarea'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { Label } from '@/components/ui/Label'
-import { FileText, Upload, Youtube, Mic, AudioLines, Globe } from 'lucide-react'
+import { FileText, Upload, Youtube, Mic, AudioLines, Globe, Sparkles } from 'lucide-react'
 
 export default function NewPage() {
   const { user, isLoading, refreshUser } = useAuth()
@@ -170,9 +170,8 @@ export default function NewPage() {
   const submitBtnLabel = useMemo(() => {
     if (submitting) return '生成中...'
     if (estimating) return '生成（计算中…）'
-    if (estimate?.estimated_cost != null) return `生成（预计${estimate.estimated_cost}分）`
     return '🚀 生成'
-  }, [submitting, estimating, estimate])
+  }, [submitting, estimating])
 
   // 键盘快捷键：Cmd/Ctrl + Enter 生成
   useEffect(() => {
@@ -290,7 +289,8 @@ export default function NewPage() {
               </button>
               {!collapsed.actions && (
               <div id="group-actions">
-                <div className="flex items-center justify-end text-[11px] text-gray-600 mb-2" aria-live="polite">
+                <div className="flex items-center justify-end text-[11px] text-gray-600 mb-2 gap-3" aria-live="polite">
+                  <span className="inline-flex items-center gap-1"><Sparkles size={12} /> 预计{estimate && estimate.estimated_cost != null ? estimate.estimated_cost : '--'}分</span>
                   <span>余额{user?.credits ?? '--'}分</span>
                 </div>
                 {source==='text' ? (
@@ -328,11 +328,7 @@ export default function NewPage() {
                     <h2 className="text-base font-semibold">{preview.data?.title || title || '思维导图'}{savedId && <span className="ml-2 text-xs text-emerald-600">已自动保存</span>}</h2>
                     <div className="flex items-center gap-2">
                       {savedId && (
-                        <>
-                          <Button size="sm" variant="outline" onClick={()=>window.open(`/mindmap/${savedId}`, '_blank')} aria-label="在新标签打开导图">打开导图</Button>
-                          <Button size="sm" onClick={()=>router.push(`/mindmap/${savedId}`)} aria-label="查看导图详情">查看详情</Button>
-                          <Button size="sm" variant="ghost" onClick={()=>router.push('/mindmaps')} aria-label="返回我的导图">返回我的导图</Button>
-                        </>
+                        <Button size="sm" onClick={()=>router.push(`/mindmap/${savedId}`)} aria-label="查看导图详情">查看详情</Button>
                       )}
                       <div className="text-xs text-gray-500">Markmap 预览</div>
                     </div>
