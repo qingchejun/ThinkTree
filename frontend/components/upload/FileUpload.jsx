@@ -198,7 +198,7 @@ const FileUpload = forwardRef(function FileUpload({ onUploadStart, onUploadSucce
   }
 
   // 第二步：处理文件生成
-  const handleFileGenerate = async () => {
+  const handleFileGenerate = async (options = {}) => {
     if (!fileAnalysis?.file_token) return
 
     try {
@@ -214,7 +214,8 @@ const FileUpload = forwardRef(function FileUpload({ onUploadStart, onUploadSucce
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          file_token: fileAnalysis.file_token
+          file_token: fileAnalysis.file_token,
+          ...options
         })
       })
 
@@ -248,7 +249,7 @@ const FileUpload = forwardRef(function FileUpload({ onUploadStart, onUploadSucce
 
   // 对外暴露控制能力（供外部统一操作区触发）
   useImperativeHandle(ref, () => ({
-    generate: handleFileGenerate,
+    generate: (opts) => handleFileGenerate(opts || {}),
     canGenerate: () => Boolean(fileAnalysis?.analysis?.sufficient_credits && fileAnalysis?.file_token && !isAnalyzing && !isGenerating),
   }), [fileAnalysis, isAnalyzing, isGenerating])
 
