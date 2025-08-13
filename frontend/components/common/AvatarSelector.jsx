@@ -29,6 +29,7 @@ const AVATAR_OPTIONS = [
 
 export default function AvatarSelector({ isOpen, onClose, onSelect, currentAvatar, user }) {
   const [selectedAvatar, setSelectedAvatar] = useState(currentAvatar || 'blob:default');
+  const [hoverId, setHoverId] = useState(null);
 
   useEffect(() => {
     setSelectedAvatar(currentAvatar || 'blob:default');
@@ -80,6 +81,8 @@ export default function AvatarSelector({ isOpen, onClose, onSelect, currentAvata
               <div key={avatar.id} className="text-center">
                 <button
                   onClick={() => handleSelect(avatar.id)}
+                  onMouseEnter={() => setHoverId(avatar.id)}
+                  onMouseLeave={() => setHoverId(null)}
                   className={`relative w-20 h-20 rounded-full flex items-center justify-center border-4 transition-all duration-200 ${
                     selectedAvatar === avatar.id
                       ? 'border-blue-500 shadow-lg scale-105'
@@ -102,6 +105,46 @@ export default function AvatarSelector({ isOpen, onClose, onSelect, currentAvata
               </div>
             );
           })}
+        </div>
+        {/* 即时预览：四尺寸与轻呼吸动画 */}
+        <div className="mb-6">
+          <p className="text-xs text-gray-500 mb-2">预览</p>
+          <div className="flex items-center gap-4">
+            {[32, 48, 72, 96].map((sz) => (
+              <div key={sz} className="flex flex-col items-center">
+                <div className="animate-[breath_3s_ease-in-out_infinite]">
+                  {(() => {
+                    const id = hoverId || selectedAvatar;
+                    if (id.startsWith('blob:')) {
+                      return <div className="rounded-full" style={{ width: sz, height: sz, overflow: 'hidden' }}>
+                        <svg width={sz} height={sz} viewBox="0 0 100 100" className="block">
+                          <defs>
+                            <linearGradient id="prevBlob" x1="0" y1="0" x2="1" y2="1">
+                              <stop offset="0%" stopColor="#60a5fa" />
+                              <stop offset="100%" stopColor="#22d3ee" />
+                            </linearGradient>
+                          </defs>
+                          <circle cx="50" cy="50" r="46" fill="url(#prevBlob)" opacity="0.95" />
+                        </svg>
+                      </div>
+                    }
+                    if (id.startsWith('mono:')) {
+                      const letters = id.slice(5) || 'TT';
+                      return <div className="rounded-full flex items-center justify-center text-white"
+                        style={{ width: sz, height: sz, background: 'linear-gradient(135deg,#8b5cf6,#60a5fa)' }}>
+                        <span style={{ fontSize: Math.max(12, Math.floor(sz * 0.42)) }}>{letters}</span>
+                      </div>
+                    }
+                    return <div className="rounded-full bg-gray-100" style={{ width: sz, height: sz }} />
+                  })()}
+                </div>
+                <span className="text-[10px] text-gray-400 mt-1">{sz}px</span>
+              </div>
+            ))}
+          </div>
+          <style jsx>{`
+            @keyframes breath { 0%,100% { transform: scale(1);} 50% { transform: scale(1.03);} }
+          `}</style>
         </div>
         <p className="text-xs text-gray-500 mb-4">提示：默认选择“流体头像”，将基于你的账户信息自动生成稳定的图形；字母头像将使用你的姓名或邮箱前缀生成。</p>
 

@@ -11,9 +11,9 @@ services:
   #                 生产环境 (Production)
   # ======================================================
 
-  # 生产后端（FastAPI）
+  # 生产后端（FastAPI）- 复用现有服务
   - type: web
-    name: thinktree-backend-prod
+    name: thinktree-backend
     branch: main
     autoDeploy: true
     env: python
@@ -49,9 +49,9 @@ services:
       - key: UPLOAD_DIR
         value: ./uploads
 
-  # 生产前端（Next.js）
+  # 生产前端（Next.js）- 复用现有服务
   - type: web
-    name: thinktree-frontend-prod
+    name: thinktree-frontend
     branch: main
     autoDeploy: true
     env: node
@@ -63,7 +63,7 @@ services:
     healthCheckPath: /api/health
     envVars:
       - key: NEXT_PUBLIC_API_URL
-        value: https://thinktree-backend-prod.onrender.com
+        value: https://thinktree-backend.onrender.com
       - key: NODE_ENV
         value: production
 
@@ -131,12 +131,7 @@ services:
 #                     数据库定义
 # ======================================================
 databases:
-  # 生产数据库
-  - name: thinktree-db-prod
-    plan: free
-    region: singapore
-
-  # 测试数据库
+  # 仅声明测试数据库（生产库 thinktree-db 已存在，直接在上方引用）
   - name: thinktree-db-staging
     plan: free
     region: singapore
