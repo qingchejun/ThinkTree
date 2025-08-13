@@ -8,6 +8,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
+import { useModal } from '@/context/ModalContext'
 import FileUpload from '@/components/upload/FileUpload'
 import { useRef } from 'react'
 import SimpleMarkmapBasic from '@/components/mindmap/SimpleMarkmapBasic'
@@ -20,6 +21,7 @@ import { FileText, Upload, Youtube, Mic, AudioLines, Globe } from 'lucide-react'
 
 export default function NewPage() {
   const { user, isLoading, refreshUser } = useAuth()
+  const { openLoginModal } = useModal?.() || { openLoginModal: null }
   const router = useRouter()
 
   const [source, setSource] = useState('text') // text | upload
@@ -30,6 +32,8 @@ export default function NewPage() {
   const [estimating, setEstimating] = useState(false)
   const [estimate, setEstimate] = useState(null)
   const [submitting, setSubmitting] = useState(false)
+  const [retrySignal, setRetrySignal] = useState(0)
+  const estimateAbortRef = useRef(null)
   const uploadRef = useRef(null)
   // 基础/高级参数（占位，后续接入）
   // const [language, setLanguage] = useState('auto') // 暂时隐藏
@@ -66,27 +70,46 @@ export default function NewPage() {
 
   const canSubmit = useMemo(() => {
     const credits = user?.credits || 0
-    if (source === 'text') {
-      const cost = estimate?.estimated_cost || 0
-      const enough = credits >= cost || !estimate
-      return Boolean(text.trim()) && enough
-    }
-    // 上传路径：根据估算与可生成状态综合判断（估算缺失时不拦截，由 uploadRef.canGenerate 控制）
     const cost = estimate?.estimated_cost || 0
     const enough = credits >= cost || !estimate
-    return enough
-  }, [source, text, estimate, user])
+    if (source === 'text') return Boolean(text.trim()) && enough && !submitting
+    // 上传路径：根据估算与可生成状态综合判断（估算缺失时不拦截，由 uploadRef.canGenerate 控制）
+    return enough && !submitting
+  }, [source, text, estimate, user, submitting])
+
+  // 通用 fetch 带重试与401触发登录
+  const fetchWithRetry = async (url, opts={}, { retries=2, baseDelay=400 } = {}) => {
+    let attempt = 0
+    while (true) {
+      try {
+        const res = await fetch(url, opts)
+        if (res.status === 401) {
+          if (openLoginModal) openLoginModal()
+          throw new Error('需要登录')
+        }
+        return res
+      } catch (e) {
+        if (attempt >= retries) throw e
+        const delay = baseDelay * Math.pow(2, attempt)
+        await new Promise(r => setTimeout(r, delay))
+        attempt += 1
+      }
+    }
+  }
 
   const handleEstimateText = async (val) => {
+    if (estimateAbortRef.current) { try { estimateAbortRef.current.abort() } catch {} }
     if (!val.trim()) { setEstimate(null); return }
     try {
       setEstimating(true)
       const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
-      const res = await fetch(`${API_BASE_URL}/api/estimate-credit-cost`, {
-        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: val.trim() })
-      })
+      const controller = new AbortController()
+      estimateAbortRef.current = controller
+      const res = await fetchWithRetry(`${API_BASE_URL}/api/estimate-credit-cost`, {
+        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: val.trim() }), signal: controller.signal
+      }, { retries: 2 })
       if (res.ok) setEstimate(await res.json()); else setEstimate(null)
-    } catch { setEstimate(null) } finally { setEstimating(false) }
+    } catch { setEstimate(null) } finally { setEstimating(false); estimateAbortRef.current = null }
   }
 
   // 自动保存到「我的导图」
@@ -113,18 +136,25 @@ export default function NewPage() {
 
   // 生成（文本）
   const handleGenerateFromText = async () => {
-    if (!text.trim()) return
+    if (!text.trim() || submitting) return
     try {
       setSubmitting(true); setError(null)
       const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
       // 仅传入导图风格，由后端集中管理 refined 提示词
       const payload = { text: text.trim(), style: mapStyle }
-      const res = await fetch(`${API_BASE_URL}/api/process-text`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+      const res = await fetchWithRetry(`${API_BASE_URL}/api/process-text`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }, { retries: 2 })
       const result = await res.json()
       if (res.ok && result.success) { setPreview(result); autoSave(result); refreshUser?.() }
       else throw new Error(result?.detail?.message || result?.detail || '生成失败')
     } catch (e) { setError(String(e.message || e)) } finally { setSubmitting(false) }
   }
+
+  const submitBtnLabel = useMemo(() => {
+    if (submitting) return '生成中...'
+    if (estimating) return '生成（计算中…）'
+    if (estimate?.estimated_cost != null) return `生成（预计${estimate.estimated_cost}分）`
+    return '🚀 生成'
+  }, [submitting, estimating, estimate])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -231,13 +261,16 @@ export default function NewPage() {
                   <span>余额{user?.credits ?? '--'}分</span>
                 </div>
                 {source==='text' ? (
-                  <Button onClick={handleGenerateFromText} disabled={!canSubmit || submitting} className="w-full" aria-label="生成思维导图">{submitting? '生成中...' : '🚀 生成'}</Button>
+                  <Button onClick={handleGenerateFromText} disabled={!canSubmit} className="w-full" aria-label="生成思维导图">{submitBtnLabel}</Button>
                 ) : (
                   <>
-                    <Button onClick={()=> uploadRef.current?.generate({ style: mapStyle })} disabled={!uploadRef.current || !uploadRef.current?.canGenerate?.() || (estimate?.estimated_cost || 0) > (user?.credits || 0)} className="w-full" aria-label="生成思维导图">🚀 生成</Button>
+                    <Button onClick={()=> uploadRef.current?.generate({ style: mapStyle })} disabled={!uploadRef.current || !uploadRef.current?.canGenerate?.() || (estimate?.estimated_cost || 0) > (user?.credits || 0) || submitting} className="w-full" aria-label="生成思维导图">{submitBtnLabel}</Button>
                     {estimate && estimate.sufficient_credits === false && (
                       <div className="mt-2 text-[11px] text-rose-600">积分不足，请前往邀请/充值后再试</div>
                     )}
+                    <div className="mt-2 text-[11px] text-gray-400">
+                      <button className="underline" onClick={()=> setRetrySignal(x=>x+1)}>重试</button>
+                    </div>
                   </>
                 )}
               </div>
