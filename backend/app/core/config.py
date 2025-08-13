@@ -62,10 +62,12 @@ class Settings(BaseSettings):
             # 兼容逗号或空格分隔
             self.allowed_origins = [o.strip() for o in env_allowed.replace(" ", "").split(",") if o.strip()]
         else:
+            # 默认包含本地与线上前端域名（含测试环境域名）
             self.allowed_origins = [
                 "http://localhost:3000",
                 "https://thinkso.io",
                 "https://www.thinkso.io",
+                "https://thinktree-frontend-staging.onrender.com",
             ]
     
     # Resend 邮件服务配置
