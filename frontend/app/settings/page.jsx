@@ -559,19 +559,6 @@ const SettingsContent = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-6 py-12">
-        {/* 统一页头：标题/描述/操作组 */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-          <div className="mb-3 md:mb-0">
-            <h1 className="text-2xl font-semibold text-gray-900">账户设置</h1>
-            <p className="text-sm text-gray-500 mt-1">管理个人资料、用量计费与邀请奖励。</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="text-sm text-gray-600 hidden sm:block">当前积分：<span className="font-semibold text-gray-900">{currentBalance}</span></div>
-            <button onClick={() => { loadProfileData(); loadInvitations(); loadCreditHistory(); }} className="inline-flex items-center px-3 py-1.5 text-xs border rounded-lg bg-white text-gray-700 hover:bg-gray-50">
-              <RefreshCcw className="w-3.5 h-3.5 mr-1"/> 刷新资料
-            </button>
-          </div>
-        </div>
         <Tabs value={activeTab} onValueChange={(value) => router.push(`/settings?tab=${value}`)} className="w-full">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             {/* 左侧导航 */}
