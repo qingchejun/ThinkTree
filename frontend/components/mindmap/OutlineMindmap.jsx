@@ -397,16 +397,16 @@ export default function OutlineMindmap({ markdown, mindmapId, editable = false, 
             // 仅渲染根的子章节，标题已在顶部输出
             (tree.children || []).map((c) => <ChapterBlock key={c.id} node={c} />)
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-slate-500">正在生成大纲...</div>
+            <div className="w-full h-full flex items-center justify-center text-brand-500">正在生成大纲...</div>
           )}
         </div>
         <aside className="col-span-3">
           <div className="sticky top-4">
             {/* 固定的控制按钮 */}
             <div className="flex items-center gap-2 mb-3">
-              <button onClick={collapseToLevel1} className="px-3 py-1 text-xs border rounded bg-white hover:bg-slate-50">折叠到一级</button>
-              <button onClick={() => expandToSemanticLevel(2)} className="px-3 py-1 text-xs border rounded bg-white hover:bg-slate-50">展开到二级</button>
-              <button onClick={expandAll} className="px-3 py-1 text-xs border rounded bg-white hover:bg-slate-50">展开全部</button>
+              <button onClick={collapseToLevel1} className="px-3 py-1 text-xs border rounded bg-white hover:bg-brand-50">折叠到一级</button>
+              <button onClick={() => expandToSemanticLevel(2)} className="px-3 py-1 text-xs border rounded bg-white hover:bg-brand-50">展开到二级</button>
+              <button onClick={expandAll} className="px-3 py-1 text-xs border rounded bg-white hover:bg-brand-50">展开全部</button>
             </div>
             {/* 保存按钮（仅在有 mindmapId 时显示）*/}
             {mindmapId && (
@@ -454,11 +454,11 @@ export default function OutlineMindmap({ markdown, mindmapId, editable = false, 
             )}
             {/* 搜索框：位于按钮下方、目录上方，左侧与目录左侧对齐 */}
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="搜索..." className="w-full px-2 py-1 text-xs border rounded mb-3" />
-            <div className="text-xs text-slate-500 mb-2">目录</div>
+            <div className="text-xs text-brand-500 mb-2">目录</div>
             <ul className="space-y-1 text-sm">
               {toc.map(item => (
                 <li key={item.id}>
-                  <button onClick={() => jumpTo(item.id)} className={`text-left ${/* active state to be set below */''} w-full text-slate-700 hover:text-indigo-600 hover:underline`}>
+                  <button onClick={() => jumpTo(item.id)} className={`text-left ${/* active state to be set below */''} w-full text-brand-700 hover:text-core-600 hover:underline`}>
                     {item.index + 1}. {stripHtmlTags(item.label)}
                   </button>
                 </li>

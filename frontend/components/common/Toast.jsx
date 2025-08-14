@@ -57,10 +57,10 @@ const Toast = ({ message, type = 'info', duration, onClose, count = 1 }) => {
   }
 
   const typeStyles = {
-    success: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
-    error: 'bg-rose-50 text-rose-700 border border-rose-200',
-    warning: 'bg-amber-50 text-amber-700 border border-amber-200',
-    info: 'bg-slate-50 text-slate-700 border border-slate-200'
+    success: 'bg-success-50 text-success-700 border border-success-100',
+    error: 'bg-error-50 text-error-700 border border-error-100',
+    warning: 'bg-warning-50 text-warning-700 border border-warning-100',
+    info: 'bg-info-50 text-info-700 border border-info-100'
   }
 
   const icons = {

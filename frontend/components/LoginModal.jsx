@@ -322,7 +322,7 @@ const LoginModal = ({ isOpen, onClose, initialInvitationCode, autoOpenRegister }
               <svg width="32" height="32" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
                 <path fill="#111827" d="M128 24a104 104 0 1 0 104 104A104.11 104.11 0 0 0 128 24Zm-8 152v-56H88a8 8 0 0 1 0-16h32V88a8 8 0 0 1 16 0v16h16a8 8 0 0 1 0 16h-16v56h32a8 8 0 0 1 0 16h-32v16a8 8 0 0 1-16 0v-16H96a8 8 0 0 1 0-16h24Z"/>
               </svg>
-              <span className="text-2xl font-bold text-gray-900">ThinkSo</span>
+              <span className="text-2xl font-bold text-brand-900">ThinkSo</span>
             </div>
             
             {/* Google登录按钮 - 暂时隐藏，保留代码供后续使用 */}
@@ -359,15 +359,15 @@ const LoginModal = ({ isOpen, onClose, initialInvitationCode, autoOpenRegister }
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email"
-                className="w-full py-3 px-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black transition"
+                className="w-full py-3 px-4 border border-brand-200 rounded-lg focus:ring-2 focus:ring-core-500/20 focus:border-brand-500 transition"
                 disabled={isEmailLoading}
               />
               
               {/* 邀请码输入框 */}
               <div className="mt-4">
                 {initialInvitationCode && (
-                  <div className="mb-2 p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <p className="text-green-700 text-sm font-medium">
+                  <div className="mb-2 p-3 bg-success-50 border border-success-200 rounded-lg">
+                    <p className="text-success-700 text-sm font-medium">
                       🎉 您已通过邀请链接访问，邀请码已自动填入！
                     </p>
                   </div>
@@ -377,31 +377,31 @@ const LoginModal = ({ isOpen, onClose, initialInvitationCode, autoOpenRegister }
                   value={invitationCode}
                   onChange={(e) => setInvitationCode(e.target.value.toUpperCase())}
                   placeholder="邀请码（新用户必填）"
-                  className="w-full py-3 px-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black transition"
+                  className="w-full py-3 px-4 border border-brand-200 rounded-lg focus:ring-2 focus:ring-core-500/20 focus:border-brand-500 transition"
                   disabled={isEmailLoading}
                   maxLength={16}
                 />
-                <p className="text-gray-500 text-xs mt-1">
+                <p className="text-brand-500 text-xs mt-1">
                   💡 已注册用户可留空，新用户必须填写邀请码
                 </p>
               </div>
               
-              {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+              {error && <p className="text-error-600 text-sm mt-2">{error}</p>}
               <button
                 type="submit"
                 disabled={isEmailLoading || !email}
-                className="w-full mt-4 py-3 px-4 bg-black text-white font-semibold rounded-lg shadow-md hover:bg-gray-800 transition-colors disabled:opacity-50"
+                className="w-full mt-4 py-3 px-4 bg-core-600 hover:bg-core-700 text-white font-semibold rounded-lg shadow-md transition-colors disabled:opacity-50"
               >
                 {isEmailLoading ? '发送中...' : 'Continue'}
               </button>
               
               {/* reCAPTCHA 声明 */}
-              <p className="text-xs text-gray-500 mt-3 text-center">
+              <p className="text-xs text-brand-500 mt-3 text-center">
                 本站使用 reCAPTCHA 保护，适用 Google 
-                <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline ml-1">
+                <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="text-core-600 hover:underline ml-1">
                   隐私政策
                 </a> 和 
-                <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer" className="text-core-600 hover:underline">
                   服务条款
                 </a>
               </p>
@@ -419,11 +419,11 @@ const LoginModal = ({ isOpen, onClose, initialInvitationCode, autoOpenRegister }
               </svg>
             </div>
             
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">检查您的邮箱</h2>
-            <p className="text-gray-600 mb-4">
-              我们向 <span className="font-semibold text-gray-800">{email}</span> 发送了一个6位数的验证码。
+            <h2 className="text-2xl font-bold text-brand-900 mb-2">检查您的邮箱</h2>
+            <p className="text-brand-600 mb-4">
+              我们向 <span className="font-semibold text-brand-800">{email}</span> 发送了一个6位数的验证码。
             </p>
-            <p className="text-sm text-gray-500 mb-8">
+            <p className="text-sm text-brand-500 mb-8">
               💡 邮件通常在1-2分钟内到达，请耐心等待。如未收到，请检查垃圾邮件文件夹。
             </p>
             
@@ -442,18 +442,18 @@ const LoginModal = ({ isOpen, onClose, initialInvitationCode, autoOpenRegister }
                   onKeyDown={e => handleKeyDown(e, index)}
                   onPaste={index === 0 ? handlePaste : undefined}
                   onFocus={e => e.target.select()}
-                  className="w-12 h-14 text-center text-2xl font-semibold border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black transition"
+                  className="w-12 h-14 text-center text-2xl font-semibold border-2 rounded-lg focus:ring-2 transition border-brand-200 focus:ring-core-500/20 focus:border-brand-500"
                   disabled={isEmailLoading}
                 />
               ))}
             </div>
 
-            {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+            {error && <p className="text-error-600 text-sm mb-4">{error}</p>}
             
             <button
                 onClick={() => handleVerifyCode(code.join(""))}
                 disabled={isEmailLoading || code.join("").length < 6}
-                className="w-full py-3 px-4 bg-black text-white font-semibold rounded-lg shadow-md hover:bg-gray-800 transition-colors disabled:opacity-50 mb-4"
+                className="w-full py-3 px-4 bg-core-600 hover:bg-core-700 text-white font-semibold rounded-lg shadow-md transition-colors disabled:opacity-50 mb-4"
               >
                 {isEmailLoading ? '验证中...' : 'Continue →'}
             </button>
@@ -461,7 +461,7 @@ const LoginModal = ({ isOpen, onClose, initialInvitationCode, autoOpenRegister }
             {/* 返回按钮 */}
             <button 
               onClick={handleGoBack} 
-              className="text-sm text-gray-600 hover:text-black transition-colors"
+              className="text-sm text-brand-600 hover:text-brand-900 transition-colors"
               disabled={isEmailLoading}
             >
               ← 返回

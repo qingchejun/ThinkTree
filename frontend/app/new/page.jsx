@@ -246,11 +246,11 @@ export default function NewPage() {
   }, [source, canSubmit, mapStyle, handleGenerateFromText, handleGenerateFromUpload])
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-brand-50">
       <div className="max-w-[1280px] mx-auto px-8 py-8">
         <div className="flex gap-8">
           {/* 左侧侧栏 */}
-          <aside className="w-[320px] shrink-0 bg-white rounded-xl border border-gray-200 p-4 h-[calc(100vh-160px)] overflow-auto" aria-label="新建导图设置侧栏">
+          <aside className="w-[320px] shrink-0 bg-white rounded-xl border border-brand-200 p-4 h-[calc(100vh-160px)] overflow-auto" aria-label="新建导图设置侧栏">
             {/* 来源选择 */}
             <SourceSelector
               source={source}
@@ -330,7 +330,7 @@ export default function NewPage() {
           </aside>
 
           {/* 右侧预览区 */}
-          <div className="flex-1 border-l border-gray-200 pl-8">
+          <div className="flex-1 border-l border-brand-200 pl-8">
             <PreviewPanel
               submitting={submitting}
               preview={preview}

@@ -10,7 +10,10 @@ import { useToast } from '../../hooks/useToast'
 import ShareModal from '../../components/share/ShareModal'
 import MindmapThumbnail from '../../components/mindmap/MindmapThumbnail'
 import Sidebar from '../../components/common/Sidebar'
+import { Card } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
+import { Badge } from '../../components/ui/Badge'
+import { iconSizes } from '../../design-system/tokens/semantic'
 import { Input } from '../../components/ui/Input'
 import Pagination from '../../components/ui/Pagination'
 import { 
@@ -423,12 +426,12 @@ export default function MindmapsPage() {
   // 加载状态
   if (isLoading) {
     return (
-      <div className="flex h-screen bg-gray-50">
+      <div className="flex h-screen bg-brand-50">
         <Sidebar />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <Loader2 className="w-12 h-12 animate-spin text-blue-500 mx-auto mb-4" />
-            <p className="text-gray-600">加载中...</p>
+            <Loader2 className="w-12 h-12 animate-spin text-core-600 mx-auto mb-4" />
+            <p className="text-brand-600">加载中...</p>
           </div>
         </main>
       </div>
@@ -441,14 +444,14 @@ export default function MindmapsPage() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-brand-50">
       <Sidebar />
       <main className="flex-1 overflow-y-auto p-8">
         <div className="max-w-7xl mx-auto">
           {/* 错误和成功消息提示 */}
           <div className="mb-6 space-y-3">
             {successMessage && (
-              <div className="flex items-center p-4 bg-green-50 text-green-800 border border-green-200 rounded-lg">
+              <div className="flex items-center p-4 bg-success-50 text-success-800 border border-success-200 rounded-lg">
                 <CheckCircle className="w-5 h-5 mr-2 flex-shrink-0" />
                 <span>{successMessage}</span>
               </div>
@@ -456,9 +459,9 @@ export default function MindmapsPage() {
           </div>
 
           {/* 搜索控件 */}
-          <div className="flex justify-start items-center mb-8">
+          <Card className="p-4 mb-8">
             <div className="relative max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 text-brand-400 ${iconSizes.sm}`} />
               <Input
                 type="text"
                 placeholder="搜索思维导图..."
@@ -467,22 +470,22 @@ export default function MindmapsPage() {
                 className="pl-10 w-full"
               />
             </div>
-          </div>
+          </Card>
 
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {/* 新建导图卡片骨架屏 */}
-              <div className="cursor-pointer group bg-gray-50 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center p-6 h-full min-h-[200px] animate-pulse">
-                <div className="w-12 h-12 bg-gray-200 rounded-full mb-3"></div>
-                <div className="w-20 h-4 bg-gray-200 rounded"></div>
+              <div className="cursor-pointer group bg-brand-50 rounded-xl border-2 border-dashed border-brand-300 flex flex-col items-center justify-center p-6 h-full min-h-[200px] animate-pulse">
+                <div className="w-12 h-12 bg-brand-200 rounded-full mb-3"></div>
+                <div className="w-20 h-4 bg-brand-200 rounded"></div>
               </div>
               {/* 加载骨架屏 */}
               {Array.from({ length: 7 }).map((_, index) => (
                 <div key={index} className="bg-white rounded-xl border overflow-hidden min-h-[200px] animate-pulse">
-                  <div className="bg-gray-200 h-32"></div>
+                  <div className="bg-brand-200 h-32"></div>
                   <div className="p-4">
-                    <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                    <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+                    <div className="h-4 bg-brand-200 rounded mb-2"></div>
+                    <div className="h-3 bg-brand-200 rounded w-2/3"></div>
                   </div>
                 </div>
               ))}
@@ -493,9 +496,9 @@ export default function MindmapsPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {/* 创建新项目卡片 */}
                 <div onClick={handleCreateNew} 
-                     className="cursor-pointer group bg-gray-50 rounded-xl border-2 border-dashed border-gray-300 hover:border-blue-500 transition-all duration-300 flex flex-col items-center justify-center p-6 h-full min-h-[200px] hover:scale-105">
-                  <PlusCircle className="w-12 h-12 text-green-500 group-hover:text-blue-500 transition-all duration-300"/>
-                  <h3 className="font-semibold text-gray-600 group-hover:text-blue-600 transition-colors text-lg mt-2">新建导图</h3>
+                     className="cursor-pointer group bg-brand-50 rounded-xl border-2 border-dashed border-brand-300 hover:border-core-500 transition-all duration-300 flex flex-col items-center justify-center p-6 h-full min-h-[200px] hover:scale-105">
+                  <PlusCircle className="w-12 h-12 text-core-600 group-hover:text-core-600 transition-all duration-300"/>
+                  <h3 className="font-semibold text-brand-600 group-hover:text-core-600 transition-colors text-lg mt-2">新建导图</h3>
                 </div>
 
                 {/* 项目卡片 */}
@@ -517,51 +520,61 @@ export default function MindmapsPage() {
                         <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                       </div>
                       <div className="p-4">
-                        <h3 className="card-title font-semibold text-gray-800 truncate transition-colors duration-200" title={mindmap.title}>
+                        <h3 className="card-title font-semibold text-brand-800 truncate transition-colors duration-200" title={mindmap.title}>
                           {mindmap.title}
                         </h3>
-                        <p className="text-sm text-gray-500 mt-1 flex items-center">
+                        <p className="text-sm text-brand-500 mt-1 flex items-center">
                           <Calendar className="w-3 h-3 mr-1" />
                           {formatDate(mindmap.updated_at)} 更新
                         </p>
                       </div>
                     </div>
-                    <div className="card-actions border-t border-gray-100 p-3 flex justify-end space-x-2 bg-gray-50/50 transition-all duration-300">
-                      <button 
-                        onClick={(e) => handleView(e, mindmap.id)} 
-                        className="action-button text-green-500 hover:bg-green-100 hover:text-green-600"
+                    <div className="card-actions border-t border-brand-100 p-3 flex justify-end space-x-2 bg-brand-50/50 transition-all duration-300">
+                      <Button
+                        onClick={(e) => handleView(e, mindmap.id)}
+                        variant="ghost"
+                        size="sm"
+                        className="p-2 text-core-600 hover:bg-core-100 hover:text-core-700"
                         title="查看思维导图"
                       >
                         <Eye className="w-4 h-4" />
-                      </button>
-                      <button 
-                         onClick={(e) => handleExport(e, mindmap)} 
-                         className="action-button text-purple-500 hover:bg-purple-100 hover:text-purple-600"
-                         title="导出为PNG图片"
-                       >
-                         <Download className="w-4 h-4" />
-                       </button>
-                      <button 
-                        onClick={(e) => handleShare(e, mindmap)} 
-                        className="action-button text-blue-500 hover:bg-blue-100 hover:text-blue-600"
+                      </Button>
+                      <Button
+                        onClick={(e) => handleExport(e, mindmap)}
+                        variant="ghost"
+                        size="sm"
+                        className="p-2 text-content-600 hover:bg-content-100 hover:text-content-700"
+                        title="导出为PNG图片"
+                      >
+                        <Download className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        onClick={(e) => handleShare(e, mindmap)}
+                        variant="ghost"
+                        size="sm"
+                        className="p-2 text-collaboration-600 hover:bg-collaboration-100 hover:text-collaboration-700"
                         title="分享思维导图"
                       >
                         <Share2 className="w-4 h-4" />
-                      </button>
-                      <button 
-                        onClick={(e) => handleToggleFavorite(e, mindmap)} 
-                        className={`action-button ${isFavorite(mindmap.id) ? 'text-yellow-500 hover:bg-yellow-100 hover:text-yellow-600' : 'text-gray-400 hover:bg-gray-100 hover:text-yellow-500'}`}
+                      </Button>
+                      <Button
+                        onClick={(e) => handleToggleFavorite(e, mindmap)}
+                        variant="ghost"
+                        size="sm"
+                        className={`p-2 ${isFavorite(mindmap.id) ? 'text-accent-600 hover:bg-accent-100 hover:text-accent-700' : 'text-brand-400 hover:bg-brand-100 hover:text-accent-600'}`}
                         title={isFavorite(mindmap.id) ? '取消收藏' : '收藏'}
                       >
                         {isFavorite(mindmap.id) ? <Star className="w-4 h-4 fill-current" /> : <Star className="w-4 h-4" />}
-                      </button>
-                      <button 
-                        onClick={(e) => handleDelete(e, mindmap)} 
-                        className="action-button text-red-500 hover:bg-red-100 hover:text-red-600"
+                      </Button>
+                      <Button
+                        onClick={(e) => handleDelete(e, mindmap)}
+                        variant="ghost"
+                        size="sm"
+                        className="p-2 text-error-600 hover:bg-error-100 hover:text-error-700"
                         title="移动到回收站"
                       >
                         <Trash2 className="w-4 h-4" />
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 ))}
@@ -569,37 +582,35 @@ export default function MindmapsPage() {
 
               {/* 分页控件 */}
               {totalPages > 1 && (
-                <div className="mt-8">
+                <Card className="p-4 mt-8">
                   <Pagination 
                     currentPage={currentPage} 
                     totalPages={totalPages} 
                     onPageChange={setCurrentPage} 
                   />
-                </div>
+                </Card>
               )}
             </>
           ) : (
             /* 空状态 */
-            <div className="text-center py-16 border-2 border-dashed rounded-xl bg-gray-50">
-              <FileX className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-              <h3 className="mt-4 text-lg font-semibold text-gray-800">
+            <Card variant="feature" className="text-center py-16 rounded-2xl border-2 border-dashed border-brand-200">
+              <div className="mb-2"><Badge variant="feature" size="sm">提示</Badge></div>
+              <FileX className="mx-auto h-12 w-12 text-brand-400 mb-4" />
+              <h3 className="mt-4 text-lg font-semibold text-brand-800">
                 {searchTerm ? '没有找到匹配的思维导图' : '还没有任何思维导图'}
               </h3>
-              <p className="mt-2 text-sm text-gray-500">
+              <p className="mt-2 text-sm text-brand-500">
                 {searchTerm ? '尝试使用不同的搜索词' : '点击下面的按钮，开始你的第一次创作吧！'}
               </p>
               {!searchTerm && (
                 <div className="mt-6">
-                  <button 
-                    onClick={handleCreateNew} 
-                    className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black"
-                  >
+                  <Button onClick={handleCreateNew} variant="feature" size="cta-lg">
                     <Plus className="-ml-1 mr-2 h-5 w-5" />
                     新建导图
-                  </button>
+                  </Button>
                 </div>
               )}
-            </div>
+            </Card>
           )}
         </div>
       </main>

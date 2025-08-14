@@ -55,6 +55,7 @@ import {
   textColors,
   backgroundColors,
   componentPatterns,
+  iconSizes,
 } from "@/design-system/tokens/semantic";
 ```
 
@@ -115,6 +116,18 @@ className={textColors.primary}
 className={`${backgroundColors.core} ${textColors.core}`}
 className={textColors.error}
 ```
+
+### 需要迁移到 status/core/content/collaboration 的清单（第一阶段关注，不做破坏性修改）
+
+- Toast 颜色类：从 `emerald/rose/amber/slate` 过渡到 `success/error/warning/info`（新代码优先使用语义类，旧代码保留）
+- 表单校验提示：错误/成功信息统一使用 `textColors.error/success` 与 `backgroundColors.error/success`
+- 空状态与标签：优先使用 `componentPatterns.card.feature/highlight` 和功能色 `core/content/collaboration`
+
+### 使用约定（PR Review 参考）
+
+- 按钮：优先使用 `Button` 组件；功能按钮使用 `variant="feature"|"collaborate"|"accent"`，重要 CTA 可使用尺寸 `lg` 或自定义类组合；避免直接写色值类
+- 卡片：默认 `Card`；需要强调用 `componentPatterns.card.feature` 或 `highlight`
+- 图标：统一尺寸 `iconSizes`（`xs/sm/default/md/lg/xl/2xl`），颜色使用语义类（如 `text-core-600`）
 
 #### 功能卡片色彩迁移
 

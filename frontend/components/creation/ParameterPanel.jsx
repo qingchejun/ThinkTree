@@ -4,6 +4,8 @@
 'use client'
 
 import { Label } from '@/components/ui/Label'
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/Select'
+import { HelperText } from '@/components/ui/Form'
 import { componentPatterns } from '@/design-system/tokens/semantic'
 
 const STYLE_OPTIONS = [
@@ -33,21 +35,22 @@ export default function ParameterPanel({
       {!collapsed && (
         <div id="group-basic" className="space-y-3 text-sm">
           <div>
-            <Label className="text-brand-700">导图风格</Label>
-            <select 
-              value={mapStyle} 
-              onChange={(e) => onMapStyleChange(e.target.value)} 
-              className="mt-1 w-full border border-brand-200 rounded-md px-2 py-1 bg-neutral-white text-brand-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-colors duration-200"
-            >
-              {STYLE_OPTIONS.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <div className="mt-1 text-xs text-brand-500">
-              {mapStyle === 'original' ? '保持原始结构和细节' : '精炼关键信息，突出重点'}
+            <Label tone="default">导图风格</Label>
+            <div className="mt-1">
+              <Select value={mapStyle} onValueChange={onMapStyleChange}>
+                <SelectTrigger size="sm" status="default">
+                  <SelectValue placeholder="选择风格" />
+                </SelectTrigger>
+                <SelectContent>
+                  {STYLE_OPTIONS.map(option => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+            <HelperText tone="muted" >{mapStyle === 'original' ? '保持原始结构和细节' : '精炼关键信息，突出重点'}</HelperText>
           </div>
         </div>
       )}

@@ -90,6 +90,12 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* 排版工具类（响应式组合，避免大范围替换） */
+.tt-hero-title { @apply text-5xl md:text-6xl lg:text-7xl font-black; }
+.tt-section-title { @apply text-3xl md:text-4xl font-bold; }
+.tt-card-title { @apply text-xl font-semibold; }
+.tt-body-large { @apply text-lg md:text-xl font-normal; }
+
 /* ReactFlow 自定义样式 */
 .react-flow__background {
   background-color: var(--surface);

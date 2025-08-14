@@ -425,7 +425,7 @@ const FileUpload = forwardRef(function FileUpload({ onUploadStart, onUploadSucce
                       </div>
                     )}
                     {analyzeStatus === 'failed' && (
-                      <div className="mt-2 text-xs text-rose-600">解析失败。
+                      <div className="mt-2 text-xs text-error-600">解析失败。
                         <button className="ml-2 underline" onClick={() => fileInputRef.current?.click()}>重新选择</button>
                       </div>
                     )}
@@ -450,11 +450,11 @@ const FileUpload = forwardRef(function FileUpload({ onUploadStart, onUploadSucce
           </div>
 
           {/* 积分成本信息 - 仅在文件分析完成后显示 */}
-          {showEstimatePanel && fileAnalysis && (
+            {showEstimatePanel && fileAnalysis && (
             <div className={`mt-4 p-3 rounded-md text-sm ${
               fileAnalysis.analysis?.sufficient_credits
-                ? 'bg-green-50 border border-green-200 text-green-800'
-                : 'bg-red-50 border border-red-200 text-red-800'
+                ? 'bg-success-50 border border-success-200 text-success-800'
+                : 'bg-error-50 border border-error-200 text-error-800'
             }`}>
               <div className="flex items-center">
                 <span className="mr-2">
@@ -477,7 +477,7 @@ const FileUpload = forwardRef(function FileUpload({ onUploadStart, onUploadSucce
                     <div className="mt-2">
                       <button 
                         onClick={() => window.open('/pricing', '_blank')}
-                        className="text-red-700 underline hover:text-red-900 bg-transparent border-none cursor-pointer"
+                        className="text-error-700 underline hover:text-error-900 bg-transparent border-none cursor-pointer"
                       >
                         💰 增加积分
                       </button>
@@ -545,8 +545,8 @@ const FileUpload = forwardRef(function FileUpload({ onUploadStart, onUploadSucce
               {creditEstimate && (
                 <span className={`font-medium ${
                   creditEstimate.sufficient_credits 
-                    ? 'text-green-600' 
-                    : 'text-red-600'
+                    ? 'text-success-600' 
+                    : 'text-error-600'
                 }`}>
                   {estimating ? '计算中...' : (creditEstimate.estimated_cost != null ? `预计消耗: ${creditEstimate.estimated_cost} 积分` : '暂无法获取预计消耗，可直接生成')}
                 </span>
@@ -555,11 +555,11 @@ const FileUpload = forwardRef(function FileUpload({ onUploadStart, onUploadSucce
           </div>
 
           {/* 积分状态提示 */}
-          {creditEstimate && (
+            {creditEstimate && (
             <div className={`p-3 rounded-md text-sm ${
               creditEstimate.sufficient_credits
-                ? 'bg-green-50 border border-green-200 text-green-800'
-                : 'bg-red-50 border border-red-200 text-red-800'
+                ? 'bg-success-50 border border-success-200 text-success-800'
+                : 'bg-error-50 border border-error-200 text-error-800'
             }`}>
               <div className="flex items-center">
                 <span className="mr-2">
@@ -581,7 +581,7 @@ const FileUpload = forwardRef(function FileUpload({ onUploadStart, onUploadSucce
                     <div className="mt-2">
                       <button 
                         onClick={() => window.open('/pricing', '_blank')}
-                        className="text-red-700 underline hover:text-red-900 bg-transparent border-none cursor-pointer"
+                        className="text-error-700 underline hover:text-error-900 bg-transparent border-none cursor-pointer"
                       >
                         💰 增加积分
                       </button>

@@ -9,6 +9,10 @@ import { useAuth } from '../../../context/AuthContext'
 import { useToast } from '../../../hooks/useToast'
 import MindmapThumbnail from '../../../components/mindmap/MindmapThumbnail'
 import Sidebar from '../../../components/common/Sidebar'
+import { Card } from '../../../components/ui/Card'
+import { Badge } from '../../../components/ui/Badge'
+import { Button } from '../../../components/ui/Button'
+import { iconSizes } from '../../../design-system/tokens/semantic'
 import { Input } from '../../../components/ui/Input'
 import Pagination from '../../../components/ui/Pagination'
 import { 
@@ -389,12 +393,12 @@ export default function TrashPage() {
   // 加载状态
   if (isLoading) {
     return (
-      <div className="flex h-screen bg-gray-50">
+      <div className="flex h-screen bg-brand-50">
         <Sidebar />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <Loader2 className="w-12 h-12 animate-spin text-blue-500 mx-auto mb-4" />
-            <p className="text-gray-600">加载中...</p>
+            <Loader2 className="w-12 h-12 animate-spin text-core-600 mx-auto mb-4" />
+            <p className="text-brand-600">加载中...</p>
           </div>
         </main>
       </div>
@@ -407,14 +411,14 @@ export default function TrashPage() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-brand-50">
       <Sidebar />
       <main className="flex-1 overflow-y-auto p-8">
         <div className="max-w-7xl mx-auto">
           {/* 成功消息就地微反馈 */}
           <div className="mb-6 space-y-3">
             {successMessage && (
-              <div className="flex items-center p-4 bg-green-50 text-green-800 border border-green-200 rounded-lg">
+              <div className="flex items-center p-4 bg-success-50 text-success-800 border border-success-200 rounded-lg">
                 <CheckCircle className="w-5 h-5 mr-2 flex-shrink-0" />
                 <span>{successMessage}</span>
               </div>
@@ -422,13 +426,13 @@ export default function TrashPage() {
           </div>
 
           {/* 回收站提示和操作栏 */}
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+          <div className="bg-warning-50 border border-warning-200 rounded-lg p-4 mb-6">
             <div className="flex items-start justify-between">
               <div className="flex items-start">
-                <AlertTriangle className="w-5 h-5 text-yellow-600 mr-2 mt-0.5 flex-shrink-0" />
+                <AlertTriangle className="w-5 h-5 text-warning-600 mr-2 mt-0.5 flex-shrink-0" />
                 <div>
-                  <h3 className="text-sm font-medium text-yellow-800">回收站说明</h3>
-                  <p className="text-sm text-yellow-700 mt-1">
+                  <h3 className="text-sm font-medium text-warning-800">回收站说明</h3>
+                  <p className="text-sm text-warning-700 mt-1">
                     删除的思维导图会在回收站保留30天，过期后将自动永久删除。您可以在此期间恢复或永久删除它们。
                   </p>
                 </div>
@@ -436,7 +440,7 @@ export default function TrashPage() {
               {trashedMindmaps.length > 0 && (
                 <button
                   onClick={handleClearAll}
-                  className="ml-4 px-3 py-1 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                  className="ml-4 px-3 py-1 text-sm bg-error-600 text-white rounded-md hover:bg-error-700 transition-colors"
                 >
                   清空回收站
                 </button>
@@ -445,9 +449,9 @@ export default function TrashPage() {
           </div>
 
           {/* 搜索控件 */}
-          <div className="flex justify-start items-center mb-8">
+          <Card className="p-4 mb-8">
             <div className="relative max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 text-brand-400 ${iconSizes.sm}`} />
               <Input
                 type="text"
                 placeholder="搜索回收站中的思维导图..."
@@ -456,16 +460,16 @@ export default function TrashPage() {
                 className="pl-10 w-full"
               />
             </div>
-          </div>
+          </Card>
 
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {Array.from({ length: 8 }).map((_, index) => (
                 <div key={index} className="bg-white rounded-xl border overflow-hidden min-h-[200px] animate-pulse">
-                  <div className="bg-gray-200 h-32"></div>
+                  <div className="bg-brand-200 h-32"></div>
                   <div className="p-4">
-                    <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                    <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+                    <div className="h-4 bg-brand-200 rounded mb-2"></div>
+                    <div className="h-3 bg-brand-200 rounded w-2/3"></div>
                   </div>
                 </div>
               ))}
@@ -483,7 +487,7 @@ export default function TrashPage() {
                       style={{ animationDelay: `${index * 0.1}s` }}
                     >
                       {/* 动态预览图 */}
-                      <div className="h-32 overflow-hidden relative bg-gray-100">
+                      <div className="h-32 overflow-hidden relative bg-brand-100">
                         <MindmapThumbnail 
                           content={mindmap.content_preview || mindmap.content} 
                           title={mindmap.title}
@@ -491,10 +495,10 @@ export default function TrashPage() {
                         />
                         {/* 删除标识 */}
                         <div className="absolute top-2 right-2">
-                          <Trash2 className="w-5 h-5 text-red-500" />
+                          <Trash2 className="w-5 h-5 text-error-600" />
                         </div>
                         {/* 剩余天数标识 */}
-                        <div className="absolute bottom-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">
+                        <div className="absolute bottom-2 left-2 bg-error-600 text-white text-xs px-2 py-1 rounded">
                           {daysLeft}天后删除
                         </div>
                       </div>
@@ -509,21 +513,13 @@ export default function TrashPage() {
                         </p>
                       </div>
                       
-                      <div className="border-t border-gray-100 p-3 flex justify-end space-x-2 bg-gray-50">
-                        <button 
-                          onClick={(e) => handleRestore(e, mindmap)} 
-                          className="p-2 rounded-lg text-green-500 hover:bg-green-100 hover:text-green-600 transition-all duration-200"
-                          title="恢复思维导图"
-                        >
+                      <div className="border-t border-brand-100 p-3 flex justify-end space-x-2 bg-brand-50">
+                        <Button onClick={(e) => handleRestore(e, mindmap)} variant="ghost" size="sm" className="p-2 text-success-600 hover:bg-success-100 hover:text-success-700" title="恢复思维导图">
                           <RotateCcw className="w-4 h-4" />
-                        </button>
-                        <button 
-                          onClick={(e) => handlePermanentDelete(e, mindmap)} 
-                          className="p-2 rounded-lg text-red-500 hover:bg-red-100 hover:text-red-600 transition-all duration-200"
-                          title="永久删除"
-                        >
+                        </Button>
+                        <Button onClick={(e) => handlePermanentDelete(e, mindmap)} variant="ghost" size="sm" className="p-2 text-error-600 hover:bg-error-100 hover:text-error-700" title="永久删除">
                           <Trash2 className="w-4 h-4" />
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   )
@@ -532,26 +528,27 @@ export default function TrashPage() {
 
               {/* 分页控件 */}
               {totalPages > 1 && (
-                <div className="mt-8">
+                <Card className="p-4 mt-8">
                   <Pagination 
                     currentPage={currentPage} 
                     totalPages={totalPages} 
                     onPageChange={setCurrentPage} 
                   />
-                </div>
+                </Card>
               )}
             </>
           ) : (
             /* 空状态 */
-            <div className="text-center py-16 border-2 border-dashed rounded-xl bg-gray-50">
-              <Trash2 className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-              <h3 className="mt-4 text-lg font-semibold text-gray-800">
+            <Card variant="feature" className="text-center py-16 rounded-2xl border-2 border-dashed border-brand-200">
+              <div className="mb-2"><Badge variant="feature" size="sm">提示</Badge></div>
+              <Trash2 className="mx-auto h-12 w-12 text-brand-400 mb-4" />
+              <h3 className="mt-4 text-lg font-semibold text-brand-800">
                 {searchTerm ? '没有找到匹配的项目' : '回收站是空的'}
               </h3>
-              <p className="mt-2 text-sm text-gray-500">
+              <p className="mt-2 text-sm text-brand-500">
                 {searchTerm ? '尝试使用不同的搜索词' : '删除的思维导图会出现在这里'}
               </p>
-            </div>
+            </Card>
           )}
         </div>
       </main>

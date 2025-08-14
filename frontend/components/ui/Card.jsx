@@ -1,9 +1,19 @@
 import * as React from 'react';
 
-const Card = React.forwardRef(({ className, ...props }, ref) => (
+// 语义变体到类名的映射（与设计系统 v2.0 对齐）
+const cardVariants = {
+  default: 'bg-neutral-white border border-brand-200 rounded-lg shadow-sm',
+  elevated: 'bg-neutral-white border border-brand-200 rounded-lg shadow-md',
+  interactive: 'bg-neutral-white border border-brand-200 rounded-lg shadow-sm hover:shadow-md hover:border-brand-300 transition-shadow duration-200',
+  borderless: 'bg-neutral-white border-0 rounded-lg shadow-lg',
+  feature: 'bg-brand-50 border-0 rounded-2xl shadow-sm',
+  highlight: 'bg-accent-50 border border-accent-200 rounded-lg shadow-sm',
+}
+
+const Card = React.forwardRef(({ className = '', variant = 'default', ...props }, ref) => (
   <div
     ref={ref}
-    className={`bg-neutral-white border border-brand-200 rounded-lg shadow-sm ${className}`}
+    className={`${cardVariants[variant] || cardVariants.default} ${className}`}
     {...props}
   />
 ));

@@ -382,7 +382,7 @@ const AdminInvitations = () => {
           )}
         </div>
         {successMessage && (
-          <div className="fixed right-4 top-16 sm:top-4 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-md px-3 py-2 shadow-sm">
+          <div className="fixed right-4 top-16 sm:top-4 bg-success-50 text-success-700 border border-success-100 rounded-md px-3 py-2 shadow-sm">
             {successMessage || '操作成功'}
           </div>
         )}

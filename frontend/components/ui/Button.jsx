@@ -18,6 +18,10 @@ const buttonVariants = cva(
         // 强调按钮 - 使用橙色强调色
         accent: "bg-accent-600 text-neutral-white hover:bg-accent-700 active:bg-accent-800",
         
+        // 功能性按钮 - 与设计系统功能色对齐
+        feature: "bg-core-600 text-neutral-white hover:bg-core-700 active:bg-core-800",
+        collaborate: "bg-collaboration-600 text-neutral-white hover:bg-collaboration-700 active:bg-collaboration-800",
+        
         // 幽灵按钮 - 透明背景
         ghost: "text-brand-700 bg-transparent hover:bg-brand-100 active:bg-brand-200",
         
@@ -45,7 +49,8 @@ const buttonVariants = cva(
         sm: "h-8 px-3 text-sm",
         default: "h-10 px-4 py-2",
         lg: "h-12 px-6 text-lg",
-        xl: "h-14 px-8 text-xl"
+        xl: "h-14 px-8 text-xl",
+        'cta-lg': "h-12 px-8 py-4 text-lg"
       }
     },
     

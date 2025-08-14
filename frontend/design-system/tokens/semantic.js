@@ -107,6 +107,21 @@ export const componentPatterns = {
       'hover:bg-brand-100 active:bg-brand-200',
       'focus:ring-2 focus:ring-brand-500/20',
       'transition-colors duration-200'
+    ].join(' '),
+
+    // 功能按钮（与方案对齐）
+    feature: [
+      'bg-core-600 text-neutral-white',
+      'hover:bg-core-700 active:bg-core-800',
+      'focus:ring-2 focus:ring-core-500/20',
+      'transition-colors duration-200'
+    ].join(' '),
+
+    collaborate: [
+      'bg-collaboration-600 text-neutral-white',
+      'hover:bg-collaboration-700 active:bg-collaboration-800',
+      'focus:ring-2 focus:ring-collaboration-500/20',
+      'transition-colors duration-200'
     ].join(' ')
   },
   
@@ -129,6 +144,19 @@ export const componentPatterns = {
       'rounded-lg shadow-sm hover:shadow-md',
       'cursor-pointer transition-all duration-200',
       'hover:border-brand-300'
+    ].join(' '),
+
+    // 与方案对齐的变体
+    borderless: [
+      'bg-neutral-white border-0 rounded-lg shadow-lg'
+    ].join(' '),
+
+    feature: [
+      'bg-brand-50 border-0 rounded-2xl shadow-sm'
+    ].join(' '),
+
+    highlight: [
+      'bg-accent-50 border border-accent-200 rounded-lg shadow-sm'
     ].join(' ')
   },
   
@@ -202,6 +230,17 @@ export const featureCardStyles = {
 
 // ===== 工具函数 =====
 
+// 图标尺寸语义映射（统一 Lucide 图标尺寸）
+export const iconSizes = {
+  xs: 'h-3 w-3',
+  sm: 'h-4 w-4',
+  default: 'h-5 w-5',
+  md: 'h-6 w-6',
+  lg: 'h-7 w-7',
+  xl: 'h-8 w-8',
+  '2xl': 'h-12 w-12'
+}
+
 /**
  * 根据功能类型获取对应的色彩类名
  * @param {string} type - 功能类型 ('core' | 'content' | 'collaboration')
@@ -265,6 +304,7 @@ export default {
   borderColors,
   componentPatterns,
   featureCardStyles,
+  iconSizes,
   getFeatureColor,
   getStatusColor,
   getComponentStyles

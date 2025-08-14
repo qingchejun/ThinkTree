@@ -65,7 +65,7 @@ export default function ActionPanel({
               disabled={!canSubmit} 
               className="w-full" 
               aria-label="生成思维导图"
-              variant="primary"
+              variant="feature"
             >
               {submitBtnLabel}
             </Button>
@@ -76,7 +76,7 @@ export default function ActionPanel({
                 disabled={!canGenerateUpload} 
                 className="w-full" 
                 aria-label="生成思维导图"
-                variant="primary"
+                variant="feature"
               >
                 {submitBtnLabel}
               </Button>

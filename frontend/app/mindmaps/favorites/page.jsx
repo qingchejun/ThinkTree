@@ -10,6 +10,10 @@ import { useToast } from '../../../hooks/useToast'
 import ShareModal from '../../../components/share/ShareModal'
 import MindmapThumbnail from '../../../components/mindmap/MindmapThumbnail'
 import Sidebar from '../../../components/common/Sidebar'
+import { Card } from '../../../components/ui/Card'
+import { Button } from '../../../components/ui/Button'
+import { Badge } from '../../../components/ui/Badge'
+import { iconSizes } from '../../../design-system/tokens/semantic'
 import { Input } from '../../../components/ui/Input'
 import Pagination from '../../../components/ui/Pagination'
 import { 
@@ -319,12 +323,12 @@ export default function FavoritesPage() {
   // 加载状态
   if (isLoading) {
     return (
-      <div className="flex h-screen bg-gray-50">
+      <div className="flex h-screen bg-brand-50">
         <Sidebar />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <Loader2 className="w-12 h-12 animate-spin text-blue-500 mx-auto mb-4" />
-            <p className="text-gray-600">加载中...</p>
+            <Loader2 className="w-12 h-12 animate-spin text-core-600 mx-auto mb-4" />
+            <p className="text-brand-600">加载中...</p>
           </div>
         </main>
       </div>
@@ -337,14 +341,14 @@ export default function FavoritesPage() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-brand-50">
       <Sidebar />
       <main className="flex-1 overflow-y-auto p-8">
         <div className="max-w-7xl mx-auto">
           {/* 成功消息就地微反馈 */}
           <div className="mb-6 space-y-3">
             {successMessage && (
-              <div className="flex items-center p-4 bg-green-50 text-green-800 border border-green-200 rounded-lg">
+              <div className="flex items-center p-4 bg-success-50 text-success-800 border border-success-200 rounded-lg">
                 <CheckCircle className="w-5 h-5 mr-2 flex-shrink-0" />
                 <span>{successMessage}</span>
               </div>
@@ -352,9 +356,9 @@ export default function FavoritesPage() {
           </div>
 
           {/* 搜索控件 */}
-          <div className="flex justify-start items-center mb-8">
+          <Card className="p-4 mb-8">
             <div className="relative max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 text-brand-400 ${iconSizes.sm}`} />
               <Input
                 type="text"
                 placeholder="搜索收藏的思维导图..."
@@ -363,7 +367,7 @@ export default function FavoritesPage() {
                 className="pl-10 w-full"
               />
             </div>
-          </div>
+          </Card>
 
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -403,44 +407,28 @@ export default function FavoritesPage() {
                         <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                       </div>
                       <div className="p-4">
-                        <h3 className="card-title font-semibold text-gray-800 truncate transition-colors duration-200" title={mindmap.title}>
+                        <h3 className="card-title font-semibold text-brand-800 truncate transition-colors duration-200" title={mindmap.title}>
                           {mindmap.title}
                         </h3>
-                        <p className="text-sm text-gray-500 mt-1 flex items-center">
+                        <p className="text-sm text-brand-500 mt-1 flex items-center">
                           <Calendar className="w-3 h-3 mr-1" />
                           {formatDate(mindmap.updated_at)} 更新
                         </p>
                       </div>
                     </div>
-                    <div className="card-actions border-t border-gray-100 p-3 flex justify-end space-x-2 bg-gray-50/50 transition-all duration-300">
-                      <button 
-                        onClick={(e) => handleView(e, mindmap.id)} 
-                        className="action-button text-green-500 hover:bg-green-100 hover:text-green-600"
-                        title="查看思维导图"
-                      >
+                    <div className="card-actions border-t border-brand-100 p-3 flex justify-end space-x-2 bg-brand-50/50 transition-all duration-300">
+                      <Button onClick={(e) => handleView(e, mindmap.id)} variant="ghost" size="sm" className="p-2 text-core-600 hover:bg-core-100 hover:text-core-700" title="查看思维导图">
                         <Eye className="w-4 h-4" />
-                      </button>
-                      <button 
-                         onClick={(e) => handleExport(e, mindmap)} 
-                         className="action-button text-purple-500 hover:bg-purple-100 hover:text-purple-600"
-                         title="导出为PNG图片"
-                       >
-                         <Download className="w-4 h-4" />
-                       </button>
-                      <button 
-                        onClick={(e) => handleShare(e, mindmap)} 
-                        className="action-button text-blue-500 hover:bg-blue-100 hover:text-blue-600"
-                        title="分享思维导图"
-                      >
+                      </Button>
+                      <Button onClick={(e) => handleExport(e, mindmap)} variant="ghost" size="sm" className="p-2 text-content-600 hover:bg-content-100 hover:text-content-700" title="导出为PNG图片">
+                        <Download className="w-4 h-4" />
+                      </Button>
+                      <Button onClick={(e) => handleShare(e, mindmap)} variant="ghost" size="sm" className="p-2 text-collaboration-600 hover:bg-collaboration-100 hover:text-collaboration-700" title="分享思维导图">
                         <Share2 className="w-4 h-4" />
-                      </button>
-                      <button 
-                        onClick={(e) => handleUnfavorite(e, mindmap)} 
-                        className="action-button text-yellow-500 hover:bg-yellow-100 hover:text-yellow-600"
-                        title="取消收藏"
-                      >
+                      </Button>
+                      <Button onClick={(e) => handleUnfavorite(e, mindmap)} variant="ghost" size="sm" className="p-2 text-accent-600 hover:bg-accent-100 hover:text-accent-700" title="取消收藏">
                         <StarOff className="w-4 h-4" />
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 ))}
@@ -448,26 +436,27 @@ export default function FavoritesPage() {
 
               {/* 分页控件 */}
               {totalPages > 1 && (
-                <div className="mt-8">
+                <Card className="p-4 mt-8">
                   <Pagination 
                     currentPage={currentPage} 
                     totalPages={totalPages} 
                     onPageChange={setCurrentPage} 
                   />
-                </div>
+                </Card>
               )}
             </>
           ) : (
             /* 空状态 */
-            <div className="text-center py-16 border-2 border-dashed rounded-xl bg-gray-50">
-              <Star className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-              <h3 className="mt-4 text-lg font-semibold text-gray-800">
+            <Card variant="feature" className="text-center py-16 rounded-2xl border-2 border-dashed border-brand-200">
+              <div className="mb-2"><Badge variant="feature" size="sm">提示</Badge></div>
+              <Star className="mx-auto h-12 w-12 text-brand-400 mb-4" />
+              <h3 className="mt-4 text-lg font-semibold text-brand-800">
                 {searchTerm ? '没有找到匹配的收藏' : '还没有收藏任何思维导图'}
               </h3>
-              <p className="mt-2 text-sm text-gray-500">
+              <p className="mt-2 text-sm text-brand-500">
                 {searchTerm ? '尝试使用不同的搜索词' : '在思维导图页面点击收藏按钮来添加收藏'}
               </p>
-            </div>
+            </Card>
           )}
         </div>
       </main>

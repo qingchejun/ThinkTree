@@ -26,9 +26,9 @@ import Image from 'next/image';
 
 // 分离出使用 useSearchParams 的组件
 const settingsNavItems = [
-  { id: 'profile', name: '个人资料', icon: User, iconColor: 'text-blue-500' },
-  { id: 'billing', name: '用量计费', icon: CreditCard, iconColor: 'text-green-500' },
-  { id: 'invitations', name: '邀请好友', icon: Gift, iconColor: 'text-orange-500' },
+  { id: 'profile', name: '个人资料', icon: User, iconColor: 'text-core-600' },
+  { id: 'billing', name: '用量计费', icon: CreditCard, iconColor: 'text-content-600' },
+  { id: 'invitations', name: '邀请好友', icon: Gift, iconColor: 'text-accent-600' },
 ];
 
 const SettingsContent = () => {
@@ -476,11 +476,11 @@ const SettingsContent = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 w-full max-w-md mx-4 p-6">
+      <div className="min-h-screen flex items-center justify-center bg-brand-50">
+        <div className="bg-white rounded-xl shadow-sm border border-brand-200 w-full max-w-md mx-4 p-6">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-900 border-t-transparent mx-auto mb-4"></div>
-            <p className="text-gray-600">加载中...</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-brand-900 border-t-transparent mx-auto mb-4"></div>
+            <p className="text-brand-600">加载中...</p>
           </div>
         </div>
       </div>
@@ -557,23 +557,23 @@ const SettingsContent = () => {
 
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-brand-50">
       <div className="max-w-7xl mx-auto px-6 py-12">
         <Tabs value={activeTab} onValueChange={(value) => router.push(`/settings?tab=${value}`)} className="w-full">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             {/* 左侧导航 */}
             <aside className="md:col-span-1">
-              <div className="flex flex-col space-y-1 bg-white rounded-xl border border-gray-200 p-2 h-fit">
+              <div className="flex flex-col space-y-1 bg-white rounded-xl border border-brand-200 p-2 h-fit">
                 {settingsNavItems.map((item) => {
                   const isInvitations = item.id === 'invitations'
                   const isDisabled = isInvitations && !isAdmin
                   const isActive = activeTab === item.id
                   const baseClass = isDisabled
-                    ? 'text-gray-400 cursor-not-allowed bg-gray-50'
+                    ? 'text-brand-300 cursor-not-allowed bg-brand-50'
                     : isActive
-                      ? 'bg-black text-white shadow-sm'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  const iconClass = isDisabled ? 'text-gray-300' : (isActive ? 'text-white' : item.iconColor)
+                      ? 'bg-brand-800 text-white shadow-sm'
+                      : 'text-brand-600 hover:bg-brand-100 hover:text-brand-900'
+                  const iconClass = isDisabled ? 'text-brand-300' : (isActive ? 'text-white' : item.iconColor)
                   return (
                     <div key={item.id} className="relative">
                       <button
@@ -607,14 +607,14 @@ const SettingsContent = () => {
             {/* 右侧内容区 */}
             <main className="md:col-span-3">
                 <TabsContent value="profile" className="mt-0">
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-                  <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
-                    <h3 id="profile" className="text-lg font-semibold text-gray-900">个人资料</h3>
-                    <div className="flex items-center gap-3 text-sm text-gray-600">
-                      <span className="hidden sm:inline">积分 <span className="font-semibold text-gray-900">{currentBalance}</span></span>
-                      <button onClick={() => loadProfileData()} className="inline-flex items-center px-2.5 py-1 border rounded-lg bg-white text-gray-700 hover:bg-gray-50">
+                <div className="bg-white rounded-xl shadow-sm border border-brand-200">
+                  <div className="px-6 py-5 border-b border-brand-200 flex items-center justify-between">
+                    <h3 id="profile" className="text-lg font-semibold text-brand-900">个人资料</h3>
+                    <div className="flex items-center gap-3 text-sm text-brand-600">
+                      <span className="hidden sm:inline">积分 <span className="font-semibold text-brand-900">{currentBalance}</span></span>
+                      <Button variant="ghost" size="sm" onClick={() => loadProfileData()} className="inline-flex items-center">
                         <RefreshCcw className="w-3.5 h-3.5 mr-1"/> 刷新
-                      </button>
+                      </Button>
                     </div>
                   </div>
                   <div className="p-6">
@@ -625,15 +625,11 @@ const SettingsContent = () => {
                           <AvatarDisplay 
                             avatarId={tempAvatar}
                             size={80}
-                            className="border-2 border-gray-200"
+                            className="border-2 border-brand-200"
                           />
-                          <button
-                            type="button"
-                            onClick={() => setIsAvatarSelectorOpen(true)}
-                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-200 rounded-lg hover:bg-gray-200 transition-colors"
-                          >
+                          <Button type="button" variant="secondary" size="sm" onClick={() => setIsAvatarSelectorOpen(true)}>
                             更换头像
-                          </button>
+                          </Button>
                         </div>
                       </div>
                       <div>
@@ -643,7 +639,7 @@ const SettingsContent = () => {
                           type="email"
                           value={profileData?.email || user?.email || ''}
                           disabled
-                          className="bg-gray-50 text-gray-500 mt-2 border-gray-200"
+                          className="bg-brand-50 text-brand-500 mt-2 border-brand-200"
                         />
                       </div>
                       <div>
@@ -664,63 +660,57 @@ const SettingsContent = () => {
                           type="text"
                           value={profileData ? new Date(profileData.created_at).toLocaleString() : '加载中...'}
                           disabled
-                          className="bg-gray-50 text-gray-500 mt-2 border-gray-200"
+                          className="bg-brand-50 text-brand-500 mt-2 border-brand-200"
                         />
                       </div>
-                      <button 
-                        onClick={handleSaveProfile}
-                        disabled={isLoading}
-                        className="px-6 py-3 bg-black text-white text-sm font-semibold rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
+                      <Button onClick={handleSaveProfile} disabled={isLoading} variant="feature">
                         {isLoading ? '保存中...' : '保存更改'}
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 </div>
               </TabsContent>
                <TabsContent value="invitations" className="mt-0">
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-                  <div className="px-6 py-5 border-b border-gray-200">
-                    <h3 id="invitations" className="text-lg font-semibold text-gray-900">邀请好友</h3>
+                <div className="bg-white rounded-xl shadow-sm border border-brand-200">
+                  <div className="px-6 py-5 border-b border-brand-200">
+                    <h3 id="invitations" className="text-lg font-semibold text-brand-900">邀请好友</h3>
                   </div>
                   <div className="p-6">
                     <div className="space-y-6">
                       {/* 新推荐卡片 */}
-                      <div className="bg-white p-6 rounded-lg border border-gray-200">
-                          <h3 className="text-lg font-medium text-gray-900 mb-2">我的邀请链接</h3>
-                          <p className="text-sm text-gray-600 mb-3">{referralLink?.rule_text || '你和好友各得 100 积分'}</p>
+                      <div className="bg-white p-6 rounded-lg border border-brand-200">
+                          <h3 className="text-lg font-medium text-brand-900 mb-2">我的邀请链接</h3>
+                          <p className="text-sm text-brand-600 mb-3">{referralLink?.rule_text || '你和好友各得 100 积分'}</p>
                           <div className="flex items-center gap-2">
-                            <span className="flex-1 font-mono text-sm break-all text-gray-900 select-all">{referralLink?.referral_link || ''}</span>
-                            <button
+                            <span className="flex-1 font-mono text-sm break-all text-brand-900 select-all">{referralLink?.referral_link || ''}</span>
+                            <Button
                               onClick={() => referralLink?.referral_link && handleCopyLink(referralLink.referral_link)}
-                              className={`inline-flex items-center justify-center w-10 h-10 rounded-lg border transition-colors ${linkCopied ? 'border-emerald-300 bg-emerald-50' : 'border-gray-300 hover:bg-gray-100 hover:border-gray-400 active:bg-gray-200'}`}
+                              variant={linkCopied ? 'success' : 'outline'}
+                              size="sm"
                               disabled={!referralLink?.referral_link}
                               title={linkCopied ? '已复制' : '复制'}
                             >
-                              {linkCopied ? (
-                                <svg className="w-4 h-4 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 6L9 17l-5-5"/></svg>
-                              ) : (
-                                <svg className="w-4 h-4 text-gray-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                              )}
-                            </button>
-                            <button
+                              {linkCopied ? '已复制' : '复制'}
+                            </Button>
+                            <Button
                               onClick={() => referralLink?.referral_link && handleShareLink(referralLink.referral_link)}
-                              className={`inline-flex items-center justify-center w-10 h-10 rounded-lg border transition-colors ${linkShared ? 'border-blue-300 bg-blue-50' : 'border-gray-300 hover:bg-gray-100 hover:border-gray-400 active:bg-gray-200'}`}
+                              variant="collaborate"
+                              size="sm"
                               disabled={!referralLink?.referral_link}
                               title={linkShared ? '已分享' : '分享'}
                             >
-                              <Share2 className={`w-4 h-4 ${linkShared ? 'text-blue-600' : 'text-gray-700'}`} />
-                            </button>
+                              分享
+                            </Button>
                           </div>
-                          <div className="text-xs text-gray-500 mt-2">已邀请 {referralStats?.invited_count ?? referralLink?.invited_count ?? 0}/{referralStats?.limit ?? referralLink?.limit ?? 10}</div>
+                          <div className="text-xs text-brand-500 mt-2">已邀请 {referralStats?.invited_count ?? referralLink?.invited_count ?? 0}/{referralStats?.limit ?? referralLink?.limit ?? 10}</div>
                           <div className="mt-3">
-                            <button onClick={() => setShowQR(!showQR)} className="text-xs px-2 py-1 border rounded-lg text-gray-700 bg-white hover:bg-gray-50">{showQR ? '隐藏二维码' : '显示二维码'}</button>
+                            <Button onClick={() => setShowQR(!showQR)} variant="secondary" size="xs">{showQR ? '隐藏二维码' : '显示二维码'}</Button>
                             {showQR && (
-                              <div className="mt-3 p-3 border rounded-lg inline-flex flex-col items-center bg-white">
+                              <div className="mt-3 p-3 border border-brand-200 rounded-lg inline-flex flex-col items-center bg-white">
                                 <canvas ref={qrCanvasRef} width={184} height={184} className="rounded"/>
                                 <div className="mt-2 flex items-center gap-2">
-                                  <span className="text-xs text-gray-500">扫码或保存图片</span>
-                                  <button onClick={downloadQR} className="text-xs px-2 py-1 border rounded-lg hover:bg-gray-50">保存PNG</button>
+                                  <span className="text-xs text-brand-500">扫码或保存图片</span>
+                                  <Button onClick={downloadQR} size="xs" variant="outline">保存PNG</Button>
                                 </div>
                               </div>
                             )}
@@ -730,36 +720,36 @@ const SettingsContent = () => {
 
                       {user?.is_superuser && (
                       <div>
-                        <h3 className="text-lg font-medium text-gray-900 mb-4">管理员一次性邀请码</h3>
-                          <button 
+                        <h3 className="text-lg font-medium text-brand-900 mb-4">管理员一次性邀请码</h3>
+                          <Button 
                             onClick={handleGenerateInvitation}
                             disabled={isLoading}
-                            className="px-6 py-3 bg-black text-white text-sm font-semibold rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            variant="feature"
                           >
                             {isLoading ? '生成中...' : '生成一次性邀请码（管理员）'}
-                          </button>
+                          </Button>
                       </div>
                       )}
                       
                       <div>
                         <div className="flex items-center justify-between mb-3">
-                          <h3 className="text-lg font-medium text-gray-900">我的邀请记录</h3>
+                          <h3 className="text-lg font-medium text-brand-900">我的邀请记录</h3>
                           {isAdmin && referralHistory.length > 0 && (
-                            <button onClick={exportReferralCSV} className="text-xs px-2.5 py-1.5 border rounded-lg bg-white text-gray-700 hover:bg-gray-50">导出 CSV</button>
+                            <Button onClick={exportReferralCSV} variant="outline" size="xs">导出 CSV</Button>
                           )}
                         </div>
                         <div className="flex items-center gap-2 mb-3 text-xs">
                           <Input value={refSearch} onChange={(e)=>setRefSearch(e.target.value)} placeholder="搜索邮箱或ID" className="h-8 w-56"/>
-                          <span className="text-gray-500">时间:</span>
+                          <span className="text-brand-500">时间:</span>
                           {['ALL','7','30'].map(v => (
-                            <button key={v} onClick={()=>setRefRange(v)} className={`px-2 py-1 rounded-full border ${refRange===v?'bg-black text-white border-black':'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}>{v==='ALL'?'全部':`${v}天`}</button>
+                            <Button key={v} onClick={()=>setRefRange(v)} variant={refRange===v ? 'primary' : 'outline'} size="xs">{v==='ALL'?'全部':`${v}天`}</Button>
                           ))}
                         </div>
                         {filteredReferrals.length > 0 ? (
                           <div className="overflow-x-auto">
                             <table className="min-w-full text-sm">
                               <thead>
-                                <tr className="text-left text-gray-500">
+                                <tr className="text-left text-brand-500">
                                   <th className="py-2 pr-4">受邀用户ID</th>
                                   <th className="py-2 pr-4">受邀邮箱</th>
                                   <th className="py-2 pr-4">时间</th>
@@ -767,35 +757,35 @@ const SettingsContent = () => {
                               </thead>
                               <tbody>
                                 {filteredReferrals.map((e, idx) => (
-                                  <tr key={idx} className="border-t">
+                                  <tr key={idx} className="border-t border-brand-200">
                                     <td className="py-2 pr-4">{e.invitee_user_id}</td>
                                     <td className="py-2 pr-4">{e.invitee_email_masked || '***'}</td>
-                                    <td className="py-2 pr-4 text-gray-600">{new Date(e.created_at).toLocaleString('zh-CN')}</td>
+                                    <td className="py-2 pr-4 text-brand-600">{new Date(e.created_at).toLocaleString('zh-CN')}</td>
                                   </tr>
                                 ))}
                               </tbody>
                             </table>
                           </div>
                         ) : (
-                          <div className="text-gray-500 text-sm">
+                          <div className="text-brand-500 text-sm">
                             <p>暂无邀请记录</p>
                             {referralLink?.referral_link && (
-                              <button onClick={()=>handleCopyLink(referralLink.referral_link)} className="mt-2 inline-flex items-center px-3 py-1.5 text-xs border rounded-lg bg-white text-gray-700 hover:bg-gray-50">复制我的邀请链接</button>
+                              <Button onClick={()=>handleCopyLink(referralLink.referral_link)} variant="outline" size="xs" className="mt-2">复制我的邀请链接</Button>
                             )}
                           </div>
                         )}
                       </div>
                       {user?.is_superuser && (
                         <div>
-                          <h3 className="text-lg font-medium text-gray-900 mb-4">我的管理员邀请码（一次性）</h3>
+                          <h3 className="text-lg font-medium text-brand-900 mb-4">我的管理员邀请码（一次性）</h3>
                           {invitations.length > 0 ? (
                             <div className="space-y-2">
                               {invitations.map((invitation, index) => (
-                                <div key={index} className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+                                <div key={index} className="bg-brand-50 rounded-lg border border-brand-200 p-4">
                                   <div className="flex items-center justify-between">
                                     <div className="flex items-center space-x-3">
-                                      <span className="font-mono text-sm text-gray-900">{invitation.code}</span>
-                                      <button
+                                      <span className="font-mono text-sm text-brand-900">{invitation.code}</span>
+                                      <Button
                                         onClick={() => {
                                           const inviteLink = `https://thinkso.io/register?invitation_code=${invitation.code}`;
                                           navigator.clipboard.writeText(inviteLink).then(() => {
@@ -804,16 +794,17 @@ const SettingsContent = () => {
                                             showToast('复制失败，请手动复制', 'error');
                                           });
                                         }}
-                                        className="px-3 py-1 text-xs font-medium text-gray-600 bg-gray-100 border border-gray-200 rounded-md hover:bg-gray-200 hover:text-gray-800 transition-colors"
+                                        size="xs"
+                                        variant="secondary"
                                         title="复制邀请链接"
                                       >
                                         复制链接
-                                      </button>
+                                      </Button>
                                     </div>
                                     <span className={`text-sm px-2 py-1 rounded-full ${
                                       invitation.is_used 
-                                        ? 'bg-green-100 text-green-700' 
-                                        : 'bg-gray-100 text-gray-600'
+                                        ? 'bg-success-100 text-success-800' 
+                                        : 'bg-brand-100 text-brand-600'
                                     }`}>
                                       {invitation.is_used ? '已使用' : '未使用'}
                                     </span>
@@ -822,7 +813,7 @@ const SettingsContent = () => {
                               ))}
                             </div>
                           ) : (
-                            <p className="text-gray-500 text-sm">暂无邀请码</p>
+                            <p className="text-brand-500 text-sm">暂无邀请码</p>
                           )}
                         </div>
                       )}
@@ -831,23 +822,23 @@ const SettingsContent = () => {
                 </div>
               </TabsContent>
                  <TabsContent value="billing" className="mt-0">
-                  <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-                    <div className="px-6 py-5 border-b border-gray-200">
-                      <h3 id="billing" className="text-lg font-semibold text-gray-900">用量计费</h3>
+                  <div className="bg-white rounded-xl shadow-sm border border-brand-200">
+                    <div className="px-6 py-5 border-b border-brand-200">
+                      <h3 id="billing" className="text-lg font-semibold text-brand-900">用量计费</h3>
                     </div>
                     <div className="p-6">
                       <div className="space-y-6">
-                        <div className="bg-white p-6 rounded-lg border border-gray-200">
-                          <h3 className="text-lg font-medium text-gray-900 mb-2">当前积分余额</h3>
-                          <p className="text-3xl font-bold text-gray-900">
+                        <div className="bg-white p-6 rounded-lg border border-brand-200">
+                          <h3 className="text-lg font-medium text-brand-900 mb-2">当前积分余额</h3>
+                          <p className="text-3xl font-bold text-brand-900">
                             {currentBalance}
                           </p>
-                          <p className="text-sm text-gray-600 mt-1">积分</p>
+                          <p className="text-sm text-brand-600 mt-1">积分</p>
                           {/* 迷你趋势图 */}
                            <div className="mt-3">
                             <div className="flex items-center justify-between mb-1">
-                              <span className="text-xs text-gray-500">最近{historyRange==='30'?'30':'7'}天趋势</span>
-                              <span className={`text-xs ${sparkData.trendUp ? 'text-emerald-600' : 'text-rose-600'}`}>{sparkData.last >= 0 ? '+' : ''}{sparkData.last}</span>
+                              <span className="text-xs text-brand-500">最近{historyRange==='30'?'30':'7'}天趋势</span>
+                              <span className={`text-xs ${sparkData.trendUp ? 'text-success-600' : 'text-error-600'}`}>{sparkData.last >= 0 ? '+' : ''}{sparkData.last}</span>
                             </div>
                             <div className="relative" style={{ width: sparkData.w, height: sparkData.h }}>
                               <svg width={sparkData.w} height={sparkData.h} className="block">
@@ -890,27 +881,27 @@ const SettingsContent = () => {
                         </div>
                         <div>
                           <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-medium text-gray-900">积分历史</h3>
+                            <h3 className="text-lg font-medium text-brand-900">积分历史</h3>
                           <div className="flex items-center gap-2">
                               {isAdmin && (
-                                <button onClick={exportCSV} className="inline-flex items-center px-2.5 py-1.5 text-xs border rounded-lg text-gray-700 bg-white hover:bg-gray-50">导出 CSV</button>
+                                <Button onClick={exportCSV} variant="outline" size="xs">导出 CSV</Button>
                               )}
-                              <button onClick={() => { const now=Date.now(); if (now - creditRetryRef.current < 800) return; creditRetryRef.current = now; loadCreditHistory(1, false); }} className="inline-flex items-center px-2.5 py-1.5 text-xs border rounded-lg text-gray-700 bg-white hover:bg-gray-50">
+                              <Button onClick={() => { const now=Date.now(); if (now - creditRetryRef.current < 800) return; creditRetryRef.current = now; loadCreditHistory(1, false); }} variant="secondary" size="xs">
                                 <RefreshCcw className="w-3.5 h-3.5 mr-1"/> 重新加载
-                              </button>
+                              </Button>
                             </div>
                           </div>
                           {/* 筛选条 */}
                           <div className="flex flex-wrap items-center gap-2 mb-3 text-xs">
-                            <span className="text-gray-500">时间:</span>
+                            <span className="text-brand-500">时间:</span>
                             {['ALL','7','30'].map(v => (
-                              <button key={v} onClick={() => setHistoryRange(v)} className={`px-2 py-1 rounded-full border ${historyRange===v?'bg-black text-white border-black':'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}>{v==='ALL'?'全部':`${v}天`}</button>
+                              <Button key={v} onClick={() => setHistoryRange(v)} variant={historyRange===v?'primary':'outline'} size="xs">{v==='ALL'?'全部':`${v}天`}</Button>
                             ))}
-                            <span className="ml-3 text-gray-500">类型:</span>
+                            <span className="ml-3 text-brand-500">类型:</span>
                             {['INVITE','REDEEM','DAILY_REWARD','DEDUCTION','REFUND','GRANT'].map(k => (
-                              <button key={k} onClick={() => toggleType(k)} className={`px-2 py-1 rounded-full border ${typeFilters.has(k)?'bg-black text-white border-black':'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}>{
+                              <Button key={k} onClick={() => toggleType(k)} variant={typeFilters.has(k)?'primary':'outline'} size="xs">{
                                 {INVITE:'邀请',REDEEM:'兑换码',DAILY_REWARD:'每日登录',DEDUCTION:'扣除',REFUND:'退款',GRANT:'奖励'}[k]
-                              }</button>
+                              }</Button>
                             ))}
                             {/* 已选条件 chips 与清空快捷键 */}
                             <div
@@ -919,50 +910,50 @@ const SettingsContent = () => {
                               onKeyDown={(e)=>{ if ((e.metaKey || e.ctrlKey) && e.key === 'Backspace') { setHistoryRange('ALL'); setTypeFilters(new Set()); } }}
                             >
                               {historyRange !== 'ALL' && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-brand-100 text-brand-700">
                                   {historyRange==='7'?'7天':'30天'}
-                                  <button onClick={()=> setHistoryRange('ALL')} className="hover:text-gray-900" aria-label="移除时间筛选">×</button>
+                                  <button onClick={()=> setHistoryRange('ALL')} className="hover:text-brand-900" aria-label="移除时间筛选">×</button>
                                 </span>
                               )}
                               {Array.from(typeFilters).map(k => (
-                                <span key={k} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">
+                                <span key={k} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-brand-100 text-brand-700">
                                   {{INVITE:'邀请',REDEEM:'兑换码',DAILY_REWARD:'每日登录',DEDUCTION:'扣除',REFUND:'退款',GRANT:'奖励'}[k]}
-                                  <button onClick={()=> { const next = new Set(typeFilters); next.delete(k); setTypeFilters(next); }} className="hover:text-gray-900" aria-label={`移除${k}筛选`}>×</button>
+                                  <button onClick={()=> { const next = new Set(typeFilters); next.delete(k); setTypeFilters(next); }} className="hover:text-brand-900" aria-label={`移除${k}筛选`}>×</button>
                                 </span>
                               ))}
                               {(historyRange!=='ALL' || typeFilters.size>0) && (
-                                <button onClick={()=> { setHistoryRange('ALL'); setTypeFilters(new Set()); }} className="text-gray-600 hover:text-gray-900">清空（⌘/Ctrl+Backspace）</button>
+                                <Button onClick={()=> { setHistoryRange('ALL'); setTypeFilters(new Set()); }} variant="ghost" size="xs">清空（⌘/Ctrl+Backspace）</Button>
                               )}
                             </div>
                           </div>
                           {creditError && (
-                            <div className="p-3 mb-3 rounded-lg border border-rose-200 bg-rose-50 text-rose-700 text-xs flex items-center justify-between" role="alert">
+                            <div className="p-3 mb-3 rounded-lg border border-error-200 bg-error-50 text-error-700 text-xs flex items-center justify-between" role="alert">
                               <span>{creditError}</span>
-                              <button onClick={() => { const now=Date.now(); if (now - creditRetryRef.current < 800) return; creditRetryRef.current = now; loadCreditHistory(1, false); }} disabled={creditLoading} className="px-2 py-1 border rounded bg-white text-rose-700 hover:bg-rose-100 disabled:opacity-50 disabled:cursor-not-allowed">重试</button>
+                              <Button onClick={() => { const now=Date.now(); if (now - creditRetryRef.current < 800) return; creditRetryRef.current = now; loadCreditHistory(1, false); }} disabled={creditLoading} size="xs" variant="outline">重试</Button>
                             </div>
                           )}
                           {creditLoading && !creditHistory.length ? (
                             <div className="space-y-3">
                               {Array.from({length:8}).map((_,i)=> (
-                                <div key={i} className="p-4 rounded-lg border border-gray-200 bg-gray-50 animate-pulse">
-                                  <div className="h-4 bg-gray-200 rounded w-1/3 mb-2"/>
-                                  <div className="h-3 bg-gray-200 rounded w-1/4"/>
+                                <div key={i} className="p-4 rounded-lg border border-brand-200 bg-brand-50 animate-pulse">
+                                  <div className="h-4 bg-brand-200 rounded w-1/3 mb-2"/>
+                                  <div className="h-3 bg-brand-200 rounded w-1/4"/>
                                 </div>
                               ))}
                             </div>
                           ) : creditHistory.length > 0 ? (
                             <div className="space-y-3">
                               {displayHistory.length === 0 ? (
-                                <div className="text-center p-6 rounded-lg border border-gray-200 bg-white">
-                                  <p className="text-sm text-gray-600">无符合当前筛选条件的记录</p>
-                                  <button onClick={() => { setHistoryRange('ALL'); setTypeFilters(new Set()); }} className="mt-3 inline-flex items-center px-2.5 py-1.5 text-xs border rounded-lg bg-white text-gray-700 hover:bg-gray-50">清除筛选</button>
+                                <div className="text-center p-6 rounded-lg border border-brand-200 bg-white">
+                                  <p className="text-sm text-brand-600">无符合当前筛选条件的记录</p>
+                                  <Button onClick={() => { setHistoryRange('ALL'); setTypeFilters(new Set()); }} variant="outline" size="xs" className="mt-3">清除筛选</Button>
                                 </div>
                               ) : null}
                               {displayHistory.map((item) => (
-                                <div key={item.id} className="flex items-center p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                <div key={item.id} className="flex items-center p-4 bg-brand-50 rounded-lg border border-brand-200">
                                   <div className="flex-1">
-                                    <p className="font-semibold text-gray-900">{item.summary || formatTransactionSummary(item)}</p>
-                                    <p className="text-sm text-gray-600">{formatDate(item.created_at)}</p>
+                                    <p className="font-semibold text-brand-900">{item.summary || formatTransactionSummary(item)}</p>
+                                    <p className="text-sm text-brand-600">{formatDate(item.created_at)}</p>
                                   </div>
                                   <div className="ml-4 text-right">
                                     <p className={getAmountStyle(item.transaction_type || item.type)}>{getAmountText(item.transaction_type || item.type, item.amount)}</p>
@@ -970,23 +961,24 @@ const SettingsContent = () => {
                                 </div>
                               ))}
                               {creditPagination.has_next && (
-                                <button 
+                                <Button 
                                   onClick={() => loadCreditHistory(creditPagination.current_page + 1, true)} 
                                   disabled={creditLoading}
-                                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-200 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                  variant="secondary"
+                                  size="sm"
                                 >
                                   {creditLoading ? '加载中...' : '加载更多'}
-                                </button>
+                                </Button>
                               )}
                             </div>
                            ) : (
-                            <div className="text-center p-8 border border-dashed border-gray-200 rounded-lg bg-gray-50">
-                              <svg className="w-10 h-10 mx-auto text-gray-300" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1a4 4 0 0 1 4 4v1h1a3 3 0 0 1 3 3v6a5 5 0 0 1-4 4.9V22a1 1 0 1 1-2 0v-2H10v2a1 1 0 1 1-2 0v-2.1A5 5 0 0 1 4 15V9a3 3 0 0 1 3-3h1V5a4 4 0 0 1 4-4Zm0 2a2 2 0 0 0-2 2v1h4V5a2 2 0 0 0-2-2Z"/></svg>
-                              <p className="mt-2 text-sm text-gray-600">还没有积分历史，试试以下操作</p>
+                            <div className="text-center p-8 border border-dashed border-brand-200 rounded-lg bg-brand-50">
+                              <svg className="w-10 h-10 mx-auto text-brand-300" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1a4 4 0 0 1 4 4v1h1a3 3 0 0 1 3 3v6a5 5 0 0 1-4 4.9V22a1 1 0 1 1-2 0v-2H10v2a1 1 0 1 1-2 0v-2.1A5 5 0 0 1 4 15V9a3 3 0 0 1 3-3h1V5a4 4 0 0 1 4-4Zm0 2a2 2 0 0 0-2 2v1h4V5a2 2 0 0 0-2-2Z"/></svg>
+                              <p className="mt-2 text-sm text-brand-600">还没有积分历史，试试以下操作</p>
                               <div className="mt-3 flex items-center justify-center gap-2 text-xs">
-                                <a href="#redeem" className="px-2.5 py-1.5 border rounded-lg bg-white text-gray-700 hover:bg-gray-50">输入兑换码</a>
+                                <a href="#redeem" className="px-2.5 py-1.5 border rounded-lg bg-white text-brand-700 hover:bg-brand-50">输入兑换码</a>
                                 {isAdmin ? (
-                                  <a href="/settings?tab=invitations#invitations" className="px-2.5 py-1.5 border rounded-lg bg-white text-gray-700 hover:bg-gray-50">邀请好友</a>
+                                  <a href="/settings?tab=invitations#invitations" className="px-2.5 py-1.5 border rounded-lg bg-white text-brand-700 hover:bg-brand-50">邀请好友</a>
                                 ) : null}
                               </div>
                             </div>
@@ -1026,11 +1018,11 @@ const SettingsContent = () => {
 const SettingsPage = () => {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 w-full max-w-md mx-4 p-6">
+      <div className="min-h-screen flex items-center justify-center bg-brand-50">
+        <div className="bg-white rounded-xl shadow-sm border border-brand-200 w-full max-w-md mx-4 p-6">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-900 border-t-transparent mx-auto mb-4"></div>
-            <p className="text-gray-600">加载中...</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-brand-900 border-t-transparent mx-auto mb-4"></div>
+            <p className="text-brand-600">加载中...</p>
           </div>
         </div>
       </div>

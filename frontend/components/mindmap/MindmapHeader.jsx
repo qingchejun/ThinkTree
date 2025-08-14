@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Check, X, Maximize, Minimize, Share2, Star, Trash2, Edit3 } from 'lucide-react';
+import { Button } from '@/components/ui/Button'
 import ExportMenu from './ExportMenu.jsx'; // 注意路径和文件扩展名
 
 export default function MindmapHeader({
@@ -70,15 +71,11 @@ export default function MindmapHeader({
   };
 
   return (
-    <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+    <div className="flex items-center justify-between px-6 py-4 border-b border-brand-200">
       <div className="flex items-center space-x-4 flex-1">
-        <button
-          onClick={() => router.push('/mindmaps')}
-          className="action-button text-gray-600 hover:bg-gray-100 hover:text-gray-800"
-          title="返回控制台"
-        >
+        <Button onClick={() => router.push('/mindmaps')} variant="ghost" size="sm" className="p-2 text-brand-600 hover:bg-brand-100 hover:text-brand-800" title="返回控制台">
           <ArrowLeft className="w-4 h-4" />
-        </button>
+        </Button>
         <div className="min-w-0 flex-1">
           {isEditingTitle ? (
             <div className="flex items-center space-x-2">
@@ -88,42 +85,32 @@ export default function MindmapHeader({
                 onChange={(e) => setEditingTitle(e.target.value)}
                 onKeyDown={handleTitleKeyDown}
                 onBlur={handleSaveTitle}
-                className="text-xl font-bold text-gray-900 bg-white border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-0 flex-1"
+                className="text-xl font-bold text-brand-900 bg-white border border-brand-200 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-core-500/20 focus:border-brand-500 min-w-0 flex-1"
                 placeholder="请输入标题"
                 autoFocus
                 maxLength={100}
               />
-              <button
-                onClick={handleSaveTitle}
-                disabled={isSavingTitle}
-                className="action-button text-green-500 hover:bg-green-100 hover:text-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                title="保存标题"
-              >
+              <Button onClick={handleSaveTitle} disabled={isSavingTitle} variant="ghost" size="sm" className="p-2 text-success-600 hover:bg-success-100 hover:text-success-700 disabled:opacity-50 disabled:cursor-not-allowed" title="保存标题">
                 {isSavingTitle ? (
-                  <div className="animate-spin w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full"></div>
+                  <div className="animate-spin w-4 h-4 border-2 border-success-600 border-t-transparent rounded-full"></div>
                 ) : (
                   <Check className="w-4 h-4" />
                 )}
-              </button>
-              <button
-                onClick={handleCancelEditTitle}
-                disabled={isSavingTitle}
-                className="action-button text-red-500 hover:bg-red-100 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                title="取消编辑"
-              >
+              </Button>
+              <Button onClick={handleCancelEditTitle} disabled={isSavingTitle} variant="ghost" size="sm" className="p-2 text-error-600 hover:bg-error-100 hover:text-error-700 disabled:opacity-50 disabled:cursor-not-allowed" title="取消编辑">
                 <X className="w-4 h-4" />
-              </button>
+              </Button>
             </div>
           ) : (
             <h1
-              className="text-xl font-bold text-gray-900 truncate cursor-pointer hover:text-blue-600 hover:underline transition-colors"
+              className="text-xl font-bold text-brand-900 truncate cursor-pointer hover:text-core-600 hover:underline transition-colors"
               onClick={() => setIsEditingTitle(true)}
               title="点击编辑标题"
             >
               {mindmap.title}
             </h1>
           )}
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-brand-500 mt-1">
             创建于 {formatDate(mindmap.created_at)}
             {mindmap.updated_at !== mindmap.created_at && (
               <span> · 更新于 {formatDate(mindmap.updated_at)}</span>
@@ -134,7 +121,7 @@ export default function MindmapHeader({
 
       <div className="flex items-center space-x-2">
         {isEditMode && (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-200">
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-collaboration-100 text-collaboration-700 border border-collaboration-200">
             编辑模式
           </span>
         )}
@@ -142,21 +129,13 @@ export default function MindmapHeader({
           <span key={idx}>{el}</span>
         ))}
         {onToggleEditMode && (
-          <button
-            onClick={onToggleEditMode}
-            className={`action-button ${isEditMode ? 'text-purple-600 bg-purple-50' : 'text-gray-500 hover:bg-gray-100 hover:text-purple-600'}`}
-            title={isEditMode ? '退出编辑模式' : '进入编辑模式'}
-          >
+          <Button onClick={onToggleEditMode} variant="ghost" size="sm" className={`p-2 ${isEditMode ? 'text-collaboration-600 bg-collaboration-50' : 'text-brand-500 hover:bg-brand-100 hover:text-collaboration-600'}`} title={isEditMode ? '退出编辑模式' : '进入编辑模式'}>
             <Edit3 className="w-4 h-4" />
-          </button>
+          </Button>
         )}
-        <button
-          onClick={onToggleFullscreen}
-          className="action-button text-green-500 hover:bg-green-100 hover:text-green-600"
-          title={isFullscreen ? "退出全屏" : "进入全屏"}
-        >
+        <Button onClick={onToggleFullscreen} variant="ghost" size="sm" className="p-2 text-content-600 hover:bg-content-100 hover:text-content-700" title={isFullscreen ? '退出全屏' : '进入全屏'}>
           {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
-        </button>
+        </Button>
 
         <ExportMenu
           onExportSVG={onExportSVG}
@@ -166,29 +145,17 @@ export default function MindmapHeader({
           setShowExportMenu={setShowExportMenu} // 传递给子组件
         />
 
-        <button
-          onClick={onShare}
-          className="action-button text-blue-500 hover:bg-blue-100 hover:text-blue-600"
-          title="分享思维导图"
-        >
+        <Button onClick={onShare} variant="ghost" size="sm" className="p-2 text-collaboration-600 hover:bg-collaboration-100 hover:text-collaboration-700" title="分享思维导图">
           <Share2 className="w-4 h-4" />
-        </button>
+        </Button>
 
-        <button
-          onClick={onToggleFavorite}
-          className={`action-button ${isFavorited ? 'text-yellow-500 hover:bg-yellow-100 hover:text-yellow-600' : 'text-gray-400 hover:bg-gray-100 hover:text-yellow-500'}`}
-          title={isFavorited ? '取消收藏' : '收藏'}
-        >
+        <Button onClick={onToggleFavorite} variant="ghost" size="sm" className={`p-2 ${isFavorited ? 'text-accent-600 hover:bg-accent-100 hover:text-accent-700' : 'text-brand-400 hover:bg-brand-100 hover:text-accent-600'}`} title={isFavorited ? '取消收藏' : '收藏'}>
           {isFavorited ? <Star className="w-4 h-4 fill-current" /> : <Star className="w-4 h-4" />}
-        </button>
+        </Button>
 
-        <button
-          onClick={onDelete}
-          className="action-button text-red-500 hover:bg-red-100 hover:text-red-600"
-          title="删除思维导图"
-        >
+        <Button onClick={onDelete} variant="ghost" size="sm" className="p-2 text-error-600 hover:bg-error-100 hover:text-error-700" title="删除思维导图">
           <Trash2 className="w-4 h-4" />
-        </button>
+        </Button>
       </div>
     </div>
   );

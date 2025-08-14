@@ -25,6 +25,9 @@ import { useAuth } from '../context/AuthContext';
 import ShareModal from './share/ShareModal';
 import MindmapThumbnail from './mindmap/MindmapThumbnail';
 import { Gift, Zap, LayoutDashboard, CreditCard, Settings, LogOut, FileText, FileUp, Youtube, Podcast, FileAudio, Link as LinkIcon, Sparkles, UploadCloud, PlusCircle, ListChecks, ArrowRight, Eye, Trash2, Share2, FileX, Plus, File, Download } from 'lucide-react';
+import { Card } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
+import { Badge } from '@/components/ui/Badge'
 
 // 头像相关功能已移至 Navbar 组件
 
@@ -84,17 +87,17 @@ const useApi = () => {
 // ===================================================================
 const LoadingSkeleton = () => {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-brand-50">
       {/* Header骨架屏 */}
-      <div className="bg-white border-b border-gray-200 px-6 py-3">
+      <div className="bg-white border-b border-brand-200 px-6 py-3">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gray-200 rounded animate-pulse"></div>
-            <div className="w-20 h-6 bg-gray-200 rounded animate-pulse"></div>
+            <div className="w-8 h-8 bg-brand-200 rounded animate-pulse"></div>
+            <div className="w-20 h-6 bg-brand-200 rounded animate-pulse"></div>
           </div>
           <div className="flex items-center space-x-6">
-            <div className="w-20 h-8 bg-gray-200 rounded animate-pulse"></div>
-            <div className="w-16 h-8 bg-gray-200 rounded-full animate-pulse"></div>
+            <div className="w-20 h-8 bg-brand-200 rounded animate-pulse"></div>
+            <div className="w-16 h-8 bg-brand-200 rounded-full animate-pulse"></div>
           </div>
         </div>
       </div>
@@ -102,27 +105,27 @@ const LoadingSkeleton = () => {
       {/* Main内容骨架屏 */}
       <div className="container mx-auto px-6 py-8">
         <div className="w-full max-w-5xl mx-auto">
-          <div className="w-64 h-8 bg-gray-200 rounded animate-pulse mx-auto mb-6"></div>
-          <div className="bg-white rounded-2xl shadow-lg border p-6">
+          <div className="w-64 h-8 bg-brand-200 rounded animate-pulse mx-auto mb-6"></div>
+          <div className="bg-white rounded-2xl shadow-lg border border-brand-200 p-6">
             <div className="flex justify-center space-x-4 mb-4">
               {[1,2,3,4,5,6].map(i => (
-                <div key={i} className="w-16 h-8 bg-gray-200 rounded animate-pulse"></div>
+                <div key={i} className="w-16 h-8 bg-brand-200 rounded animate-pulse"></div>
               ))}
             </div>
-            <div className="w-full h-40 bg-gray-200 rounded animate-pulse"></div>
+            <div className="w-full h-40 bg-brand-200 rounded animate-pulse"></div>
           </div>
         </div>
         
         {/* 项目骨架屏 */}
         <div className="w-full max-w-6xl mx-auto mt-12">
-          <div className="w-32 h-6 bg-gray-200 rounded animate-pulse mb-4"></div>
+          <div className="w-32 h-6 bg-brand-200 rounded animate-pulse mb-4"></div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
             {[1,2,3,4,5].map(i => (
               <div key={i} className="bg-white rounded-xl border overflow-hidden">
-                <div className="bg-gray-200 h-32 animate-pulse"></div>
+                <div className="bg-brand-200 h-32 animate-pulse"></div>
                 <div className="p-4">
-                  <div className="w-3/4 h-4 bg-gray-200 rounded animate-pulse mb-2"></div>
-                  <div className="w-1/2 h-3 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="w-3/4 h-4 bg-brand-200 rounded animate-pulse mb-2"></div>
+                  <div className="w-1/2 h-3 bg-brand-200 rounded animate-pulse"></div>
                 </div>
               </div>
             ))}
@@ -153,21 +156,21 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="min-h-screen flex items-center justify-center bg-brand-50">
           <div className="text-center p-8">
-            <div className="text-red-500 text-6xl mb-4">⚠️</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">出现了一些问题</h2>
-            <p className="text-gray-600 mb-6">页面加载时发生错误，请刷新页面重试</p>
-            <button 
+            <div className="text-error-600 text-6xl mb-4">⚠️</div>
+            <h2 className="text-2xl font-bold text-brand-900 mb-4">出现了一些问题</h2>
+            <p className="text-brand-600 mb-6">页面加载时发生错误，请刷新页面重试</p>
+            <Button 
               onClick={() => {
                 if (typeof window !== 'undefined') {
                   window.location.reload();
                 }
               }}
-              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              variant="feature"
             >
               刷新页面
-            </button>
+            </Button>
           </div>
         </div>
       );
@@ -224,33 +227,26 @@ const CreationPanel = React.memo(({ onCreate, loading }) => {
   return (
     <div id="creationView" className="w-full max-w-6xl mx-auto">
       <div className="text-center">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">今天我们创造些什么？</h1>
-        <p className="text-gray-500 mb-8">从一个想法开始，或从多种来源导入</p>
+        <h1 className="tt-section-title text-brand-900 mb-2">今天我们创造些什么？</h1>
+        <p className="text-brand-500 mb-8">从一个想法开始，或从多种来源导入</p>
       </div>
-      
-      <div className="bg-white rounded-2xl shadow-lg border p-2">
-        <div className="flex justify-center border-b border-gray-200">
+      <Card className="rounded-2xl shadow-lg p-2">
+        <div className="flex justify-center border-b border-brand-200">
           {tabs.map(tab => (
             <button
               key={tab.id}
               onClick={() => !tab.disabled && setActiveTab(tab.id)}
-              className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-colors duration-200 ease-in-out \
-                ${
-                  activeTab === tab.id
-                    ? 'border-b-2 border-black text-black'
-                    : 'text-gray-500 hover:text-black'
-                }
-                ${tab.disabled ? 'cursor-not-allowed opacity-50' : ''}`
-              }
+              className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-colors duration-200 ease-in-out ${
+                activeTab === tab.id ? 'border-b-2 border-brand-800 text-brand-800' : 'text-brand-500 hover:text-brand-900'
+              } ${tab.disabled ? 'cursor-not-allowed opacity-50' : ''}`}
               disabled={tab.disabled}
             >
               <tab.icon className="w-5 h-5" color={activeTab === tab.id ? 'currentColor' : tab.color} />
               <span>{tab.name}</span>
-              {tab.disabled && <span className="text-xs text-gray-400">(开发中)</span>}
+              {tab.disabled && <Badge variant="secondary" size="xs">开发中</Badge>}
             </button>
           ))}
         </div>
-
         <div className="p-6 flex flex-col">
           <div className="flex-grow">
             {activeTab === 'text' && (
@@ -258,69 +254,53 @@ const CreationPanel = React.memo(({ onCreate, loading }) => {
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 placeholder="在此处输入你的想法、粘贴长文本或链接..."
-                className="w-full h-40 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent transition resize-none"
+                className="w-full h-40 p-4 border border-brand-200 rounded-lg focus:ring-2 focus:ring-core-500/20 focus:border-brand-500 transition resize-none"
               />
             )}
             {activeTab === 'upload' && (
               <div className="h-40">
                 {!file ? (
-                  <div 
-                    onDragOver={(e) => {e.preventDefault(); e.stopPropagation(); setDragActive(true);}} 
-                    onDragLeave={(e) => {e.preventDefault(); e.stopPropagation(); setDragActive(false);}} 
-                    onDrop={handleDrop} 
-                    className={`relative flex flex-col items-center justify-center h-full text-center p-4 border-2 border-dashed rounded-lg transition-colors duration-300 ${dragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-blue-500'}`}
+                  <div
+                    onDragOver={(e) => {e.preventDefault(); e.stopPropagation(); setDragActive(true);}}
+                    onDragLeave={(e) => {e.preventDefault(); e.stopPropagation(); setDragActive(false);}}
+                    onDrop={handleDrop}
+                    className={`relative flex flex-col items-center justify-center h-full text-center p-4 border-2 border-dashed rounded-lg transition-colors duration-300 ${dragActive ? 'border-core-500 bg-core-50' : 'border-brand-300 hover:border-core-500'}`}
                   >
                     <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" accept=".pdf,.doc,.docx,.txt" />
-                    <UploadCloud className="mx-auto h-10 w-10 text-blue-500" />
-                    <h3 className="mt-2 text-sm font-medium text-gray-900">将文件拖放到此处</h3>
-                    <p className="mt-1 text-xs text-gray-600">或</p>
-                    <button
-                        type="button"
-                        onClick={() => fileInputRef.current.click()}
-                        className="mt-2 inline-flex items-center px-3 py-1.5 border border-transparent shadow-sm text-xs font-medium rounded-md text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black"
-                    >
-                        选择文件
-                    </button>
-                    <p className="mt-3 text-xs text-gray-500">支持 PDF, DOCX, TXT 等格式</p>
+                    <UploadCloud className="mx-auto h-10 w-10 text-core-600" />
+                    <h3 className="mt-2 text-sm font-medium text-brand-900">将文件拖放到此处</h3>
+                    <p className="mt-1 text-xs text-brand-500">或</p>
+                    <Button type="button" onClick={() => fileInputRef.current.click()} size="sm" variant="feature" className="mt-2">选择文件</Button>
+                    <p className="mt-3 text-xs text-brand-500">支持 PDF, DOCX, TXT 等格式</p>
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center h-full text-center p-4 border border-gray-200 rounded-lg bg-gray-50">
-                    <File className="mx-auto h-10 w-10 text-green-500" />
-                    <p className="mt-2 font-semibold text-gray-800 truncate max-w-full px-4">{file.name}</p>
-                    <p className="text-sm text-gray-500">{(file.size / 1024).toFixed(2)} KB</p>
-                    <button onClick={() => setFile(null)} className="mt-3 text-sm font-medium text-red-600 hover:text-red-800 transition-colors">
-                      移除文件
-                    </button>
+                  <div className="flex flex-col items-center justify-center h-full text-center p-4 border border-brand-200 rounded-lg bg-brand-50">
+                    <File className="mx-auto h-10 w-10 text-content-600" />
+                    <p className="mt-2 font-semibold text-brand-800 truncate max-w-full px-4">{file.name}</p>
+                    <p className="text-sm text-brand-500">{(file.size / 1024).toFixed(2)} KB</p>
+                    <Button onClick={() => setFile(null)} variant="ghost" size="sm" className="mt-3 p-2 text-error-600 hover:bg-error-100 hover:text-error-700">移除文件</Button>
                   </div>
                 )}
               </div>
             )}
           </div>
-
           <div className="flex justify-end mt-4">
-            <button
-              onClick={handleCreate}
-              disabled={loading || (activeTab === 'text' && !text.trim()) || (activeTab === 'upload' && !file)}
-              className="inline-flex items-center px-6 py-3 border border-transparent text-base font-bold rounded-lg shadow-md text-white bg-gradient-to-r from-gray-900 to-black hover:from-gray-800 hover:to-gray-900 transform hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-gray-400 disabled:cursor-not-allowed disabled:opacity-100"
-            >
+            <Button onClick={handleCreate} disabled={loading || (activeTab === 'text' && !text.trim()) || (activeTab === 'upload' && !file)} variant="feature" size="cta-lg">
               {loading ? (
                 <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 0 1 4 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                   处理中...
                 </>
               ) : (
-                <> 
-                  <Sparkles className="-ml-1 mr-2 h-5 w-5 text-yellow-500" />
+                <>
+                  <Sparkles className="-ml-1 mr-2 h-5 w-5" />
                   开始创作
-                </> 
+                </>
                )}
-             </button>
-           </div>
+            </Button>
+          </div>
         </div>
-      </div>
+      </Card>
     </div>
   );
 });
@@ -605,51 +585,60 @@ const RecentProjects = React.memo(({ mindmaps, onCardClick, onCreateNew, loading
                     </p>
                   </div>
                 </div>
-                <div className="card-actions border-t border-gray-100 p-3 flex justify-end space-x-2 bg-gray-50/50 transition-all duration-300">
-                  <button 
+                <div className="card-actions border-t border-brand-100 p-3 flex justify-end space-x-2 bg-brand-50/50 transition-all duration-300">
+                  <Button 
                     onClick={(e) => handleView(e, mindmap.id)} 
-                    className="action-button text-green-500 hover:bg-green-100 hover:text-green-600"
+                    variant="ghost"
+                    size="sm"
+                    className="p-2 text-core-600 hover:bg-core-100 hover:text-core-700"
                     title="查看思维导图"
                   >
                     <Eye className="w-4 h-4" />
-                  </button>
-                  <button 
+                  </Button>
+                  <Button 
                      onClick={(e) => handleExport(e, mindmap)} 
-                     className="action-button text-purple-500 hover:bg-purple-100 hover:text-purple-600"
+                     variant="ghost"
+                     size="sm"
+                     className="p-2 text-content-600 hover:bg-content-100 hover:text-content-700"
                      title="导出为PNG图片"
                    >
                      <Download className="w-4 h-4" />
-                   </button>
-                  <button 
+                   </Button>
+                  <Button 
                     onClick={(e) => handleShare(e, mindmap)} 
-                    className="action-button text-blue-500 hover:bg-blue-100 hover:text-blue-600"
+                    variant="ghost"
+                    size="sm"
+                    className="p-2 text-collaboration-600 hover:bg-collaboration-100 hover:text-collaboration-700"
                     title="分享思维导图"
                   >
                     <Share2 className="w-4 h-4" />
-                  </button>
-                  <button 
+                  </Button>
+                  <Button 
                     onClick={(e) => handleDelete(e, mindmap)} 
-                    className="action-button text-red-500 hover:bg-red-100 hover:text-red-600"
+                    variant="ghost"
+                    size="sm"
+                    className="p-2 text-error-600 hover:bg-error-100 hover:text-error-700"
                     title="删除思维导图"
                   >
                     <Trash2 className="w-4 h-4" />
-                  </button>
+                  </Button>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="text-center py-16 border-2 border-dashed rounded-xl bg-gray-50">
-              <FileX className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-4 text-lg font-semibold text-gray-800">还没有任何项目</h3>
-              <p className="mt-2 text-sm text-gray-500">点击下面的按钮，开始你的第一次创作吧！</p>
+          <Card variant="feature" className="text-center py-16 rounded-2xl border-2 border-dashed border-brand-200">
+              <div className="mb-2"><Badge variant="feature" size="sm">提示</Badge></div>
+              <FileX className="mx-auto h-12 w-12 text-brand-400" />
+              <h3 className="mt-4 text-lg font-semibold text-brand-800">还没有任何项目</h3>
+              <p className="mt-2 text-sm text-brand-500">点击下面的按钮，开始你的第一次创作吧！</p>
               <div className="mt-6">
-                <button onClick={onCreateNew} className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black">
+                <Button onClick={onCreateNew} variant="feature" size="cta-lg">
                   <Plus className="-ml-1 mr-2 h-5 w-5" />
                   新建导图
-                </button>
+                </Button>
               </div>
-          </div>
+          </Card>
         )}
         
         {/* 分享模态框 */}
@@ -681,18 +670,10 @@ const RecentProjects = React.memo(({ mindmaps, onCardClick, onCreateNew, loading
               </p>
               
               <div className="flex justify-end space-x-3">
-                <button
-                  onClick={cancelDelete}
-                  disabled={deleteModal.isDeleting}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 disabled:opacity-50"
-                >
+                <Button onClick={cancelDelete} disabled={deleteModal.isDeleting} variant="ghost" size="sm" className="text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 disabled:opacity-50">
                   取消
-                </button>
-                <button
-                  onClick={confirmDelete}
-                  disabled={deleteModal.isDeleting}
-                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50 flex items-center"
-                >
+                </Button>
+                <Button onClick={confirmDelete} disabled={deleteModal.isDeleting} variant="feature" size="sm" className="text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50 flex items-center">
                   {deleteModal.isDeleting ? (
                     <>
                       <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -704,7 +685,7 @@ const RecentProjects = React.memo(({ mindmaps, onCardClick, onCreateNew, loading
                   ) : (
                     '确认删除'
                   )}
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -804,7 +785,7 @@ const DashboardClient = ({ initialData }) => {
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-brand-50">
         <main className="container mx-auto px-6 py-8">
           <CreationPanel onCreate={handleCreateMindMap} loading={createMindMapLoading} />
           <RecentProjects mindmaps={projects} onCardClick={(id) => router.push(`/mindmap/${id}`)} onCreateNew={() => router.push('/new')} loading={projectsLoading} />

@@ -123,6 +123,11 @@ module.exports = {
           'Helvetica Neue',
           'sans-serif',
         ],
+        serif: [
+          'Georgia',
+          'Times New Roman',
+          'serif',
+        ],
         mono: [
           'ui-monospace',
           'SFMono-Regular',
