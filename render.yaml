@@ -100,6 +100,8 @@ services:
         fromDatabase:
           name: thinktree-db-staging
           property: connectionString
+      - key: FRONTEND_URL
+        value: https://thinktree-frontend-staging.onrender.com
       - key: ALGORITHM
         value: HS256
       - key: ACCESS_TOKEN_EXPIRE_MINUTES
@@ -126,6 +128,8 @@ services:
         value: https://thinktree-backend-staging.onrender.com
       - key: NODE_ENV
         value: production
+      - key: FRONTEND_URL
+        value: https://thinktree-frontend-staging.onrender.com
 
 # ======================================================
 #                     数据库定义
