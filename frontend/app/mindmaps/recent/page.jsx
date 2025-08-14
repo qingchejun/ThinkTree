@@ -321,7 +321,7 @@ export default function RecentPage() {
       
     } catch (error) {
       console.error('导出思维导图失败:', error)
-      alert(`导出失败: ${error.message}`)
+      toast.error(`导出失败：${error.message}`)
     }
   }
 
@@ -443,10 +443,10 @@ export default function RecentPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {Array.from({ length: 8 }).map((_, index) => (
                 <div key={index} className="bg-white rounded-xl border overflow-hidden min-h-[200px] animate-pulse">
-                  <div className="bg-gray-200 h-32"></div>
+                  <div className="bg-brand-200 h-32"></div>
                   <div className="p-4">
-                    <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                    <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+                    <div className="h-4 bg-brand-200 rounded mb-2"></div>
+                    <div className="h-3 bg-brand-200 rounded w-2/3"></div>
                   </div>
                 </div>
               ))}

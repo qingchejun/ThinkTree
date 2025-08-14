@@ -15,6 +15,9 @@ const OutlineMindmap = dynamic(() => import('../../../components/mindmap/Outline
 import ShareModal from '../../../components/share/ShareModal'
 import MindmapHeader from '../../../components/mindmap/MindmapHeader.jsx'
 import DeleteConfirmationModal from '../../../components/mindmap/DeleteConfirmationModal.jsx'
+import { Card } from '../../../components/ui/Card'
+import { Button } from '../../../components/ui/Button'
+import { Badge } from '../../../components/ui/Badge'
 // 移除ToastManager，使用内联提示样式
 import { exportSVG, exportPNG, getSafeFilename, getTimestamp } from '../../../lib/exportUtils.js'
 import { useToast } from '../../../hooks/useToast.js'
@@ -334,25 +337,15 @@ export default function ViewMindmapPage() {
     return (
       <div className="min-h-screen bg-brand-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="bg-error-50 border border-error-200 rounded-lg p-8 text-center">
+          <Card className="p-8 text-center border border-error-200 bg-error-50">
             <div className="text-error-600 text-6xl mb-4">❌</div>
-            <h2 className="text-2xl font-bold text-error-900 mb-4">加载失败</h2>
+            <h2 className="text-2xl font-bold text-error-900 mb-2">加载失败</h2>
             <p className="text-error-700 mb-6">{error}</p>
-            <div className="flex items-center justify-center space-x-4">
-              <button
-                onClick={() => router.push('/mindmaps')}
-                className="bg-brand-700 text-white px-6 py-3 rounded-md font-medium hover:bg-brand-800"
-              >
-                ← 返回控制台
-              </button>
-              <button
-                onClick={() => window.location.reload()}
-                className="bg-error-600 text-white px-6 py-3 rounded-md font-medium hover:bg-error-700"
-              >
-                🔄 重新加载
-              </button>
+            <div className="flex items-center justify-center space-x-3">
+              <Button variant="ghost" size="sm" onClick={() => router.push('/mindmaps')} className="text-brand-800 hover:bg-brand-100">← 返回控制台</Button>
+              <Button variant="ghost" size="sm" onClick={() => window.location.reload()} className="text-error-600 hover:bg-error-100 hover:text-error-700">重新加载</Button>
             </div>
-          </div>
+          </Card>
         </div>
       </div>
     )
@@ -363,17 +356,13 @@ export default function ViewMindmapPage() {
     return (
       <div className="min-h-screen bg-brand-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="text-center">
+          <Card variant="feature" className="text-center py-12 rounded-2xl border-2 border-dashed border-brand-200">
+            <div className="mb-2"><Badge variant="feature" size="sm">提示</Badge></div>
             <div className="text-brand-400 text-6xl mb-4">🔍</div>
-            <h2 className="text-2xl font-bold text-brand-900 mb-4">思维导图不存在</h2>
+            <h2 className="text-2xl font-bold text-brand-900 mb-2">思维导图不存在</h2>
             <p className="text-brand-600 mb-6">您要查看的思维导图可能已被删除或您没有访问权限</p>
-            <button
-              onClick={() => router.push('/mindmaps')}
-              className="bg-core-600 text-white px-6 py-3 rounded-md font-medium hover:bg-core-700"
-            >
-              ← 返回控制台
-            </button>
-          </div>
+            <Button variant="feature" size="sm" onClick={() => router.push('/mindmaps')}>← 返回控制台</Button>
+          </Card>
         </div>
       </div>
     )
@@ -398,18 +387,15 @@ export default function ViewMindmapPage() {
         <div className="bg-core-50 border-b border-core-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             {mindmap.description && (
-              <p className="text-core-700 mb-3">{mindmap.description}</p>
+              <Card className="p-3 mb-3 bg-white border border-brand-200">
+                <p className="text-core-700">{mindmap.description}</p>
+              </Card>
             )}
             {mindmap.tags && mindmap.tags.length > 0 && (
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="text-core-700 text-sm font-medium">标签:</span>
                 {mindmap.tags.map((tag, index) => (
-                  <span
-                    key={index}
-                    className="inline-block bg-core-100 text-core-700 text-sm px-3 py-1 rounded-full"
-                  >
-                    {tag}
-                  </span>
+                  <Badge key={index} variant="secondary" size="xs">{tag}</Badge>
                 ))}
               </div>
             )}

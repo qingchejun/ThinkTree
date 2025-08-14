@@ -438,12 +438,14 @@ export default function TrashPage() {
                 </div>
               </div>
               {trashedMindmaps.length > 0 && (
-                <button
+                <Button
                   onClick={handleClearAll}
-                  className="ml-4 px-3 py-1 text-sm bg-error-600 text-white rounded-md hover:bg-error-700 transition-colors"
+                  variant="ghost"
+                  size="sm"
+                  className="ml-4 text-error-600 hover:bg-error-100 hover:text-error-700"
                 >
                   清空回收站
-                </button>
+                </Button>
               )}
             </div>
           </div>
@@ -483,7 +485,7 @@ export default function TrashPage() {
                   return (
                     <div 
                       key={mindmap.id} 
-                      className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col relative opacity-75"
+                      className="bg-white rounded-xl border border-brand-200 overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col relative opacity-75"
                       style={{ animationDelay: `${index * 0.1}s` }}
                     >
                       {/* 动态预览图 */}
@@ -504,10 +506,10 @@ export default function TrashPage() {
                       </div>
                       
                       <div className="p-4 flex-grow">
-                        <h3 className="font-semibold text-gray-800 truncate" title={mindmap.title}>
+                        <h3 className="font-semibold text-brand-800 truncate" title={mindmap.title}>
                           {mindmap.title}
                         </h3>
-                        <p className="text-sm text-gray-500 mt-1 flex items-center">
+                        <p className="text-sm text-brand-500 mt-1 flex items-center">
                           <Calendar className="w-3 h-3 mr-1" />
                           {formatDate(mindmap.deletedAt)} 删除
                         </p>
@@ -556,135 +558,144 @@ export default function TrashPage() {
       {/* 恢复确认弹窗 */}
       {restoreModal.isOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+          <Card className="p-6 max-w-md w-full mx-4">
             <div className="flex items-center mb-4">
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mr-4">
-                <RotateCcw className="w-6 h-6 text-green-600" />
+              <div className="w-12 h-12 bg-success-100 rounded-full flex items-center justify-center mr-4">
+                <RotateCcw className="w-6 h-6 text-success-600" />
               </div>
               <div>
-                <h3 className="text-lg font-medium text-gray-900">确认恢复</h3>
-                <p className="text-sm text-gray-500">恢复后可以正常访问</p>
+                <h3 className="text-lg font-medium text-brand-900">确认恢复</h3>
+                <p className="text-sm text-brand-500">恢复后可以正常访问</p>
               </div>
             </div>
             
-            <p className="text-gray-700 mb-6">
+            <p className="text-brand-700 mb-6">
               确定要恢复思维导图 <span className="font-semibold">"{restoreModal.mindmapTitle}"</span> 吗？
             </p>
             
             <div className="flex justify-end space-x-3">
-              <button
+              <Button
                 onClick={cancelRestore}
                 disabled={restoreModal.isRestoring}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 disabled:opacity-50"
+                variant="outline"
+                size="sm"
               >
                 取消
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={confirmRestore}
                 disabled={restoreModal.isRestoring}
-                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-50 flex items-center"
+                variant="ghost"
+                size="sm"
+                className="text-success-600 hover:bg-success-100 hover:text-success-700"
               >
                 {restoreModal.isRestoring ? (
                   <>
-                    <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" />
+                    <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
                     恢复中...
                   </>
                 ) : (
                   '确认恢复'
                 )}
-              </button>
+              </Button>
             </div>
-          </div>
+          </Card>
         </div>
       )}
 
       {/* 永久删除确认弹窗 */}
       {deleteModal.isOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+          <Card className="p-6 max-w-md w-full mx-4">
             <div className="flex items-center mb-4">
-              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-4">
-                <Trash2 className="w-6 h-6 text-red-600" />
+              <div className="w-12 h-12 bg-error-100 rounded-full flex items-center justify-center mr-4">
+                <Trash2 className="w-6 h-6 text-error-600" />
               </div>
               <div>
-                <h3 className="text-lg font-medium text-gray-900">永久删除</h3>
-                <p className="text-sm text-gray-500">此操作无法撤销</p>
+                <h3 className="text-lg font-medium text-brand-900">永久删除</h3>
+                <p className="text-sm text-brand-500">此操作无法撤销</p>
               </div>
             </div>
             
-            <p className="text-gray-700 mb-6">
+            <p className="text-brand-700 mb-6">
               确定要永久删除思维导图 <span className="font-semibold">"{deleteModal.mindmapTitle}"</span> 吗？删除后无法恢复。
             </p>
             
             <div className="flex justify-end space-x-3">
-              <button
+              <Button
                 onClick={cancelPermanentDelete}
                 disabled={deleteModal.isDeleting}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 disabled:opacity-50"
+                variant="outline"
+                size="sm"
               >
                 取消
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={confirmPermanentDelete}
                 disabled={deleteModal.isDeleting}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50 flex items-center"
+                variant="ghost"
+                size="sm"
+                className="text-error-600 hover:bg-error-100 hover:text-error-700"
               >
                 {deleteModal.isDeleting ? (
                   <>
-                    <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" />
+                    <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
                     删除中...
                   </>
                 ) : (
                   '永久删除'
                 )}
-              </button>
+              </Button>
             </div>
-          </div>
+          </Card>
         </div>
       )}
 
       {/* 清空回收站确认弹窗 */}
       {clearAllModal.isOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+          <Card className="p-6 max-w-md w-full mx-4">
             <div className="flex items-center mb-4">
-              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-4">
-                <Trash2 className="w-6 h-6 text-red-600" />
+              <div className="w-12 h-12 bg-error-100 rounded-full flex items-center justify-center mr-4">
+                <Trash2 className="w-6 h-6 text-error-600" />
               </div>
               <div>
-                <h3 className="text-lg font-medium text-gray-900">清空回收站</h3>
-                <p className="text-sm text-gray-500">此操作无法撤销</p>
+                <h3 className="text-lg font-medium text-brand-900">清空回收站</h3>
+                <p className="text-sm text-brand-500">此操作无法撤销</p>
               </div>
             </div>
             
-            <p className="text-gray-700 mb-6">
+            <p className="text-brand-700 mb-6">
               确定要清空整个回收站吗？所有项目都将被永久删除，无法恢复。
             </p>
             
             <div className="flex justify-end space-x-3">
-              <button
+              <Button
                 onClick={cancelClearAll}
                 disabled={clearAllModal.isClearing}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 disabled:opacity-50"
+                variant="outline"
+                size="sm"
               >
                 取消
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={confirmClearAll}
                 disabled={clearAllModal.isClearing}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50 flex items-center"
+                variant="ghost"
+                size="sm"
+                className="text-error-600 hover:bg-error-100 hover:text-error-700"
               >
                 {clearAllModal.isClearing ? (
                   <>
-                    <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" />
+                    <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
                     清空中...
                   </>
                 ) : (
                   '确认清空'
                 )}
-              </button>
+              </Button>
             </div>
-          </div>
+          </Card>
         </div>
       )}
     </div>

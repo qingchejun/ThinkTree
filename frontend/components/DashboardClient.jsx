@@ -26,8 +26,10 @@ import ShareModal from './share/ShareModal';
 import MindmapThumbnail from './mindmap/MindmapThumbnail';
 import { Gift, Zap, LayoutDashboard, CreditCard, Settings, LogOut, FileText, FileUp, Youtube, Podcast, FileAudio, Link as LinkIcon, Sparkles, UploadCloud, PlusCircle, ListChecks, ArrowRight, Eye, Trash2, Share2, FileX, Plus, File, Download } from 'lucide-react';
 import { Card } from '@/components/ui/Card'
-import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
+import { listMindmaps } from '@/lib/api/mindmaps'
+import { Button } from '@/components/ui/Button'
+import { useToast } from '@/hooks/useToast'
 
 // 头像相关功能已移至 Navbar 组件
 
@@ -312,6 +314,7 @@ CreationPanel.displayName = 'CreationPanel';
 // ===================================================================
 const RecentProjects = React.memo(({ mindmaps, onCardClick, onCreateNew, loading = false }) => {
     const router = useRouter();
+    const toast = useToast();
 
     // 分享模态框状态
     const [shareModal, setShareModal] = useState({
@@ -371,11 +374,11 @@ const RecentProjects = React.memo(({ mindmaps, onCardClick, onCreateNew, loading
           window.location.reload();
         } else {
           console.error('删除思维导图失败:', response.status);
-          alert('删除失败，请重试');
+          toast.error('删除失败，请重试');
         }
       } catch (error) {
         console.error('删除思维导图失败:', error);
-        alert('删除失败，请重试');
+        toast.error('删除失败，请重试');
       } finally {
         setDeleteModal({
           isOpen: false,
@@ -502,7 +505,7 @@ const RecentProjects = React.memo(({ mindmaps, onCardClick, onCreateNew, loading
         
       } catch (error) {
         console.error('导出思维导图失败:', error);
-        alert(`导出失败: ${error.message}`);
+        toast.error(`导出失败：${error.message}`);
       }
     };
 
@@ -654,29 +657,29 @@ const RecentProjects = React.memo(({ mindmaps, onCardClick, onCreateNew, loading
         {/* 删除确认弹窗 */}
         {deleteModal.isOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <Card className="p-6 max-w-md w-full mx-4">
               <div className="flex items-center mb-4">
-                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-4">
-                  <Trash2 className="w-6 h-6 text-red-600" />
+                <div className="w-12 h-12 bg-error-100 rounded-full flex items-center justify-center mr-4">
+                  <Trash2 className="w-6 h-6 text-error-600" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-medium text-gray-900">确认删除</h3>
-                  <p className="text-sm text-gray-500">此操作无法撤销</p>
+                  <h3 className="text-lg font-medium text-brand-900">确认删除</h3>
+                  <p className="text-sm text-brand-500">此操作无法撤销</p>
                 </div>
               </div>
               
-              <p className="text-gray-700 mb-6">
+              <p className="text-brand-700 mb-6">
                 确定要删除思维导图 <span className="font-semibold">&ldquo;{deleteModal.mindmapTitle}&rdquo;</span> 吗？
               </p>
               
               <div className="flex justify-end space-x-3">
-                <Button onClick={cancelDelete} disabled={deleteModal.isDeleting} variant="ghost" size="sm" className="text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 disabled:opacity-50">
+                <Button onClick={cancelDelete} disabled={deleteModal.isDeleting} variant="outline" size="sm">
                   取消
                 </Button>
-                <Button onClick={confirmDelete} disabled={deleteModal.isDeleting} variant="feature" size="sm" className="text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50 flex items-center">
+                <Button onClick={confirmDelete} disabled={deleteModal.isDeleting} variant="ghost" size="sm" className="text-error-600 hover:bg-error-100 hover:text-error-700">
                   {deleteModal.isDeleting ? (
                     <>
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
@@ -687,7 +690,7 @@ const RecentProjects = React.memo(({ mindmaps, onCardClick, onCreateNew, loading
                   )}
                 </Button>
               </div>
-            </div>
+            </Card>
           </div>
         )}
       </div>
@@ -708,6 +711,14 @@ const DashboardClient = ({ initialData }) => {
   // 状态管理
   const [projects, setProjects] = useState([]);
   const [projectsLoading, setProjectsLoading] = useState(true);
+  const [favoritesCount, setFavoritesCount] = useState(0);
+  const [favoritesTrend, setFavoritesTrend] = useState('neutral'); // 'up' | 'down' | 'neutral'
+  const [todayDelta, setTodayDelta] = useState(0);
+  const [yesterdayDelta, setYesterdayDelta] = useState(0);
+  const [updatesLast24h, setUpdatesLast24h] = useState(0);
+  const [updatesPrev24h, setUpdatesPrev24h] = useState(0);
+  const [createsLast24h, setCreatesLast24h] = useState(0);
+  const [createsPrev24h, setCreatesPrev24h] = useState(0);
 
   const { loading: createMindMapLoading, execute: createMindMap } = useAsync(async (data) => {
     return await apiCall('/api/mindmaps/', {
@@ -727,23 +738,98 @@ const DashboardClient = ({ initialData }) => {
 
       try {
         setProjectsLoading(true);
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/mindmaps/`, {
-          method: 'GET',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
+        const data = await listMindmaps({ limit: 50 }).catch(() => ({}))
+        const items = Array.isArray(data) ? data : (data?.items || [])
+        setProjects(items.slice(0, 9));
+        try {
+          const favoriteIds = JSON.parse(localStorage.getItem('favoriteMindmaps') || '[]')
+          const favCount = items.filter((m) => favoriteIds.includes(m.id)).length
+          setFavoritesCount(favCount)
+          try {
+            const prev = JSON.parse(localStorage.getItem('tt:stats:favorites:last') || 'null')
+            if (prev && typeof prev.count === 'number') {
+              if (favCount > prev.count) setFavoritesTrend('up')
+              else if (favCount < prev.count) setFavoritesTrend('down')
+              else setFavoritesTrend('neutral')
+            } else {
+              setFavoritesTrend('neutral')
+            }
+          } catch { setFavoritesTrend('neutral') }
+          localStorage.setItem('tt:stats:favorites:last', JSON.stringify({ count: favCount, at: Date.now() }))
+        } catch { setFavoritesTrend('neutral') }
 
-        if (response.ok) {
-          const data = await response.json();
-          // 适配新的分页响应结构 { items, has_next, next_cursor }
-          const items = Array.isArray(data) ? data : (data?.items || []);
-          setProjects(items.slice(0, 9));
-        } else {
-          console.error('获取思维导图列表失败:', response.status);
-          setProjects([]);
-        }
+        // 最近更新：近24小时 vs 前一24小时
+        try {
+          const nowTs = Date.now()
+          const last24Start = nowTs - 24 * 60 * 60 * 1000
+          const prev24Start = nowTs - 48 * 60 * 60 * 1000
+          const updLast = items.reduce((acc, m) => {
+            const t = m?.updated_at ? new Date(m.updated_at).getTime() : 0
+            return acc + (t >= last24Start && t < nowTs ? 1 : 0)
+          }, 0)
+          const updPrev = items.reduce((acc, m) => {
+            const t = m?.updated_at ? new Date(m.updated_at).getTime() : 0
+            return acc + (t >= prev24Start && t < last24Start ? 1 : 0)
+          }, 0)
+          setUpdatesLast24h(updLast)
+          setUpdatesPrev24h(updPrev)
+        } catch {}
+
+        // 新建导图：近24小时 vs 前一24小时（优先 created_at，回退 updated_at）
+        try {
+          const nowTs = Date.now()
+          const last24Start = nowTs - 24 * 60 * 60 * 1000
+          const prev24Start = nowTs - 48 * 60 * 60 * 1000
+          const getCreatedTs = (m) => {
+            if (m?.created_at) return new Date(m.created_at).getTime()
+            if (m?.updated_at) return new Date(m.updated_at).getTime()
+            return 0
+          }
+          const crtLast = items.reduce((acc, m) => {
+            const t = getCreatedTs(m)
+            return acc + (t >= last24Start && t < nowTs ? 1 : 0)
+          }, 0)
+          const crtPrev = items.reduce((acc, m) => {
+            const t = getCreatedTs(m)
+            return acc + (t >= prev24Start && t < last24Start ? 1 : 0)
+          }, 0)
+          setCreatesLast24h(crtLast)
+          setCreatesPrev24h(crtPrev)
+        } catch {}
+
+        // 计算今日积分变动（与 settings 页相同思路）
+        try {
+          const resp = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/credits/history?page=1&page_size=50`, {
+            credentials: 'include',
+          })
+          if (resp.ok) {
+            const payload = await resp.json()
+            const list = Array.isArray(payload?.data) ? payload.data : (payload?.items || [])
+            const today = new Date(); today.setHours(0,0,0,0)
+            let sum = 0
+            list.forEach((it) => {
+              const d = new Date(it.created_at); d.setHours(0,0,0,0)
+              if (d.getTime() === today.getTime()) {
+                const t = it.transaction_type || it.type
+                const amount = Number(it.amount || 0)
+                sum += t === 'DEDUCTION' ? -amount : amount
+              }
+            })
+            setTodayDelta(sum)
+            // 昨日积分变动
+            const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1)
+            let ysum = 0
+            list.forEach((it) => {
+              const d = new Date(it.created_at); d.setHours(0,0,0,0)
+              if (d.getTime() === yesterday.getTime()) {
+                const t = it.transaction_type || it.type
+                const amount = Number(it.amount || 0)
+                ysum += t === 'DEDUCTION' ? -amount : amount
+              }
+            })
+            setYesterdayDelta(ysum)
+          }
+        } catch {}
       } catch (err) {
         console.error('获取思维导图列表失败:', err);
         setProjects([]);
@@ -787,6 +873,47 @@ const DashboardClient = ({ initialData }) => {
     <ErrorBoundary>
       <div className="min-h-screen bg-brand-50">
         <main className="container mx-auto px-6 py-8">
+          {/* 顶部统计卡 */}
+          {user && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <Card onClick={() => router.push('/mindmaps')} className="relative p-4 border border-brand-200 rounded-xl cursor-pointer hover:shadow-md transition-shadow">
+                <div className="absolute top-3 right-3">
+                  <Badge variant={createsLast24h > createsPrev24h ? 'success' : createsLast24h < createsPrev24h ? 'error' : 'secondary'} size="xs">
+                    {createsLast24h > createsPrev24h ? '↑' : createsLast24h < createsPrev24h ? '↓' : '—'}
+                  </Badge>
+                </div>
+                <div className="text-sm text-brand-600">总导图数</div>
+                <div className="mt-2 text-2xl font-bold text-brand-900">{projects?.length ?? 0}</div>
+              </Card>
+              <Card onClick={() => router.push('/mindmaps/recent')} className="relative p-4 border border-brand-200 rounded-xl cursor-pointer hover:shadow-md transition-shadow">
+                <div className="absolute top-3 right-3">
+                  <Badge variant={updatesLast24h > updatesPrev24h ? 'success' : updatesLast24h < updatesPrev24h ? 'error' : 'secondary'} size="xs">
+                    {updatesLast24h > updatesPrev24h ? '↑' : updatesLast24h < updatesPrev24h ? '↓' : '—'}
+                  </Badge>
+                </div>
+                <div className="text-sm text-brand-600">最近更新</div>
+                <div className="mt-2 text-2xl font-bold text-core-700">{updatesLast24h}</div>
+              </Card>
+              <Card onClick={() => router.push('/mindmaps/favorites')} className="relative p-4 border border-brand-200 rounded-xl cursor-pointer hover:shadow-md transition-shadow">
+                <div className="absolute top-3 right-3">
+                  <Badge variant={favoritesTrend === 'up' ? 'success' : favoritesTrend === 'down' ? 'error' : 'secondary'} size="xs">
+                    {favoritesTrend === 'up' ? '↑' : favoritesTrend === 'down' ? '↓' : '—'}
+                  </Badge>
+                </div>
+                <div className="text-sm text-brand-600">收藏数</div>
+                <div className="mt-2 text-2xl font-bold text-accent-700">{favoritesCount}</div>
+              </Card>
+              <Card onClick={() => router.push('/settings?tab=billing')} className="relative p-4 border border-brand-200 rounded-xl cursor-pointer hover:shadow-md transition-shadow">
+                <div className="absolute top-3 right-3">
+                  <Badge variant={todayDelta > yesterdayDelta ? 'success' : todayDelta < yesterdayDelta ? 'error' : 'secondary'} size="xs">
+                    {todayDelta > yesterdayDelta ? '↑' : todayDelta < yesterdayDelta ? '↓' : '—'}
+                  </Badge>
+                </div>
+                <div className="text-sm text-brand-600">今日积分变动</div>
+                <div className={`mt-2 text-2xl font-bold ${todayDelta >= 0 ? 'text-success-600' : 'text-error-600'}`}>{todayDelta >= 0 ? `+${todayDelta}` : todayDelta}</div>
+              </Card>
+            </div>
+          )}
           <CreationPanel onCreate={handleCreateMindMap} loading={createMindMapLoading} />
           <RecentProjects mindmaps={projects} onCardClick={(id) => router.push(`/mindmap/${id}`)} onCreateNew={() => router.push('/new')} loading={projectsLoading} />
         </main>

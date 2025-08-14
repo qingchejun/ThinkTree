@@ -232,7 +232,7 @@ export default function MindmapsPage() {
       
     } catch (error) {
       console.error('导出思维导图失败:', error)
-      alert(`导出失败: ${error.message}`)
+      toast.error(`导出失败：${error.message}`)
     }
   }
 
@@ -626,45 +626,48 @@ export default function MindmapsPage() {
       {/* 删除确认弹窗 */}
       {deleteModal.isOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+          <Card className="p-6 max-w-md w-full mx-4">
             <div className="flex items-center mb-4">
-              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-4">
-                <Trash2 className="w-6 h-6 text-red-600" />
+              <div className="w-12 h-12 bg-error-100 rounded-full flex items-center justify-center mr-4">
+                <Trash2 className="w-6 h-6 text-error-600" />
               </div>
               <div>
-                <h3 className="text-lg font-medium text-gray-900">移动到回收站</h3>
-                <p className="text-sm text-gray-500">可以在回收站中恢复</p>
+                <h3 className="text-lg font-medium text-brand-900">移动到回收站</h3>
+                <p className="text-sm text-brand-500">可以在回收站中恢复</p>
               </div>
             </div>
             
-            <p className="text-gray-700 mb-6">
+            <p className="text-brand-700 mb-6">
               确定要将思维导图 <span className="font-semibold">"{deleteModal.mindmapTitle}"</span> 移动到回收站吗？可以在回收站中恢复。
             </p>
             
             <div className="flex justify-end space-x-3">
-              <button
+              <Button
                 onClick={cancelDelete}
                 disabled={deleteModal.isDeleting}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 disabled:opacity-50"
+                variant="outline"
+                size="sm"
               >
                 取消
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={confirmDelete}
                 disabled={deleteModal.isDeleting}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50 flex items-center"
+                variant="ghost"
+                size="sm"
+                className="text-error-600 hover:bg-error-100 hover:text-error-700"
               >
                 {deleteModal.isDeleting ? (
                   <>
-                    <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" />
+                    <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
                     删除中...
                   </>
                 ) : (
                   '移动到回收站'
                 )}
-              </button>
+              </Button>
             </div>
-          </div>
+          </Card>
         </div>
       )}
     </div>

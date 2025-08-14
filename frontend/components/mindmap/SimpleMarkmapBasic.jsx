@@ -5,6 +5,7 @@
 
 import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react'
 import { Maximize2, Minimize2, ZoomIn } from 'lucide-react'
+import { Button } from '@/components/ui/Button'
 import '../../styles/markmap.css'
 
 const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
@@ -424,27 +425,22 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
       
       {/* 展开/折叠控制按钮 */}
       <div className="absolute top-2 right-2 flex space-x-2">
-        <button
+        <Button
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
             handleToggleExpandCollapse()
           }}
-          className={`${
-            isExpanded 
-              ? 'bg-orange-500 hover:bg-orange-600' 
-              : 'bg-green-500 hover:bg-green-600'
-          } text-white px-3 py-1 rounded text-sm shadow-md transition-colors flex items-center space-x-1`}
+          variant="ghost"
+          size="sm"
+          className={`p-2 ${isExpanded ? 'text-warning-600 hover:bg-warning-100 hover:text-warning-700' : 'text-success-600 hover:bg-success-100 hover:text-success-700'}`}
           title={isExpanded ? '点击折叠到主要节点' : '点击展开所有节点'}
         >
           {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-          <span>
-            {isExpanded ? '折叠' : '展开'}
-          </span>
-        </button>
+        </Button>
         
         {/* 适应大小按钮 */}
-        <button
+        <Button
           onClick={() => {
             if (mmRef.current && containerRef.current) {
               try {
@@ -466,12 +462,13 @@ const SimpleMarkmapBasic = forwardRef(({ mindmapData }, ref) => {
               }
             }
           }}
-          className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm shadow-md transition-colors flex items-center space-x-1"
+          variant="ghost"
+          size="sm"
+          className="p-2 text-core-600 hover:bg-core-100 hover:text-core-700"
           title="重新适应窗口大小"
         >
           <ZoomIn className="w-4 h-4" />
-          <span>适应</span>
-        </button>
+        </Button>
       </div>
     </div>
   )

@@ -64,8 +64,8 @@ export default function HomeContent() {
   // 加载状态
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-900 border-t-transparent"></div>
+      <div className="min-h-screen flex items-center justify-center bg-brand-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-brand-900 border-t-transparent"></div>
       </div>
     );
   }
@@ -89,10 +89,10 @@ export default function HomeContent() {
     
     // 没有特殊参数时，显示跳转加载状态
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-brand-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-900 border-t-transparent mx-auto mb-4"></div>
-          <p className="text-gray-600">正在跳转到工作台...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-brand-900 border-t-transparent mx-auto mb-4"></div>
+          <p className="text-brand-600">正在跳转到工作台...</p>
         </div>
       </div>
     );
