@@ -4,6 +4,7 @@
 'use client'
 
 import { Label } from '@/components/ui/Label'
+import { componentPatterns } from '@/design-system/tokens/semantic'
 
 const STYLE_OPTIONS = [
   { value: 'original', label: '原始' },
@@ -20,7 +21,7 @@ export default function ParameterPanel({
     <div className="mt-6">
       <button 
         onClick={() => onToggleCollapse('basic')} 
-        className="w-full flex items-center justify-between text-left text-sm font-semibold text-gray-800 mb-2" 
+        className={componentPatterns.collapseButton}
         role="button" 
         aria-expanded={!collapsed} 
         aria-controls="group-basic"
@@ -32,11 +33,11 @@ export default function ParameterPanel({
       {!collapsed && (
         <div id="group-basic" className="space-y-3 text-sm">
           <div>
-            <Label>导图风格</Label>
+            <Label className="text-brand-700">导图风格</Label>
             <select 
               value={mapStyle} 
               onChange={(e) => onMapStyleChange(e.target.value)} 
-              className="mt-1 w-full border rounded-md px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="mt-1 w-full border border-brand-200 rounded-md px-2 py-1 bg-neutral-white text-brand-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-colors duration-200"
             >
               {STYLE_OPTIONS.map(option => (
                 <option key={option.value} value={option.value}>
@@ -44,7 +45,7 @@ export default function ParameterPanel({
                 </option>
               ))}
             </select>
-            <div className="mt-1 text-xs text-gray-500">
+            <div className="mt-1 text-xs text-brand-500">
               {mapStyle === 'original' ? '保持原始结构和细节' : '精炼关键信息，突出重点'}
             </div>
           </div>

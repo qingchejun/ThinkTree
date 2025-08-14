@@ -5,6 +5,7 @@
 
 import { Button } from '@/components/ui/Button'
 import { Sparkles } from 'lucide-react'
+import { componentPatterns, textColors } from '@/design-system/tokens/semantic'
 
 export default function ActionPanel({
   source,
@@ -34,10 +35,10 @@ export default function ActionPanel({
     !submitting
 
   return (
-    <div className="mt-6 border-t pt-2 sticky bottom-0 bg-white">
+    <div className="mt-6 border-t border-brand-200 pt-2 sticky bottom-0 bg-neutral-white">
       <button 
         onClick={() => onToggleCollapse('actions')} 
-        className="w-full flex items-center justify-between text-left text-sm font-semibold text-gray-800 mb-2" 
+        className={componentPatterns.collapseButton}
         role="button" 
         aria-expanded={!collapsed} 
         aria-controls="group-actions"
@@ -49,9 +50,9 @@ export default function ActionPanel({
       {!collapsed && (
         <div id="group-actions">
           {/* 积分信息 */}
-          <div className="flex items-center justify-end text-[11px] text-gray-600 mb-2 gap-3" aria-live="polite">
+          <div className="flex items-center justify-end text-[11px] text-brand-500 mb-2 gap-3" aria-live="polite">
             <span className="inline-flex items-center gap-1">
-              <Sparkles size={12} /> 
+              <Sparkles size={12} className="text-accent-600" /> 
               预计{estimate && estimate.estimated_cost != null ? estimate.estimated_cost : '--'}分
             </span>
             <span>余额{user?.credits ?? '--'}分</span>
@@ -64,6 +65,7 @@ export default function ActionPanel({
               disabled={!canSubmit} 
               className="w-full" 
               aria-label="生成思维导图"
+              variant="primary"
             >
               {submitBtnLabel}
             </Button>
@@ -74,11 +76,12 @@ export default function ActionPanel({
                 disabled={!canGenerateUpload} 
                 className="w-full" 
                 aria-label="生成思维导图"
+                variant="primary"
               >
                 {submitBtnLabel}
               </Button>
               {estimate && estimate.sufficient_credits === false && (
-                <div className="mt-2 text-[11px] text-rose-600">
+                <div className={`mt-2 text-[11px] ${textColors.error}`}>
                   积分不足，请前往邀请/充值后再试
                 </div>
               )}

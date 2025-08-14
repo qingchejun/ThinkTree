@@ -112,7 +112,7 @@ const LandingPage = ({ invitationCode, autoRegister, errorMessage, onLoginClick 
           
           {/* 功能卡片网格 - 响应式3列布局 */}
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* 功能卡片 1: AI智能生成 */}
+            {/* 功能卡片 1: AI智能生成 - 核心AI功能组 (蓝色系) */}
             <div className="bg-gray-50 p-8 rounded-2xl flex items-start space-x-6">
               <div className="flex-shrink-0 flex items-center justify-center w-12 h-12 bg-blue-100 rounded-xl">
                 <Cpu className="w-7 h-7 text-blue-600" />
@@ -123,10 +123,10 @@ const LandingPage = ({ invitationCode, autoRegister, errorMessage, onLoginClick 
               </div>
             </div>
             
-            {/* 功能卡片 2: 多格式内容导入 */}
+            {/* 功能卡片 2: 多格式内容导入 - 内容处理功能组 (绿色系) */}
             <div className="bg-gray-50 p-8 rounded-2xl flex items-start space-x-6">
-              <div className="flex-shrink-0 flex items-center justify-center w-12 h-12 bg-sky-100 rounded-xl">
-                 <FileStack className="w-7 h-7 text-sky-600" />
+              <div className="flex-shrink-0 flex items-center justify-center w-12 h-12 bg-green-100 rounded-xl">
+                 <FileStack className="w-7 h-7 text-green-600" />
               </div>
               <div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">多格式导入</h3>
@@ -134,10 +134,10 @@ const LandingPage = ({ invitationCode, autoRegister, errorMessage, onLoginClick 
               </div>
             </div>
             
-            {/* 功能卡片 3: 团队协作分享 */}
+            {/* 功能卡片 3: 团队协作分享 - 协作扩展功能组 (紫色系) */}
             <div className="bg-gray-50 p-8 rounded-2xl flex items-start space-x-6">
-              <div className="flex-shrink-0 flex items-center justify-center w-12 h-12 bg-green-100 rounded-xl">
-                <Users className="w-7 h-7 text-green-600" />
+              <div className="flex-shrink-0 flex items-center justify-center w-12 h-12 bg-purple-100 rounded-xl">
+                <Users className="w-7 h-7 text-purple-600" />
               </div>
               <div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">协作分享</h3>
@@ -145,10 +145,10 @@ const LandingPage = ({ invitationCode, autoRegister, errorMessage, onLoginClick 
               </div>
             </div>
             
-            {/* 功能卡片 4: AI智能优化 */}
+            {/* 功能卡片 4: AI智能优化 - 核心AI功能组 (蓝色系) */}
             <div className="bg-gray-50 p-8 rounded-2xl flex items-start space-x-6">
-              <div className="flex-shrink-0 flex items-center justify-center w-12 h-12 bg-rose-100 rounded-xl">
-                 <BrainCircuit className="w-7 h-7 text-rose-600" />
+              <div className="flex-shrink-0 flex items-center justify-center w-12 h-12 bg-blue-100 rounded-xl">
+                 <BrainCircuit className="w-7 h-7 text-blue-600" />
               </div>
               <div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">智能优化</h3>
@@ -156,10 +156,10 @@ const LandingPage = ({ invitationCode, autoRegister, errorMessage, onLoginClick 
               </div>
             </div>
             
-            {/* 功能卡片 5: 多格式导出 */}
+            {/* 功能卡片 5: 多格式导出 - 内容处理功能组 (绿色系) */}
             <div className="bg-gray-50 p-8 rounded-2xl flex items-start space-x-6">
-              <div className="flex-shrink-0 flex items-center justify-center w-12 h-12 bg-purple-100 rounded-xl">
-                <FileOutput className="w-7 h-7 text-purple-600" />
+              <div className="flex-shrink-0 flex items-center justify-center w-12 h-12 bg-green-100 rounded-xl">
+                <FileOutput className="w-7 h-7 text-green-600" />
               </div>
               <div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">多格式导出</h3>
@@ -167,10 +167,10 @@ const LandingPage = ({ invitationCode, autoRegister, errorMessage, onLoginClick 
               </div>
             </div>
             
-            {/* 功能卡片 6: 无限节点扩展 */}
+            {/* 功能卡片 6: 无限节点扩展 - 协作扩展功能组 (紫色系) */}
             <div className="bg-gray-50 p-8 rounded-2xl flex items-start space-x-6">
-              <div className="flex-shrink-0 flex items-center justify-center w-12 h-12 bg-amber-100 rounded-xl">
-                 <Infinity className="w-7 h-7 text-amber-600" />
+              <div className="flex-shrink-0 flex items-center justify-center w-12 h-12 bg-purple-100 rounded-xl">
+                 <Infinity className="w-7 h-7 text-purple-600" />
               </div>
               <div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">无限扩展</h3>

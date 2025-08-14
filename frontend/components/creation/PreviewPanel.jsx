@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import SimpleMarkmapBasic from '@/components/mindmap/SimpleMarkmapBasic'
+import { textColors } from '@/design-system/tokens/semantic'
 
 export default function PreviewPanel({
   submitting,
@@ -23,9 +24,9 @@ export default function PreviewPanel({
       <Card className="h-[calc(100vh-140px)]">
         <CardContent className="h-full">
           <div className="h-full p-6 animate-pulse">
-            <div className="h-5 w-40 bg-gray-200 rounded mb-4"></div>
-            <div className="h-8 w-full bg-gray-100 rounded mb-3"></div>
-            <div className="h-[calc(100%-60px)] w-full bg-gray-100 rounded"></div>
+            <div className="h-5 w-40 bg-brand-200 rounded mb-4"></div>
+            <div className="h-8 w-full bg-brand-100 rounded mb-3"></div>
+            <div className="h-[calc(100%-60px)] w-full bg-brand-100 rounded"></div>
           </div>
         </CardContent>
       </Card>
@@ -37,11 +38,11 @@ export default function PreviewPanel({
     return (
       <Card className="h-[calc(100vh-140px)]">
         <div className="h-full rounded-lg overflow-hidden">
-          <div className="flex items-center justify-between p-4 border-b">
-            <h2 className="text-base font-semibold">
+          <div className="flex items-center justify-between p-4 border-b border-brand-200">
+            <h2 className="text-base font-semibold text-brand-800">
               {preview.data?.title || title || '思维导图'}
               {savedId && (
-                <span className="ml-2 text-xs text-emerald-600">已自动保存</span>
+                <span className="ml-2 text-xs text-success-600">已自动保存</span>
               )}
             </h2>
             <div className="flex items-center gap-2">
@@ -50,11 +51,12 @@ export default function PreviewPanel({
                   size="sm" 
                   onClick={() => router.push(`/mindmap/${savedId}`)} 
                   aria-label="查看导图详情"
+                  variant="secondary"
                 >
                   查看详情
                 </Button>
               )}
-              <div className="text-xs text-gray-500">Markmap 预览</div>
+              <div className="text-xs text-brand-500">Markmap 预览</div>
             </div>
           </div>
           <div className="h-[calc(100%-44px)]">
@@ -70,7 +72,7 @@ export default function PreviewPanel({
     return (
       <Card className="h-[calc(100vh-140px)]">
         <CardContent className="h-full">
-          <div className="h-full flex items-center justify-center border border-rose-200 bg-rose-50 rounded-lg text-rose-700 text-sm p-6">
+          <div className="h-full flex items-center justify-center border border-error-200 bg-error-50 rounded-lg text-error-700 text-sm p-6">
             {String(error)}
           </div>
         </CardContent>
@@ -82,11 +84,11 @@ export default function PreviewPanel({
   return (
     <Card className="h-[calc(100vh-140px)]">
       <CardContent className="h-full">
-        <div className="h-full flex items-center justify-center border-2 border-dashed rounded-lg text-center text-gray-500">
+        <div className="h-full flex items-center justify-center border-2 border-dashed border-brand-200 rounded-lg text-center text-brand-500">
           <div>
             <div className="text-5xl mb-3">🌳</div>
             <div className="text-sm">选择来源并填写内容，点击左下角"生成"后在这里预览</div>
-            <div className="text-xs mt-2 text-gray-400">
+            <div className="text-xs mt-2 text-brand-400">
               小提示：可展开/折叠左侧分组，系统会记住你的偏好
             </div>
           </div>

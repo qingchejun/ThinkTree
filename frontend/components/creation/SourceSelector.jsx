@@ -5,6 +5,7 @@
 
 import { useState } from 'react'
 import { FileText, Upload, Youtube, Mic, AudioLines, Globe } from 'lucide-react'
+import { componentPatterns } from '@/design-system/tokens/semantic'
 
 const SOURCE_OPTIONS = [
   { key: 'text', label: '长文本', Icon: FileText },
@@ -32,7 +33,7 @@ export default function SourceSelector({
     <div className="mb-4">
       <button 
         onClick={() => onToggleCollapse('source')} 
-        className="w-full flex items-center justify-between text-left text-sm font-semibold text-gray-800 mb-2" 
+        className={componentPatterns.collapseButton}
         role="button" 
         aria-expanded={!collapsed} 
         aria-controls="group-source"
@@ -47,10 +48,10 @@ export default function SourceSelector({
             <button
               key={item.key}
               onClick={() => handleSourceChange(item.key)}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg border text-sm ${
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg border text-sm transition-colors duration-200 ${
                 source === item.key 
-                  ? 'border-black bg-gray-900 text-white'
-                  : 'border-gray-200 bg-white text-gray-800 hover:bg-gray-50'
+                  ? 'border-brand-800 bg-brand-800 text-neutral-white'
+                  : 'border-brand-200 bg-neutral-white text-brand-800 hover:bg-brand-50 hover:border-brand-300'
               } ${item.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
               aria-expanded={source === item.key}
               aria-disabled={item.disabled}
@@ -59,7 +60,7 @@ export default function SourceSelector({
                 {item.Icon && (
                   <item.Icon 
                     size={16} 
-                    className={source === item.key ? 'text-white' : 'text-gray-600'} 
+                    className={source === item.key ? 'text-neutral-white' : 'text-brand-500'} 
                   />
                 )}
                 {item.label}

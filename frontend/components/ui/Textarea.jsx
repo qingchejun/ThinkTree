@@ -1,16 +1,20 @@
 import * as React from "react"
 
-import { cn } from "@/lib/utils"
+// 简单的类名合并工具函数
+function cn(...classes) {
+  return classes.filter(Boolean).join(' ')
+}
 
 const Textarea = React.forwardRef(({ className, ...props }, ref) => {
   return (
-    (<textarea
+    <textarea
       className={cn(
-        "flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+        "flex min-h-[80px] w-full rounded-md border border-brand-200 bg-neutral-white px-3 py-2 text-sm ring-offset-neutral-white placeholder:text-brand-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/20 focus-visible:ring-offset-2 focus-visible:border-brand-500 disabled:cursor-not-allowed disabled:opacity-50",
         className
       )}
       ref={ref}
-      {...props} />)
+      {...props}
+    />
   );
 })
 Textarea.displayName = "Textarea"
