@@ -1,6 +1,7 @@
 /**
  * 新建思维导图页面 - 重构版本
  * 采用组件化架构，提升可维护性和开发效率
+ * 基于设计系统 v2.0 优化视觉设计和用户体验
  */
 'use client'
 
@@ -247,90 +248,121 @@ export default function NewPage() {
 
   return (
     <div className="min-h-screen bg-brand-50">
-      <div className="max-w-[1280px] mx-auto px-8 py-8">
-        <div className="flex gap-8">
-          {/* 左侧侧栏 */}
-          <aside className="w-[320px] shrink-0 bg-white rounded-xl border border-brand-200 p-4 h-[calc(100vh-160px)] overflow-auto" aria-label="新建导图设置侧栏">
-            {/* 来源选择 */}
-            <SourceSelector
-              source={source}
-              onSourceChange={setSource}
-              collapsed={collapsed.source}
-              onToggleCollapse={handleToggleCollapse}
-              onReset={handleReset}
-            />
+      {/* 页面标题区域 */}
+      <div className="bg-neutral-white border-b border-brand-200">
+        <div className="max-w-[1400px] mx-auto px-6 md:px-8 py-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold text-brand-900 mb-2">
+                创建思维导图
+              </h1>
+              <p className="text-lg text-brand-600">
+                从文本或文档快速生成专业的思维导图
+              </p>
+            </div>
+            <div className="hidden md:flex items-center space-x-4 text-sm text-brand-500">
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-core-500 rounded-full"></div>
+                <span>AI 智能生成</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-content-500 rounded-full"></div>
+                <span>多格式支持</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-            {/* 动态表单区域 */}
-            {source === 'text' && (
-              <TextInput
-                text={text}
-                onTextChange={setText}
-                onEstimate={handleEstimateText}
-                estimating={estimating}
-              />
-            )}
-            
-            {source === 'upload' && (
-              <div className="mt-3" aria-label="文件上传区域">
-                <FileUpload 
-                  ref={uploadRef} 
-                  hideModeToggle 
-                  initialMode="file" 
-                  forceMode="file" 
-                  showGenerateButton={false} 
-                  showEstimatePanel={false} 
-                  onStateChange={(s) => {
-                    const credits = user?.credits || 0
-                    setEstimate(prev => prev ? { 
-                      ...prev, 
-                      estimated_cost: s.estimated_cost, 
-                      user_balance: credits, 
-                      sufficient_credits: credits >= (s.estimated_cost||0) 
-                    } : (s.estimated_cost ? { 
-                      estimated_cost: s.estimated_cost, 
-                      user_balance: credits, 
-                      sufficient_credits: credits >= (s.estimated_cost||0) 
-                    } : null))
-                  }} 
-                  onUploadStart={() => { 
-                    setError(null)
-                    setPreview(null) 
-                  }} 
-                  onUploadSuccess={(res) => { 
-                    setPreview(res)
-                    autoSave(res) 
-                  }} 
-                  onUploadError={(msg) => setError(msg)} 
+      {/* 主内容区域 */}
+      <div className="max-w-[1400px] mx-auto px-6 md:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* 左侧控制面板 */}
+          <aside className="lg:col-span-4 xl:col-span-3">
+            <div className="bg-neutral-white rounded-2xl border border-brand-200 shadow-soft overflow-hidden sticky top-8">
+              <div className="p-6 space-y-6 max-h-[calc(100vh-120px)] overflow-y-auto">
+                {/* 来源选择 */}
+                <SourceSelector
+                  source={source}
+                  onSourceChange={setSource}
+                  collapsed={collapsed.source}
+                  onToggleCollapse={handleToggleCollapse}
+                  onReset={handleReset}
+                />
+
+                {/* 动态表单区域 */}
+                {source === 'text' && (
+                  <TextInput
+                    text={text}
+                    onTextChange={setText}
+                    onEstimate={handleEstimateText}
+                    estimating={estimating}
+                  />
+                )}
+                
+                {source === 'upload' && (
+                  <div className="space-y-4" aria-label="文件上传区域">
+                    <FileUpload 
+                      ref={uploadRef} 
+                      hideModeToggle 
+                      initialMode="file" 
+                      forceMode="file" 
+                      showGenerateButton={false} 
+                      showEstimatePanel={false} 
+                      onStateChange={(s) => {
+                        const credits = user?.credits || 0
+                        setEstimate(prev => prev ? { 
+                          ...prev, 
+                          estimated_cost: s.estimated_cost, 
+                          user_balance: credits, 
+                          sufficient_credits: credits >= (s.estimated_cost||0) 
+                        } : (s.estimated_cost ? { 
+                          estimated_cost: s.estimated_cost, 
+                          user_balance: credits, 
+                          sufficient_credits: credits >= (s.estimated_cost||0) 
+                        } : null))
+                      }} 
+                      onUploadStart={() => { 
+                        setError(null)
+                        setPreview(null) 
+                      }} 
+                      onUploadSuccess={(res) => { 
+                        setPreview(res)
+                        autoSave(res) 
+                      }} 
+                      onUploadError={(msg) => setError(msg)} 
+                    />
+                  </div>
+                )}
+
+                {/* 参数设置 */}
+                <ParameterPanel
+                  mapStyle={mapStyle}
+                  onMapStyleChange={setMapStyle}
+                  collapsed={collapsed.basic}
+                  onToggleCollapse={handleToggleCollapse}
+                />
+
+                {/* 操作区 */}
+                <ActionPanel
+                  source={source}
+                  collapsed={collapsed.actions}
+                  onToggleCollapse={handleToggleCollapse}
+                  estimate={estimate}
+                  user={user}
+                  canSubmit={canSubmit}
+                  submitting={submitting}
+                  estimating={estimating}
+                  onGenerateText={handleGenerateFromText}
+                  onGenerateUpload={handleGenerateFromUpload}
+                  uploadRef={uploadRef}
                 />
               </div>
-            )}
-
-            {/* 参数设置 */}
-            <ParameterPanel
-              mapStyle={mapStyle}
-              onMapStyleChange={setMapStyle}
-              collapsed={collapsed.basic}
-              onToggleCollapse={handleToggleCollapse}
-            />
-
-            {/* 操作区 */}
-            <ActionPanel
-              source={source}
-              collapsed={collapsed.actions}
-              onToggleCollapse={handleToggleCollapse}
-              estimate={estimate}
-              user={user}
-              canSubmit={canSubmit}
-              submitting={submitting}
-              estimating={estimating}
-              onGenerateText={handleGenerateFromText}
-              onGenerateUpload={handleGenerateFromUpload}
-              uploadRef={uploadRef}
-            />
+            </div>
           </aside>
 
           {/* 右侧预览区 */}
-          <div className="flex-1 border-l border-brand-200 pl-8">
+          <main className="lg:col-span-8 xl:col-span-9">
             <PreviewPanel
               submitting={submitting}
               preview={preview}
@@ -338,7 +370,7 @@ export default function NewPage() {
               savedId={savedId}
               title={title}
             />
-          </div>
+          </main>
         </div>
       </div>
     </div>
