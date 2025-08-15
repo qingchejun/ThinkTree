@@ -310,11 +310,11 @@ def get_cookie_domain() -> str:
     
     Examples:
         FRONTEND_URL=https://www.thinkso.io -> .thinkso.io
-        FRONTEND_URL=https://thinktree-frontend.onrender.com -> .onrender.com
+        FRONTEND_URL=https://thinktree-frontend.onrender.com -> None (不设置domain，使用host-only cookie)
         FRONTEND_URL=http://localhost:3000 -> localhost
         
     Returns:
-        str: Cookie的domain值
+        str: Cookie的domain值，如果返回None表示不设置domain（host-only cookie）
     """
     from ..core.config import settings
     from urllib.parse import urlparse
@@ -327,11 +327,17 @@ def get_cookie_domain() -> str:
         if hostname == "localhost" or hostname == "127.0.0.1":
             return "localhost"
         
-        # 生产环境 - 提取根域名
+        # 特殊处理：Render.com 部署环境
+        # 对于 thinktree-frontend-staging.onrender.com 和 thinktree-backend-staging.onrender.com
+        # 不能使用 .onrender.com 作为 Cookie 域名，因为这会影响其他应用
+        # 使用 host-only Cookie（不设置 domain 参数）
+        if hostname.endswith('.onrender.com'):
+            return None  # 返回None表示不设置domain，使用host-only cookie
+        
+        # 其他生产环境 - 提取根域名
         parts = hostname.split('.')
         if len(parts) >= 2:
             # 对于 www.thinkso.io -> .thinkso.io
-            # 对于 thinktree-frontend.onrender.com -> .onrender.com
             root_domain = '.'.join(parts[-2:])
             return f".{root_domain}"
         else:

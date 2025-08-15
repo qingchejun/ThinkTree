@@ -77,7 +77,7 @@ const LandingPage = ({ invitationCode, autoRegister, errorMessage, onLoginClick 
         </h1>
         
         {/* 主要CTA按钮 - 引导用户开始使用产品 */}
-        <div className="mt-8 flex justify-center gap-3 mb-16">
+        <div className="mt-8 flex justify-center mb-16">
           <Button onClick={() => {
             console.log('LandingPage: 主要CTA按钮被点击');
             if (onLoginClick) {
@@ -87,18 +87,6 @@ const LandingPage = ({ invitationCode, autoRegister, errorMessage, onLoginClick 
             }
           }} variant="primary" size="xl" className="px-12 py-4 font-bold text-xl shadow-lg hover:scale-105">
             免费生成思维导图
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              try {
-                const el = document.getElementById('features');
-                el && el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-              } catch {}
-            }}
-          >
-            了解更多
           </Button>
         </div>
 
