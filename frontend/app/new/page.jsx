@@ -24,7 +24,7 @@ import {
 
 export default function NewPage() {
   const { user, isLoading, refreshUser } = useAuth()
-  const { openLoginModal } = useModal?.() || { openLoginModal: null }
+  const { openLoginModal } = useModal()
   const router = useRouter()
 
   // 核心状态

@@ -366,7 +366,7 @@ async def process_text(
         # 5. 成功生成，返回结果
         return JSONResponse(content={
             "success": True,
-            "content_preview": request.text[:200] + "..." if len(request.text) > 200 else request.text,
+            "content_preview": text_request.text[:200] + "..." if len(text_request.text) > 200 else text_request.text,
             "data": mindmap_result["data"],
             "format": "markdown",
             "cost_info": {
