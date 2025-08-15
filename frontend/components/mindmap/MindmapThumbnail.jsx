@@ -13,149 +13,105 @@ const MindmapThumbnail = ({ content, title, className = "" }) => {
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
   const [markmap, setMarkmap] = useState(null)
+  const mmRef = useRef(null)
 
   useEffect(() => {
-    console.log('=== MindmapThumbnail useEffect 开始 ===')
-    console.log('MindmapThumbnail - title:', title)
-    console.log('MindmapThumbnail - content:', content ? content.substring(0, 100) + '...' : 'null/undefined')
-    console.log('MindmapThumbnail - content type:', typeof content)
-    console.log('MindmapThumbnail - content length:', content?.length || 0)
-    
-    // 检查内容是否存在
-    if (!content || typeof content !== 'string' || content.trim() === '') {
-      console.log('MindmapThumbnail - 内容为空或无效，显示空状态')
-      setIsLoading(false)
-      setHasError(false)
-      return
-    }
+    let mounted = true
+    try {
+      const type = typeof content
+      const length = type === 'string' ? content.length : 0
+      console.log('=== MindmapThumbnail useEffect ===', { title, type, length })
 
-    console.log('MindmapThumbnail - 内容有效，准备生成缩略图...')
-    
-    // 延迟执行，确保DOM准备就绪
-    setTimeout(() => {
-      if (!svgRef.current) {
-        console.log('MindmapThumbnail - SVG引用不存在，设置错误状态')
-        setHasError(true)
-        setIsLoading(false)
-        return
+      // 内容校验
+      if (!content || type !== 'string' || content.trim() === '') {
+        if (mounted) {
+          setIsLoading(false)
+          setHasError(false)
+        }
+        return () => { mounted = false }
       }
-      console.log('MindmapThumbnail - SVG引用已准备就绪，开始生成缩略图')
-      generateThumbnail()
-    }, 100)
 
-    const generateThumbnail = async () => {
-      try {
-        console.log('MindmapThumbnail - 开始生成缩略图')
-        setIsLoading(true)
-        setHasError(false)
-
-        // 动态导入markmap库
-        console.log('MindmapThumbnail - 正在加载Markmap库...')
-        
-        const markmapViewModule = await import('markmap-view')
-        console.log('MindmapThumbnail - markmap-view模块:', markmapViewModule)
-        
-        const markmapLibModule = await import('markmap-lib')
-        console.log('MindmapThumbnail - markmap-lib模块:', markmapLibModule)
-        
-        const { Markmap } = markmapViewModule
-        const { Transformer } = markmapLibModule
-        
-        console.log('MindmapThumbnail - Markmap:', Markmap)
-        console.log('MindmapThumbnail - Transformer:', Transformer)
-
-        console.log('MindmapThumbnail - Markmap库加载成功')
-
-        // 创建transformer实例
-        const transformer = new Transformer()
-        
-        // 转换markdown内容为markmap数据
-        console.log('MindmapThumbnail - 正在转换内容...')
-        const { root } = transformer.transform(content)
-        
-        if (!root) {
-          throw new Error('无法解析思维导图内容')
-        }
-
-        console.log('MindmapThumbnail - 内容转换成功，节点数:', root.children?.length || 0)
-
-        // 清理之前的内容
-        const svg = svgRef.current
-        if (!svg) {
-          throw new Error('SVG元素不存在')
-        }
-        
-        svg.innerHTML = ''
-        
-        // 设置SVG尺寸
-        svg.setAttribute('width', '100%')
-        svg.setAttribute('height', '100%')
-        svg.setAttribute('viewBox', '0 0 300 200')
-        svg.setAttribute('preserveAspectRatio', 'xMidYMid meet')
-
-        // 创建markmap实例（缩略图模式）
-        console.log('MindmapThumbnail - 正在创建Markmap实例...')
-        const mm = Markmap.create(svg, {
-          // 缩略图专用配置
-          duration: 0, // 禁用动画以提高性能
-          zoom: false, // 禁用缩放
-          pan: false, // 禁用拖拽
-          maxWidth: 200, // 限制节点最大宽度
-          spacingVertical: 8, // 减小垂直间距
-          spacingHorizontal: 40, // 减小水平间距
-          paddingX: 8, // 减小内边距
-          color: (node) => {
-            // 简化颜色方案
-            const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4']
-            return colors[node.depth % colors.length]
-          },
-          // 简化字体设置
-          fontFamily: 'system-ui, -apple-system, sans-serif',
-          fontSize: (node) => Math.max(10, 14 - node.depth * 2), // 更小的字体
-        })
-
-        console.log('MindmapThumbnail - Markmap实例创建成功')
-
-        // 渲染思维导图
-        console.log('MindmapThumbnail - 正在渲染数据...')
-        mm.setData(root)
-        
-        // 自动适配视图
-        setTimeout(() => {
-          try {
-            if (mm && typeof mm.fit === 'function') {
-              mm.fit()
+      const generateThumbnail = async () => {
+        try {
+          if (!svgRef.current) {
+            if (mounted) {
+              setHasError(true)
+              setIsLoading(false)
             }
-            setMarkmap(mm)
-            setIsLoading(false)
-            console.log('MindmapThumbnail - 渲染完成！')
-          } catch (error) {
-            console.warn('缩略图适配失败:', error)
+            return
+          }
+
+          // 动态导入
+          const { Markmap } = await import('markmap-view')
+          const { Transformer } = await import('markmap-lib')
+
+          const transformer = new Transformer()
+          const { root } = transformer.transform(content)
+          if (!root) throw new Error('无法解析思维导图内容')
+
+          const svg = svgRef.current
+          if (!svg) throw new Error('SVG元素不存在')
+          svg.innerHTML = ''
+          svg.setAttribute('width', '100%')
+          svg.setAttribute('height', '100%')
+          svg.setAttribute('viewBox', '0 0 300 200')
+          svg.setAttribute('preserveAspectRatio', 'xMidYMid meet')
+
+          const mm = Markmap.create(svg, {
+            duration: 0,
+            zoom: false,
+            pan: false,
+            maxWidth: 200,
+            spacingVertical: 8,
+            spacingHorizontal: 40,
+            paddingX: 8,
+            color: (node) => {
+              const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4']
+              return colors[node.depth % colors.length]
+            },
+            fontFamily: 'system-ui, -apple-system, sans-serif',
+            fontSize: (node) => Math.max(10, 14 - node.depth * 2),
+          })
+          mmRef.current = mm
+
+          mm.setData(root)
+          setTimeout(() => {
+            try {
+              if (mmRef.current && typeof mmRef.current.fit === 'function') {
+                mmRef.current.fit()
+              }
+            } finally {
+              if (mounted) setIsLoading(false)
+            }
+          }, 100)
+        } catch (e) {
+          console.error('生成思维导图缩略图失败:', e)
+          if (mounted) {
+            setHasError(true)
             setIsLoading(false)
           }
-        }, 100)
+        }
+      }
 
-      } catch (error) {
-        console.error('生成思维导图缩略图失败:', error)
-        console.error('错误详情:', error.message)
-        console.error('错误堆栈:', error.stack)
+      // 延迟执行，确保DOM准备就绪
+      const timer = setTimeout(generateThumbnail, 50)
+
+      return () => {
+        mounted = false
+        clearTimeout(timer)
+        try {
+          mmRef.current?.destroy?.()
+        } catch (err) {
+          // 清理失败静默
+        }
+      }
+    } catch (err) {
+      console.error('MindmapThumbnail 故障:', err)
+      if (mounted) {
         setHasError(true)
         setIsLoading(false)
       }
-    }
-
-    // 清理函数在useEffect结束时自动执行
-
-    // 清理函数
-    return () => {
-      console.log('MindmapThumbnail - 清理组件')
-      if (markmap) {
-        try {
-          markmap.destroy()
-        } catch (error) {
-          console.warn('清理markmap实例失败:', error)
-        }
-      }
+      return () => { mounted = false }
     }
   }, [content])
 
@@ -228,4 +184,5 @@ const MindmapThumbnail = ({ content, title, className = "" }) => {
   )
 }
 
+export default MindmapThumbnail
 export default MindmapThumbnail
