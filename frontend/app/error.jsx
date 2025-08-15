@@ -4,6 +4,19 @@
 'use client'
 
 export default function Error({ error, reset }) {
+  // 将错误完整打印到控制台，便于线上调试
+  try {
+    // 避免在SSR阶段执行
+    if (typeof window !== 'undefined') {
+      console.error('[AppErrorBoundary] 捕获到渲染错误:', error)
+      if (error?.digest) {
+        console.error('[AppErrorBoundary] digest:', error.digest)
+      }
+      if (error?.stack) {
+        console.error('[AppErrorBoundary] stack:', error.stack)
+      }
+    }
+  } catch {}
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="text-center">
