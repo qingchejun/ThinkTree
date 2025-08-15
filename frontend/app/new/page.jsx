@@ -222,7 +222,7 @@ export default function NewPage() {
       const result = await res.json()
       if (res.ok && result.success) { 
         setPreview(result)
-        autoSave(result)
+        await autoSave(result)
         saveToHistory(result)
         refreshUser?.() 
       } else {
@@ -361,9 +361,9 @@ export default function NewPage() {
               setError(null)
               setPreview(null) 
             }} 
-            onUploadSuccess={(res) => { 
+            onUploadSuccess={async (res) => { 
               setPreview(res)
-              autoSave(res)
+              await autoSave(res)
               saveToHistory(res)
             }} 
             onUploadError={(msg) => setError(msg)} 
