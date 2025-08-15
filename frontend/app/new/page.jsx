@@ -114,8 +114,14 @@ export default function NewPage() {
       const params = new URLSearchParams(window.location.search)
       const src = (params.get('source') || '').toLowerCase()
       const sty = (params.get('style') || '').toLowerCase()
+      const dbg = params.get('debug')
       if (src === 'upload' || src === 'text') setSource(src)
       if (sty === 'refined' || sty === 'original') setMapStyle(sty)
+      if (dbg === '1') {
+        // 在全局挂一个简单的调试开关
+        try { window.TS_DEBUG = true } catch {}
+        console.log('[DEBUG] NewPage 调试模式已开启')
+      }
       setTimeout(() => {
         const el = document.getElementById('group-source')
         if (el && typeof el.scrollIntoView === 'function') {
@@ -237,8 +243,16 @@ export default function NewPage() {
 
   // 生成思维导图（上传）
   const handleGenerateFromUpload = useCallback(() => {
-    if (uploadRef.current?.generate) {
-      uploadRef.current.generate({ style: mapStyle })
+    try {
+      const canGen = uploadRef.current?.canGenerate?.()
+      if (typeof window !== 'undefined' && window.TS_DEBUG) {
+        console.log('[DEBUG] 触发上传生成', { canGen, estimate, mapStyle })
+      }
+      if (canGen && uploadRef.current?.generate) {
+        uploadRef.current.generate({ style: mapStyle })
+      }
+    } catch (e) {
+      console.error('触发上传生成失败:', e)
     }
   }, [mapStyle])
 

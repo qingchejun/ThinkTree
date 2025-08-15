@@ -171,6 +171,9 @@ const FileUpload = forwardRef(function FileUpload({ onUploadStart, onUploadSucce
   // 第一步：处理文件分析
   const handleFileAnalysis = async (file) => {
     try {
+      if (typeof window !== 'undefined' && window.TS_DEBUG) {
+        console.log('[DEBUG] 开始文件分析', { name: file?.name, size: file?.size })
+      }
       validateFile(file)
       setIsAnalyzing(true)
       setAnalyzeStatus('parsing')
@@ -188,6 +191,9 @@ const FileUpload = forwardRef(function FileUpload({ onUploadStart, onUploadSucce
       })
 
       const result = await response.json()
+      if (typeof window !== 'undefined' && window.TS_DEBUG) {
+        console.log('[DEBUG] 文件分析返回', { ok: response.ok, status: response.status, result })
+      }
       
       if (response.ok && result.success) {
         setFileAnalysis(result)
@@ -198,6 +204,9 @@ const FileUpload = forwardRef(function FileUpload({ onUploadStart, onUploadSucce
       }
     } catch (error) {
       setAnalyzeStatus('failed')
+      if (typeof window !== 'undefined' && window.TS_DEBUG) {
+        console.log('[DEBUG] 文件分析异常', error)
+      }
       if (onUploadError) onUploadError(error.message)
       else ToastManager.error(error.message || '文件分析失败', 4000)
     } finally {
@@ -228,6 +237,9 @@ const FileUpload = forwardRef(function FileUpload({ onUploadStart, onUploadSucce
       })
 
       const result = await response.json()
+      if (typeof window !== 'undefined' && window.TS_DEBUG) {
+        console.log('[DEBUG] 文件生成返回', { ok: response.ok, status: response.status, result })
+      }
       
       if (response.ok && result.success) {
         // 成功后刷新用户积分信息
@@ -248,6 +260,9 @@ const FileUpload = forwardRef(function FileUpload({ onUploadStart, onUploadSucce
       }
     } catch (error) {
       console.error('思维导图生成错误:', error)
+      if (typeof window !== 'undefined' && window.TS_DEBUG) {
+        console.log('[DEBUG] 文件生成异常', error)
+      }
       if (onUploadError) onUploadError(error.message)
       else ToastManager.error(error.message || '生成失败', 4000)
     } finally {

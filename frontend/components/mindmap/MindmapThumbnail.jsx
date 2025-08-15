@@ -185,4 +185,3 @@ const MindmapThumbnail = ({ content, title, className = "" }) => {
 }
 
 export default MindmapThumbnail
-export default MindmapThumbnail
