@@ -9,6 +9,7 @@ import { useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
 import { useModal } from '@/context/ModalContext'
+import { Menu, X } from 'lucide-react'
 import FileUpload from '@/components/upload/FileUpload'
 
 // 导入新的子组件
@@ -17,7 +18,8 @@ import {
   TextInput,
   ParameterPanel,
   ActionPanel,
-  PreviewPanel
+  PreviewPanel,
+  HistoryPanel
 } from '@/components/creation'
 
 export default function NewPage() {
@@ -42,8 +44,12 @@ export default function NewPage() {
     source: false, 
     basic: false, 
     advanced: false, 
-    actions: false 
+    actions: false,
+    history: false
   })
+
+  // 移动端侧边栏状态
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
 
   // refs
   const estimateAbortRef = useRef(null)
@@ -65,6 +71,7 @@ export default function NewPage() {
           basic: !!obj.basic,
           advanced: !!obj.advanced,
           actions: !!obj.actions,
+          history: !!obj.history,
         })
       }
     } catch {}
@@ -75,6 +82,31 @@ export default function NewPage() {
       localStorage.setItem('thinkso:new-page:collapsed', JSON.stringify(collapsed)) 
     } catch {}
   }, [collapsed])
+
+  // 移动端侧边栏关闭处理
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) { // lg breakpoint
+        setMobileSidebarOpen(false)
+      }
+    }
+    
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  // 阻止移动端侧边栏打开时的背景滚动
+  useEffect(() => {
+    if (mobileSidebarOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+    
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [mobileSidebarOpen])
 
   // URL参数处理
   useEffect(() => {
@@ -191,6 +223,7 @@ export default function NewPage() {
       if (res.ok && result.success) { 
         setPreview(result)
         autoSave(result)
+        saveToHistory(result)
         refreshUser?.() 
       } else {
         throw new Error(result?.detail?.message || result?.detail || '生成失败')
@@ -223,15 +256,49 @@ export default function NewPage() {
     setCollapsed(prev => ({ ...prev, [key]: !prev[key] }))
   }
 
+  // 移动端侧边栏切换
+  const handleToggleMobileSidebar = () => {
+    setMobileSidebarOpen(prev => !prev)
+  }
+
   // 重置状态
   const handleReset = () => {
     setError(null)
     setPreview(null)
   }
 
+  // 应用历史记录
+  const handleApplyHistory = (historyItem) => {
+    setSource(historyItem.source)
+    setText(historyItem.text)
+    setMapStyle(historyItem.mapStyle)
+    setTitle(historyItem.title)
+    handleReset()
+  }
+
+  // 保存到历史记录
+  const saveToHistory = (result) => {
+    if (window.addCreationHistory) {
+      window.addCreationHistory({
+        source,
+        title: result?.data?.title || title || '未命名思维导图',
+        text: source === 'text' ? text : '',
+        mapStyle,
+        preview: result,
+        estimatedCost: estimate?.estimated_cost || 0
+      })
+    }
+  }
+
   // 键盘快捷键
   useEffect(() => {
     const onKey = (e) => {
+      // ESC 键关闭移动端侧边栏
+      if (e.key === 'Escape' && mobileSidebarOpen) {
+        setMobileSidebarOpen(false)
+        return
+      }
+      
       if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
         if (source === 'text' && canSubmit) {
           e.preventDefault()
@@ -244,125 +311,157 @@ export default function NewPage() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [source, canSubmit, mapStyle, handleGenerateFromText, handleGenerateFromUpload])
+  }, [source, canSubmit, mapStyle, handleGenerateFromText, handleGenerateFromUpload, mobileSidebarOpen])
+
+  // 侧边栏内容组件
+  const SidebarContent = () => (
+    <div className="p-6 space-y-6 max-h-[calc(100vh-120px)] overflow-y-auto">
+      {/* 来源选择 */}
+      <SourceSelector
+        source={source}
+        onSourceChange={setSource}
+        collapsed={collapsed.source}
+        onToggleCollapse={handleToggleCollapse}
+        onReset={handleReset}
+      />
+
+      {/* 动态表单区域 */}
+      {source === 'text' && (
+        <TextInput
+          text={text}
+          onTextChange={setText}
+          onEstimate={handleEstimateText}
+          estimating={estimating}
+        />
+      )}
+      
+      {source === 'upload' && (
+        <div className="space-y-4" aria-label="文件上传区域">
+          <FileUpload 
+            ref={uploadRef} 
+            hideModeToggle 
+            initialMode="file" 
+            forceMode="file" 
+            showGenerateButton={false} 
+            showEstimatePanel={false} 
+            onStateChange={(s) => {
+              const credits = user?.credits || 0
+              setEstimate(prev => prev ? { 
+                ...prev, 
+                estimated_cost: s.estimated_cost, 
+                user_balance: credits, 
+                sufficient_credits: credits >= (s.estimated_cost||0) 
+              } : (s.estimated_cost ? { 
+                estimated_cost: s.estimated_cost, 
+                user_balance: credits, 
+                sufficient_credits: credits >= (s.estimated_cost||0) 
+              } : null))
+            }} 
+            onUploadStart={() => { 
+              setError(null)
+              setPreview(null) 
+            }} 
+            onUploadSuccess={(res) => { 
+              setPreview(res)
+              autoSave(res)
+              saveToHistory(res)
+            }} 
+            onUploadError={(msg) => setError(msg)} 
+          />
+        </div>
+      )}
+
+      {/* 参数设置 */}
+      <ParameterPanel
+        mapStyle={mapStyle}
+        onMapStyleChange={setMapStyle}
+        collapsed={collapsed.basic}
+        onToggleCollapse={handleToggleCollapse}
+      />
+
+      {/* 操作区 */}
+      <ActionPanel
+        source={source}
+        collapsed={collapsed.actions}
+        onToggleCollapse={handleToggleCollapse}
+        estimate={estimate}
+        user={user}
+        canSubmit={canSubmit}
+        submitting={submitting}
+        estimating={estimating}
+        onGenerateText={handleGenerateFromText}
+        onGenerateUpload={handleGenerateFromUpload}
+        uploadRef={uploadRef}
+      />
+
+      {/* 历史记录 */}
+      <HistoryPanel
+        collapsed={collapsed.history}
+        onToggleCollapse={handleToggleCollapse}
+        onApplyHistory={handleApplyHistory}
+        currentSource={source}
+        currentText={text}
+      />
+    </div>
+  )
 
   return (
     <div className="min-h-screen bg-brand-50">
-      {/* 页面标题区域 */}
-      <div className="bg-neutral-white border-b border-brand-200">
-        <div className="max-w-[1400px] mx-auto px-6 md:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl md:text-4xl font-bold text-brand-900 mb-2">
-                创建思维导图
-              </h1>
-              <p className="text-lg text-brand-600">
-                从文本或文档快速生成专业的思维导图
-              </p>
-            </div>
-            <div className="hidden md:flex items-center space-x-4 text-sm text-brand-500">
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-core-500 rounded-full"></div>
-                <span>AI 智能生成</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-content-500 rounded-full"></div>
-                <span>多格式支持</span>
-              </div>
-            </div>
-          </div>
+      {/* 移动端顶部工具栏 */}
+      <div className="lg:hidden sticky top-0 z-40 bg-neutral-white border-b border-brand-200 shadow-sm">
+        <div className="flex items-center justify-between px-6 py-4">
+          <h1 className="text-lg font-semibold text-brand-800">创建思维导图</h1>
+          <button
+            onClick={handleToggleMobileSidebar}
+            className="p-2 rounded-lg bg-brand-100 text-brand-700 hover:bg-brand-200 transition-colors duration-200"
+            aria-label={mobileSidebarOpen ? "关闭设置面板" : "打开设置面板"}
+          >
+            {mobileSidebarOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
         </div>
       </div>
+
+      {/* 移动端遮罩层 */}
+      {mobileSidebarOpen && (
+        <div 
+          className="lg:hidden fixed inset-0 bg-black/50 z-40 transition-opacity duration-300"
+          onClick={() => setMobileSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
 
       {/* 主内容区域 */}
       <div className="max-w-[1400px] mx-auto px-6 md:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* 左侧控制面板 */}
-          <aside className="lg:col-span-4 xl:col-span-3">
+          {/* 左侧控制面板 - 桌面端 */}
+          <aside className="hidden lg:block lg:col-span-3 xl:col-span-3">
             <div className="bg-neutral-white rounded-2xl border border-brand-200 shadow-soft overflow-hidden sticky top-8">
-              <div className="p-6 space-y-6 max-h-[calc(100vh-120px)] overflow-y-auto">
-                {/* 来源选择 */}
-                <SourceSelector
-                  source={source}
-                  onSourceChange={setSource}
-                  collapsed={collapsed.source}
-                  onToggleCollapse={handleToggleCollapse}
-                  onReset={handleReset}
-                />
-
-                {/* 动态表单区域 */}
-                {source === 'text' && (
-                  <TextInput
-                    text={text}
-                    onTextChange={setText}
-                    onEstimate={handleEstimateText}
-                    estimating={estimating}
-                  />
-                )}
-                
-                {source === 'upload' && (
-                  <div className="space-y-4" aria-label="文件上传区域">
-                    <FileUpload 
-                      ref={uploadRef} 
-                      hideModeToggle 
-                      initialMode="file" 
-                      forceMode="file" 
-                      showGenerateButton={false} 
-                      showEstimatePanel={false} 
-                      onStateChange={(s) => {
-                        const credits = user?.credits || 0
-                        setEstimate(prev => prev ? { 
-                          ...prev, 
-                          estimated_cost: s.estimated_cost, 
-                          user_balance: credits, 
-                          sufficient_credits: credits >= (s.estimated_cost||0) 
-                        } : (s.estimated_cost ? { 
-                          estimated_cost: s.estimated_cost, 
-                          user_balance: credits, 
-                          sufficient_credits: credits >= (s.estimated_cost||0) 
-                        } : null))
-                      }} 
-                      onUploadStart={() => { 
-                        setError(null)
-                        setPreview(null) 
-                      }} 
-                      onUploadSuccess={(res) => { 
-                        setPreview(res)
-                        autoSave(res) 
-                      }} 
-                      onUploadError={(msg) => setError(msg)} 
-                    />
-                  </div>
-                )}
-
-                {/* 参数设置 */}
-                <ParameterPanel
-                  mapStyle={mapStyle}
-                  onMapStyleChange={setMapStyle}
-                  collapsed={collapsed.basic}
-                  onToggleCollapse={handleToggleCollapse}
-                />
-
-                {/* 操作区 */}
-                <ActionPanel
-                  source={source}
-                  collapsed={collapsed.actions}
-                  onToggleCollapse={handleToggleCollapse}
-                  estimate={estimate}
-                  user={user}
-                  canSubmit={canSubmit}
-                  submitting={submitting}
-                  estimating={estimating}
-                  onGenerateText={handleGenerateFromText}
-                  onGenerateUpload={handleGenerateFromUpload}
-                  uploadRef={uploadRef}
-                />
-              </div>
+              <SidebarContent />
             </div>
           </aside>
 
+          {/* 左侧控制面板 - 移动端侧边栏 */}
+          <aside className={`
+            lg:hidden fixed top-0 left-0 h-full w-80 bg-neutral-white z-50 
+            transform transition-transform duration-300 ease-in-out
+            ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+            border-r border-brand-200 shadow-strong
+          `}>
+            <div className="flex items-center justify-between p-6 border-b border-brand-200">
+              <h2 className="text-lg font-semibold text-brand-800">设置面板</h2>
+              <button
+                onClick={() => setMobileSidebarOpen(false)}
+                className="p-2 rounded-lg bg-brand-100 text-brand-700 hover:bg-brand-200 transition-colors duration-200"
+                aria-label="关闭设置面板"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <SidebarContent />
+          </aside>
+
           {/* 右侧预览区 */}
-          <main className="lg:col-span-8 xl:col-span-9">
+          <main className="lg:col-span-9 xl:col-span-9">
             <PreviewPanel
               submitting={submitting}
               preview={preview}
